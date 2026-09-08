@@ -1,3 +1,44 @@
-.env
-
+# Dependencies
 node_modules/
+.pnpm-store/
+
+# Environment variables & secrets
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Build & compiled output
+dist/
+build/
+*.tsbuildinfo
+
+# Logs & debugging
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Testing & Coverage
+coverage/
+.nyc_output/
+
+# Operating System files
+.DS_Store
+Thumbs.db
+
+# IDE & Editor configurations
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Husky runtime folder
+.husky/_/
