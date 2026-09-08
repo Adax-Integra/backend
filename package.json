@@ -17,7 +17,7 @@
     }
   },
   "packageManager": "pnpm@12.3.4",
-  "type": "commonjs",
+  "type": "module",
   "dependencies": {
     "@supabase/supabase-js": "^2.115.0",
     "cors": "^2.8.6",
