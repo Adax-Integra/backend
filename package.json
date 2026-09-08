@@ -12,13 +12,14 @@
   "devEngines": {
     "packageManager": {
       "name": "pnpm",
-      "version": "11.24.0",
+      "version": "12.3.4",
       "onFail": "download"
     }
   },
-  "packageManager": "pnpm@11.24.0",
+  "packageManager": "pnpm@12.3.4",
   "type": "commonjs",
   "dependencies": {
+    "@supabase/supabase-js": "^2.115.0",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
