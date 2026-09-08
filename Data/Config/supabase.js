@@ -1,14 +1,14 @@
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
+const supabaseSecretKey = process.env.SUPABASE_SECRET_KEY;
 
-if (!supabaseUrl || !supabaseServiceKey) {
-    throw new Error('Missing Supabase environment variables: SUPABASE_URL and SUPABASE_SERVICE_KEY are required.');
+if (!supabaseUrl || !supabaseSecretKey) {
+    throw new Error('Missing Supabase environment variables: SUPABASE_URL and SUPABASE_SECRET_KEY are required.');
 }
 
 // Disables browser session storage and refresh timers for Node.js
-export const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+export const supabase = createClient(supabaseUrl, supabaseSecretKey, {
     auth: {
         autoRefreshToken: false,
         persistSession: false,
