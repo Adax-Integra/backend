@@ -1,7 +1,7 @@
-require('dotenv').config();
-const express = require('express');
-const cors = require('cors');
-const helmet = require('helmet');
+import 'dotenv/config';
+import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
 
 const app = express();
 
@@ -14,7 +14,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 // Default server running page
-app.get('/', (_req, res) => res.status(200).json({ status: 'server running' })); 
+app.get('/', (_req, res) => res.status(200).json({ status: 'server running' }));
 
 // Health check endpoint for mobile connectivity testing & load balancers
 app.get('/health', (_req, res) => res.status(200).json({ status: 'ok' }));
@@ -28,10 +28,7 @@ app.use((err, _req, res, _next) => {
     res.status(500).send('Internal server error.');
 });
 
-module.exports = app;
+const PORT = process.env.PORT || 3001;
+app.listen(PORT, () => console.log(`Servidor en http://localhost:${PORT}`));
 
-if (require.main === module) {
-    const PORT = process.env.PORT || 3001;
-    app.listen(PORT, () => console.log(`Servidor en http://localhost:${PORT}`));
-}
-
+export default app;
