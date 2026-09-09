@@ -29,6 +29,8 @@
     "helmet": "^8.3.0"
   },
   "devDependencies": {
+    "@commitlint/cli": "^21.2.2",
+    "@commitlint/config-conventional": "^21.2.2",
     "@eslint/js": "^10.0.1",
     "eslint": "^10.10.0",
     "eslint-config-prettier": "^10.1.8",
@@ -39,6 +41,7 @@
   },
   "lint-staged": {
     "*.{js,mjs,cjs}": [
+      "prettier --write",
       "eslint --fix"
     ],
     "**/*.{json,md}": [

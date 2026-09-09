@@ -24,8 +24,8 @@ app.use((_req, res) => res.status(404).send('Not found.'));
 
 // Global error handler — prevents unhandled exceptions from crashing the serverless function
 app.use((err, _req, res, _next) => {
-    console.error(err);
-    res.status(500).send('Internal server error.');
+  console.error(err);
+  res.status(500).send('Internal server error.');
 });
 
 const PORT = process.env.PORT || 3001;
