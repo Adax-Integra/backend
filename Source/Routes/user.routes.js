@@ -3,9 +3,14 @@ import userController from '../Controllers/user.controller.js';
 
 const router = express.Router();
 
+// Pre-submission
 router.get(
   '/users/:userId/pre-submission',
   userController.getPreSubmissionData
+);
+router.put(
+  'users/:userId/pre-submission',
+  userController.editPreSubmissionData
 );
 
 export default router;
