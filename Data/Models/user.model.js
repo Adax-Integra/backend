@@ -11,6 +11,13 @@ class UserModel {
     this.address = userData.Address || null;
     this.documents = userData.UserDocuments || null;
   }
+
+  // Strips out sensitive data when returning JSON respones
+  // The underscore prefix satisfies the linter rule for unused vars
+  toSaveObject() {
+    const { password: _, ...safeData } = this;
+    return safeData;
+  }
 }
 
 export default UserModel;

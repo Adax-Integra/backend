@@ -19,7 +19,7 @@ class CheckPreSubmissionDataUseCase {
       throw new Error(error.message);
     }
 
-    return new UserModel(data);
+    return new UserModel(data).toSaveObject();
   }
 }
 
