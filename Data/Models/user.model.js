@@ -8,6 +8,8 @@ class UserModel {
     this.birthDate = userData.birthDate;
     this.phone = userData.phone;
     this.createdAt = userData.createdAt;
+    this.address = userData.Address || null;
+    this.documents = userData.UserDocuments || null;
   }
 }
 
