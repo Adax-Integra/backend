@@ -1,22 +1,52 @@
+import { supabase } from '../Config/supabase.js';
+
+const PROFILE_COLUMNS = `
+  user_id,
+  name,
+  last_name,
+  email,
+  birth_date,
+  phone,
+  office_id
+`;
+
+/**
+ * Data Model for the "user" table.
+ * Domain use cases call this layer to talk to Supabase.
+ */
 class UserModel {
-  constructor(userData) {
-    this.userId = userData.userID;
-    this.name = userData.name;
-    this.email = userData.email;
-    this.password = userData.password;
-    this.officeId = userData.officeID;
-    this.birthDate = userData.birthDate;
-    this.phone = userData.phone;
-    this.createdAt = userData.createdAt;
-    this.address = userData.Address || null;
-    this.documents = userData.UserDocuments || null;
+  static async findProfileById(userId) {
+    const { data, error } = await supabase
+      .from('user')
+      .select(PROFILE_COLUMNS)
+      .eq('user_id', userId)
+      .is('deleted_at', null)
+      .maybeSingle();
+
+    if (error) {
+      throw new Error(error.message);
+    }
+    if (!data) {
+      throw new Error('User profile not found.');
+    }
+
+    return data;
   }
 
-  // Strips out sensitive data when returning JSON respones
-  // The underscore prefix satisfies the linter rule for unused vars
-  toSaveObject() {
-    const { password: _, ...safeData } = this;
-    return safeData;
+  static async updateProfile(userId, updateData) {
+    const { data, error } = await supabase
+      .from('user')
+      .update(updateData)
+      .eq('user_id', userId)
+      .is('deleted_at', null)
+      .select(PROFILE_COLUMNS)
+      .single();
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return data;
   }
 }
 
