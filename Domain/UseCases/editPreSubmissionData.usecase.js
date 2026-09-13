@@ -1,4 +1,4 @@
-import UserModel from '../../Data/Models/user.model.js';
+import ExternalUserModel from '../../Data/Models/externalUser.model.js';
 
 class EditPreSubmissionDataUseCase {
   async execute(userId, updateData) {
@@ -6,7 +6,7 @@ class EditPreSubmissionDataUseCase {
       throw new Error('userId is required.');
     }
 
-    return UserModel.updateProfile(userId, updateData);
+    return ExternalUserModel.updateProfile(userId, updateData);
   }
 }
 

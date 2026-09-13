@@ -1,24 +1,21 @@
 import { supabase } from '../Config/supabase.js';
 
-const PROFILE_COLUMNS = `
+// Profile columns that belong to external users
+const EXTERNAL_PROFILE_COLUMNS = `
   user_id,
   name,
   last_name,
   email,
   birth_date,
-  phone,
-  office_id
+  phone
 `;
 
-/**
- * Data Model for the "user" table.
- * Domain use cases call this layer to talk to Supabase.
- */
-class UserModel {
+// Data Model for external-user access to the "user" table.
+class ExternalUserModel {
   static async findProfileById(userId) {
     const { data, error } = await supabase
       .from('user')
-      .select(PROFILE_COLUMNS)
+      .select(EXTERNAL_PROFILE_COLUMNS)
       .eq('user_id', userId)
       .is('deleted_at', null)
       .maybeSingle();
@@ -33,13 +30,20 @@ class UserModel {
     return data;
   }
 
-  static async updateProfile(userId, updateData) {
+  static async updateProfile(userId, updateData = {}) {
+    const allowedKeys = ['name', 'last_name', 'email', 'birth_date', 'phone'];
+    const payload = Object.fromEntries(
+      allowedKeys
+        .filter((key) => updateData[key] !== undefined)
+        .map((key) => [key, updateData[key]])
+    );
+
     const { data, error } = await supabase
       .from('user')
-      .update(updateData)
+      .update(payload)
       .eq('user_id', userId)
       .is('deleted_at', null)
-      .select(PROFILE_COLUMNS)
+      .select(EXTERNAL_PROFILE_COLUMNS)
       .single();
 
     if (error) {
@@ -50,4 +54,4 @@ class UserModel {
   }
 }
 
-export default UserModel;
+export default ExternalUserModel;

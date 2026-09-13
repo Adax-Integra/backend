@@ -5,7 +5,7 @@ import PreSubmissionDTO from '../DTOs/preSubmission.dto.js';
 const checkPreSubmissionDataUseCase = new CheckPreSubmissionDataUseCase();
 const editPreSubmissionDataUseCase = new EditPreSubmissionDataUseCase();
 
-class UserController {
+class ExternalUserController {
   async getPreSubmissionData(req, res) {
     try {
       const { userId } = req.params;
@@ -45,4 +45,4 @@ class UserController {
   }
 }
 
-export default new UserController();
+export default new ExternalUserController();

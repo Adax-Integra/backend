@@ -1,4 +1,4 @@
-import UserModel from '../../Data/Models/user.model.js';
+import ExternalUserModel from '../../Data/Models/externalUser.model.js';
 import AddressModel from '../../Data/Models/address.model.js';
 
 class CheckPreSubmissionDataUseCase {
@@ -8,7 +8,7 @@ class CheckPreSubmissionDataUseCase {
     }
 
     const [profile, address] = await Promise.all([
-      UserModel.findProfileById(userId),
+      ExternalUserModel.findProfileById(userId),
       AddressModel.findByUserId(userId),
     ]);
 

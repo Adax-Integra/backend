@@ -4,7 +4,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 
 // Import route modules
-import userRoutes from '../Source/Routes/user.routes.js';
+import externalUserRoutes from '../Source/Routes/externalUser.routes.js';
 
 const app = express();
 
@@ -23,7 +23,7 @@ app.get('/', (_req, res) => res.status(200).json({ status: 'server running' }));
 app.get('/health', (_req, res) => res.status(200).json({ status: 'ok' }));
 
 // Mount routes under /api
-app.use('/api', userRoutes);
+app.use('/api', externalUserRoutes);
 
 // 404
 app.use((_req, res) => res.status(404).send('Not found.'));
