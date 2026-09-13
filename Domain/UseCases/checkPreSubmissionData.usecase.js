@@ -1,25 +1,18 @@
-import { supabase } from '../../Data/Config/supabase.js';
 import UserModel from '../../Data/Models/user.model.js';
+import AddressModel from '../../Data/Models/address.model.js';
 
 class CheckPreSubmissionDataUseCase {
   async execute(userId) {
-    const { data, error } = await supabase
-      .from('User')
-      .select(
-        `
-        userID, name, email, birthDate, phone,
-        Address (country, state, city),
-        UserDocuments (ine, proofOfAddress)
-      `
-      )
-      .eq('userID', userId)
-      .single();
-
-    if (error) {
-      throw new Error(error.message);
+    if (!userId) {
+      throw new Error('userId is required.');
     }
 
-    return new UserModel(data).toSaveObject();
+    const [profile, address] = await Promise.all([
+      UserModel.findProfileById(userId),
+      AddressModel.findByUserId(userId),
+    ]);
+
+    return { profile, address };
   }
 }
 
