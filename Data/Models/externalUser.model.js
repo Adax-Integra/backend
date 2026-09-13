@@ -1,6 +1,5 @@
 import { supabase } from '../Config/supabase.js';
 
-// Profile columns that belong to external users
 const EXTERNAL_PROFILE_COLUMNS = `
   user_id,
   name,
@@ -30,14 +29,7 @@ class ExternalUserModel {
     return data;
   }
 
-  static async updateProfile(userId, updateData = {}) {
-    const allowedKeys = ['name', 'last_name', 'email', 'birth_date', 'phone'];
-    const payload = Object.fromEntries(
-      allowedKeys
-        .filter((key) => updateData[key] !== undefined)
-        .map((key) => [key, updateData[key]])
-    );
-
+  static async updateProfile(userId, payload) {
     const { data, error } = await supabase
       .from('user')
       .update(payload)
