@@ -1,7 +1,7 @@
 import CheckPreSubmissionDataUseCase from '../../Domain/UseCases/checkPreSubmissionData.usecase.js';
 import EditPreSubmissionDataUseCase from '../../Domain/UseCases/editPreSubmissionData.usecase.js';
+import PreSubmissionDTO from '../DTOs/preSubmission.dto.js';
 
-// Instantiate use case
 const checkPreSubmissionDataUseCase = new CheckPreSubmissionDataUseCase();
 const editPreSubmissionDataUseCase = new EditPreSubmissionDataUseCase();
 
@@ -9,11 +9,12 @@ class UserController {
   async getPreSubmissionData(req, res) {
     try {
       const { userId } = req.params;
-      const profileData = await checkPreSubmissionDataUseCase.execute(userId);
+      const data = await checkPreSubmissionDataUseCase.execute(userId);
+      const payload = new PreSubmissionDTO(data).toJSON();
 
       return res.status(200).json({
         success: true,
-        data: profileData,
+        data: payload,
       });
     } catch (error) {
       return res.status(400).json({
@@ -26,15 +27,13 @@ class UserController {
   async editPreSubmissionData(req, res) {
     try {
       const { userId } = req.params;
-      const updateData = req.body;
-
-      const updatedData = await editPreSubmissionDataUseCase(
+      const updatedData = await editPreSubmissionDataUseCase.execute(
         userId,
-        updateData
+        req.body
       );
 
       return res.status(200).json({
-        sucess: true,
+        success: true,
         data: updatedData,
       });
     } catch (error) {
