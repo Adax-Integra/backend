@@ -1,4 +1,11 @@
-const ALLOWED_KEYS = ['name', 'last_name', 'email', 'birth_date', 'phone'];
+const ALLOWED_PROFILE_KEYS = [
+  'name',
+  'last_name',
+  'email',
+  'birth_date',
+  'phone',
+];
+const ALLOWED_DOCUMENT_KEYS = ['identity_document', 'proof_of_address'];
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
@@ -9,7 +16,6 @@ function validationError(message) {
   return new Error(message);
 }
 
-// Validates inputs for EditPreSubmissionDataUseCase
 class EditPreSubmissionValidator {
   static validateUserId(userId) {
     if (!userId || typeof userId !== 'string') {
@@ -21,8 +27,16 @@ class EditPreSubmissionValidator {
     return userId;
   }
 
-  // Whitelists and validates the profile update body
-  static validateUpdateBody(updateData = {}) {
+  /**
+   * Body shape:
+   * {
+   *   name?, last_name?, email?, birth_date?, phone?,
+   *   documents?: { identity_document?, proof_of_address? }
+   * }
+   *
+   * Document values are paths inside the `user-documents` Storage bucket.
+   */
+  static validateUpdateBody(updateData = {}, userId) {
     if (
       updateData === null ||
       typeof updateData !== 'object' ||
@@ -31,10 +45,11 @@ class EditPreSubmissionValidator {
       throw validationError('Request body must be an object.');
     }
 
-    const payload = {};
+    const profile = {};
+    const documents = {};
     const errors = [];
 
-    for (const key of ALLOWED_KEYS) {
+    for (const key of ALLOWED_PROFILE_KEYS) {
       if (updateData[key] === undefined) {
         continue;
       }
@@ -45,7 +60,7 @@ class EditPreSubmissionValidator {
         if (typeof value !== 'string' || value.trim() === '') {
           errors.push(`${key} must be a non-empty string.`);
         } else {
-          payload[key] = value.trim();
+          profile[key] = value.trim();
         }
         continue;
       }
@@ -54,7 +69,7 @@ class EditPreSubmissionValidator {
         if (typeof value !== 'string' || !EMAIL_PATTERN.test(value.trim())) {
           errors.push('email must be a valid email address.');
         } else {
-          payload.email = value.trim().toLowerCase();
+          profile.email = value.trim().toLowerCase();
         }
         continue;
       }
@@ -67,7 +82,7 @@ class EditPreSubmissionValidator {
           if (Number.isNaN(parsed.getTime())) {
             errors.push('birth_date must be a valid date.');
           } else {
-            payload.birth_date = value;
+            profile.birth_date = value;
           }
         }
         continue;
@@ -77,7 +92,34 @@ class EditPreSubmissionValidator {
         if (typeof value !== 'string' || value.trim() === '') {
           errors.push('phone must be a non-empty string.');
         } else {
-          payload.phone = value.trim();
+          profile.phone = value.trim();
+        }
+      }
+    }
+
+    if (updateData.documents !== undefined) {
+      const docs = updateData.documents;
+      if (docs === null || typeof docs !== 'object' || Array.isArray(docs)) {
+        errors.push('documents must be an object.');
+      } else {
+        for (const key of ALLOWED_DOCUMENT_KEYS) {
+          if (docs[key] === undefined) {
+            continue;
+          }
+
+          const value = docs[key];
+          if (typeof value !== 'string' || value.trim() === '') {
+            errors.push(`${key} must be a non-empty storage path string.`);
+            continue;
+          }
+
+          const path = value.trim();
+          if (userId && !path.startsWith(`${userId}/`)) {
+            errors.push(`${key} path must start with "${userId}/".`);
+            continue;
+          }
+
+          documents[key] = path;
         }
       }
     }
@@ -86,13 +128,16 @@ class EditPreSubmissionValidator {
       throw validationError(errors.join(' '));
     }
 
-    if (Object.keys(payload).length === 0) {
+    if (
+      Object.keys(profile).length === 0 &&
+      Object.keys(documents).length === 0
+    ) {
       throw validationError(
-        'At least one of name, last_name, email, birth_date, phone is required.'
+        'At least one profile field or documents path is required.'
       );
     }
 
-    return payload;
+    return { profile, documents };
   }
 }
 
