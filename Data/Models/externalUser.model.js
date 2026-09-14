@@ -9,7 +9,10 @@ const EXTERNAL_PROFILE_COLUMNS = `
   phone
 `;
 
-// Data Model for external-user access to the "user" table.
+/**
+ * Data Model for the "external-user".
+ * Domain use cases call this layer to talk to Supabase.
+ */
 class ExternalUserModel {
   static async findProfileById(userId) {
     const { data, error } = await supabase
