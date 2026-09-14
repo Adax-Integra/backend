@@ -3,6 +3,9 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 
+// Import route modules
+import externalUserRoutes from '../Source/Routes/externalUser.routes.js';
+
 const app = express();
 
 app.set('trust proxy', 1);
@@ -18,6 +21,9 @@ app.get('/', (_req, res) => res.status(200).json({ status: 'server running' }));
 
 // Health check endpoint for mobile connectivity testing & load balancers
 app.get('/health', (_req, res) => res.status(200).json({ status: 'ok' }));
+
+// Mount routes under /api
+app.use('/api', externalUserRoutes);
 
 // 404
 app.use((_req, res) => res.status(404).send('Not found.'));
