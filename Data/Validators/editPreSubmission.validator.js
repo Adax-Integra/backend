@@ -5,6 +5,15 @@ const ALLOWED_PROFILE_KEYS = [
   'birth_date',
   'phone',
 ];
+const ALLOWED_ADDRESS_KEYS = [
+  'address_line_1',
+  'address_line_2',
+  'neighborhood',
+  'zip_code',
+  'country',
+  'state',
+  'city',
+];
 const ALLOWED_DOCUMENT_KEYS = ['identity_document', 'proof_of_address'];
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -31,10 +40,14 @@ class EditPreSubmissionValidator {
    * Body shape:
    * {
    *   name?, last_name?, email?, birth_date?, phone?,
+   *   address?: {
+   *     address_line_1?, address_line_2?, neighborhood?,
+   *     zip_code?, country?, state?, city?
+   *   },
    *   documents?: { identity_document?, proof_of_address? }
    * }
    *
-   * Document values are paths inside the `user-documents` Storage bucket.
+   * Document values are paths inside the "user-documents" Storage bucket.
    */
   static validateUpdateBody(updateData = {}, userId) {
     if (
@@ -46,6 +59,7 @@ class EditPreSubmissionValidator {
     }
 
     const profile = {};
+    const address = {};
     const documents = {};
     const errors = [];
 
@@ -97,6 +111,42 @@ class EditPreSubmissionValidator {
       }
     }
 
+    // Validate address data
+    if (updateData.address !== undefined) {
+      const addr = updateData.address;
+      if (addr === null || typeof addr !== 'object' || Array.isArray(addr)) {
+        errors.push('address must be an object.');
+      } else {
+        for (const key of ALLOWED_ADDRESS_KEYS) {
+          if (addr[key] === undefined) {
+            continue;
+          }
+
+          const value = addr[key];
+
+          // address_line_2 is optional and may be cleared with null/empty
+          if (key === 'address_line_2') {
+            if (value === null) {
+              address[key] = null;
+            } else if (typeof value !== 'string') {
+              errors.push('address_line_2 must be a string or null.');
+            } else {
+              address[key] = value.trim();
+            }
+            continue;
+          }
+
+          if (typeof value !== 'string' || value.trim() === '') {
+            errors.push(`address.${key} must be a non-empty string.`);
+            continue;
+          }
+
+          address[key] = value.trim();
+        }
+      }
+    }
+
+    // Validate documents data
     if (updateData.documents !== undefined) {
       const docs = updateData.documents;
       if (docs === null || typeof docs !== 'object' || Array.isArray(docs)) {
@@ -130,14 +180,15 @@ class EditPreSubmissionValidator {
 
     if (
       Object.keys(profile).length === 0 &&
+      Object.keys(address).length === 0 &&
       Object.keys(documents).length === 0
     ) {
       throw validationError(
-        'At least one profile field or documents path is required.'
+        'At least one profile, address, or documents field is required.'
       );
     }
 
-    return { profile, documents };
+    return { profile, address, documents };
   }
 }
 
