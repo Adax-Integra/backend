@@ -29,7 +29,8 @@ class AddressModel {
       throw new Error(error.message);
     }
 
-    return Array.isArray(data) && data.length > 0 ? data[0] : null;
+    // maybeSingle() returns the row object or null
+    return data;
   }
 }
 
