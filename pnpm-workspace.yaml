@@ -1,0 +1,4 @@
+# Scarf is optional install-time analytics pulled in by swagger-ui-express.
+# Deny its scripts — Swagger UI still works without them.
+allowBuilds:
+  '@scarf/scarf': false
