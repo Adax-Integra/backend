@@ -2,9 +2,19 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import swaggerUi from 'swagger-ui-express';
+import { parse as parseYaml } from 'yaml';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 // Import route modules
 import externalUserRoutes from '../Source/Routes/externalUser.routes.js';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const swaggerDocument = parseYaml(
+  readFileSync(join(__dirname, '..', 'openapi.yaml'), 'utf8')
+);
 
 const app = express();
 
@@ -21,6 +31,9 @@ app.get('/', (_req, res) => res.status(200).json({ status: 'server running' }));
 
 // Health check endpoint for mobile connectivity testing & load balancers
 app.get('/health', (_req, res) => res.status(200).json({ status: 'ok' }));
+
+// OpenAPI docs (single source in root folder: openapi.yaml)
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // Mount routes under /api
 app.use('/api', externalUserRoutes);
