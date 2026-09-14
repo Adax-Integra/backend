@@ -22,8 +22,8 @@ class AddressModel {
       )
       .eq('user_id', userId)
       .is('deleted_at', null)
-      .order('created_at', { ascending: false })
-      .limit(1);
+      // Only returns one address row per user
+      .maybeSingle();
 
     if (error) {
       throw new Error(error.message);
