@@ -19,12 +19,13 @@ const CASE_COLUMNS = `
     violence_id,
     violence_types!inner (
       violence_id,
-      description
+      description,
+      severity
     )
   )
 `;
 
-// Data access for case listings. Urgency calculation and ordering are pending.
+// Data access for case listings. The use case calculates and sorts urgency.
 class CaseModel {
   // Extract page and limit from the input object; their defaults are 1 and 20.
   // The = {} default allows calling findAll() without arguments.
