@@ -1,4 +1,4 @@
-import { supabase } from '../Config/supabase.js';
+import { supabase } from '../data/config/supabase.js';
 
 // keeps cases that do not have any active violence types yet.
 const CASE_COLUMNS = `
@@ -122,6 +122,11 @@ class CaseModel {
     
     if (error) {
       throw new Error(error.message);
+    }
+
+    //missing case situation
+    if (!data) {
+      throw new Error(`Case with ID ${caseId} not found.`);
     }
 
     return data;
