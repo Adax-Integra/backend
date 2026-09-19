@@ -1,4 +1,4 @@
-import CaseModel from '../../Data/Models/case.model.js';
+import CaseModel from '../../data/models/case.model.js';
 
 class ListCasesUseCase {
   // Collaborator authorization must be added before exposing this listing.
