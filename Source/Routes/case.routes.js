@@ -8,9 +8,4 @@ router.get(
   caseController.getCaseById
 );
 
-router.put(
-  '/case-progress/:caseId/pre-submission',
-  caseController.editPreSubmissionData
-);
-
 export default router;
