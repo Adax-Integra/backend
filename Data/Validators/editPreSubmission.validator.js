@@ -18,24 +18,12 @@ const ALLOWED_DOCUMENT_KEYS = ['identity_document', 'proof_of_address'];
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
-const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function validationError(message) {
   return new Error(message);
 }
 
 class EditPreSubmissionValidator {
-  static validateUserId(userId) {
-    if (!userId || typeof userId !== 'string') {
-      throw validationError('userId is required.');
-    }
-    if (!UUID_PATTERN.test(userId)) {
-      throw validationError('userId must be a valid UUID.');
-    }
-    return userId;
-  }
-
   /**
    * Body shape (matches GET pre-submission response):
    * {

@@ -2,10 +2,11 @@ import ExternalUserModel from '../../Data/Models/externalUser.model.js';
 import AddressModel from '../../Data/Models/address.model.js';
 import ExternalUserDocumentsModel from '../../Data/Models/externalUserDocuments.model.js';
 import EditPreSubmissionValidator from '../../Data/Validators/editPreSubmission.validator.js';
+import UserIdValidator from '../../Data/Validators/userId.validator';
 
 class EditPreSubmissionDataUseCase {
   async execute(userId, updateData) {
-    const validUserId = EditPreSubmissionValidator.validateUserId(userId);
+    const validUserId = UserIdValidator.validateUserId(userId);
     const { profile, address, documents } =
       EditPreSubmissionValidator.validateUpdateBody(updateData, validUserId);
 
