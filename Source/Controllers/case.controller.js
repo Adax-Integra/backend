@@ -1,4 +1,4 @@
-import GetCaseByIdUseCase from "../../domain/useCases/getCaseById.usecase";
+import GetCaseByIdUseCase from '../../Domain/UseCases/getCaseById.usecase.js';
 import ListCasesUseCase from '../../Domain/UseCases/listCases.usecase.js';
 import CaseListDTO from '../DTOs/caseList.dto.js';
 
@@ -37,7 +37,8 @@ class CaseController {
     ) {
       return res.status(400).json({
         success: false,
-        error: 'Invalid pagination: page or limit is out of range (maximum limit: 100).',
+        error:
+          'Invalid pagination: page or limit is out of range (maximum limit: 100).',
       });
     }
 
@@ -59,23 +60,23 @@ class CaseController {
       });
     }
   }
-  
+
   async getCaseById(req, res) {
-        try {
-            const { caseId } = req.params;
+    try {
+      const { caseId } = req.params;
 
-            const data = await getCaseByIdUseCase.execute(caseId);
+      const data = await getCaseByIdUseCase.execute(caseId);
 
-            return res.status(200).json({
-                success: true,
-                data: data,
-            });
-        } catch(e) {
-            return res.status(400).json({
-                success: false
-            });
-        }
+      return res.status(200).json({
+        success: true,
+        data: data,
+      });
+    } catch {
+      return res.status(400).json({
+        success: false,
+      });
     }
+  }
 }
 
 export default new CaseController();

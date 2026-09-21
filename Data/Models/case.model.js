@@ -1,4 +1,4 @@
-import { supabase } from '../data/config/supabase.js';
+import { supabase } from '../Config/supabase.js';
 
 // keeps cases that do not have any active violence types yet.
 const CASE_COLUMNS = `
@@ -45,14 +45,12 @@ const CASE_DETAIL_COLUMNS = `
     status
   )
 `;
-  
 
 // Data access for case listings. Urgency calculation and ordering are pending.
 class CaseModel {
   // Extract page and limit from the input object; their defaults are 1 and 20.
   // The = {} default allows calling findAll() without arguments.
   static async findAll({ page = 1, limit = 20 } = {}) {
-
     if (!Number.isSafeInteger(page) || page < 1) {
       throw new Error('page must be a positive integer.');
     }
@@ -115,12 +113,11 @@ class CaseModel {
       .is('case_steps.deleted_at', null)
       //order the steps to show progress correctly
       .order('step_number', {
-      foreignTable: 'case_steps',
-      ascending: true
-    })
+        foreignTable: 'case_steps',
+        ascending: true,
+      })
       .maybeSingle();
 
-    
     if (error) {
       throw new Error(error.message);
     }
@@ -131,7 +128,6 @@ class CaseModel {
     }
 
     return data;
-
   }
 }
 
