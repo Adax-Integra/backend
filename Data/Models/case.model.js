@@ -1,4 +1,4 @@
-import { supabase } from '../Config/supabase.js';
+import { supabase } from '../data/config/supabase.js';
 
 // keeps cases that do not have any active violence types yet.
 const CASE_COLUMNS = `
@@ -25,7 +25,29 @@ const CASE_COLUMNS = `
   )
 `;
 
-// Data access for case listings. The use case calculates and sorts urgency.
+//retrieval of data for when an external user checks progress of case (V-07)
+const CASE_DETAIL_COLUMNS = `
+  case_id,
+  case_number,
+  state,
+  record_id,
+  record!inner (
+    record_id,
+    user!inner (
+      user_id,
+      name,
+      last_name
+    )
+  ),
+  case_steps (
+    case_step_id,
+    step_number,
+    status
+  )
+`;
+  
+
+// Data access for case listings. Urgency calculation and ordering are pending.
 class CaseModel {
   // Extract page and limit from the input object; their defaults are 1 and 20.
   // The = {} default allows calling findAll() without arguments.
@@ -79,6 +101,37 @@ class CaseModel {
       page,
       limit,
     };
+  }
+
+  //case will be retrieved by caseId to display correct information of progress to external user (V-07)
+  static async findById(caseId) {
+    const { data, error } = await supabase
+      .from('case')
+      .select(CASE_DETAIL_COLUMNS)
+      .eq('case_id', caseId)
+      .is('deleted_at', null)
+      .is('record.deleted_at', null)
+      .is('record.user.deleted_at', null)
+      .is('case_steps.deleted_at', null)
+      //order the steps to show progress correctly
+      .order('step_number', {
+      foreignTable: 'case_steps',
+      ascending: true
+    })
+      .maybeSingle();
+
+    
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    //missing case situation
+    if (!data) {
+      throw new Error(`Case with ID ${caseId} not found.`);
+    }
+
+    return data;
+
   }
 }
 

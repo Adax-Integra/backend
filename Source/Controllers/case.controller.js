@@ -1,7 +1,9 @@
+import GetCaseByIdUseCase from "../../domain/useCases/getCaseById.usecase";
 import ListCasesUseCase from '../../Domain/UseCases/listCases.usecase.js';
 import CaseListDTO from '../DTOs/caseList.dto.js';
 
 const listCasesUseCase = new ListCasesUseCase();
+const getCaseByIdUseCase = new GetCaseByIdUseCase();
 
 class CaseController {
   async listCases(req, res) {
@@ -57,6 +59,23 @@ class CaseController {
       });
     }
   }
+  
+  async getCaseById(req, res) {
+        try {
+            const { caseId } = req.params;
+
+            const data = await getCaseByIdUseCase.execute(caseId);
+
+            return res.status(200).json({
+                success: true,
+                data: data,
+            });
+        } catch(e) {
+            return res.status(400).json({
+                success: false
+            });
+        }
+    }
 }
 
 export default new CaseController();
