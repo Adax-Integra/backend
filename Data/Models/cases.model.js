@@ -2,9 +2,9 @@ import sql from '../Config/db.js';
 
 class CasesModel {
   /**
-   * Fetches all active cases from a user ID.
-   * @param {string} userId
-   * @returns {Promise<Array>}
+   * Fetches all active cases from a user ID
+   * Expects a clean userId
+   * Returns an object array
    */
   static async getAllCasesFromUser(userId) {
     const rows = await sql`
