@@ -10,6 +10,7 @@ import { fileURLToPath } from 'node:url';
 
 // Import route modules
 import externalUserRoutes from '../Source/Routes/externalUser.routes.js';
+import internalUserRoutes from '../Source/Routes/internalUser.routes.js';
 import caseRoutes from './Routes/case.routes.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -38,6 +39,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // Mount routes under /api
 app.use('/api', externalUserRoutes);
+app.use('/api', internalUserRoutes);
 app.use('/api', caseRoutes);
 
 // 404
