@@ -10,6 +10,7 @@ import { fileURLToPath } from 'node:url';
 
 // Import route modules
 import externalUserRoutes from '../Source/Routes/externalUser.routes.js';
+import internalUserRoutes from '../Source/Routes/internalUser.routes.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const swaggerDocument = parseYaml(
@@ -37,6 +38,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // Mount routes under /api
 app.use('/api', externalUserRoutes);
+app.use('/api', internalUserRoutes);
 
 // 404
 app.use((_req, res) => res.status(404).send('Not found.'));
