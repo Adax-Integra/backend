@@ -19,7 +19,8 @@ const CASE_COLUMNS = `
     violence_id,
     violence_types!inner (
       violence_id,
-      description
+      description,
+      severity
     )
   )
 `;

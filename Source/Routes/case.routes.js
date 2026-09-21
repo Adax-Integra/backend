@@ -7,5 +7,6 @@ router.get(
   '/cases/:caseId',
   caseController.getCaseById
 );
+router.get('/cases', caseController.listCases);
 
 export default router;
