@@ -7,10 +7,8 @@ class CaseSummaryDTO {
     state,
     created_at,
     updated_at,
-    helpdescription,
-    violencedescription,
-    helpDescription,
-    violenceDescription,
+    case_help = [],
+    case_violence = [],
   }) {
     this.caseId = case_id ?? null;
     this.writtenDescription = written_description ?? null;
@@ -20,17 +18,22 @@ class CaseSummaryDTO {
     this.createdAt = created_at ? new Date(created_at).toISOString() : null;
     this.updatedAt = updated_at ? new Date(updated_at).toISOString() : null;
 
-    // Handles Postgres lowercase column alias defaults or explicit casing
-    const rawHelps = helpDescription ?? helpdescription ?? null;
-    const rawViolence = violenceDescription ?? violencedescription ?? null;
+    // Filter out softly deleted records and extract the description text
+    const validHelps = case_help
+      .filter(
+        (ch) => ch.deleted_at === null && ch.help_types?.deleted_at === null
+      )
+      .map((ch) => ch.help_types.description);
 
-    // Splits comma-separated strings into clean JavaScript arrays
-    this.helps = rawHelps
-      ? rawHelps.split(', ').map((item) => item.trim())
-      : [];
-    this.violenceTypes = rawViolence
-      ? rawViolence.split(', ').map((item) => item.trim())
-      : [];
+    const validViolences = case_violence
+      .filter(
+        (cv) => cv.deleted_at === null && cv.violence_types?.deleted_at === null
+      )
+      .map((cv) => cv.violence_types.description);
+
+    // Use Set to remove any duplicates
+    this.helps = [...new Set(validHelps)];
+    this.violenceTypes = [...new Set(validViolences)];
   }
 
   /**
@@ -51,10 +54,10 @@ class CaseSummaryDTO {
   }
 
   /**
-   * Maps an array of database rows to an array of CaseSummaryDTO.
+   * Maps an array of database rows to an array of serialized JSON objects.
    */
   static fromRows(rows = []) {
-    return rows.map((row) => new CaseSummaryDTO(row));
+    return rows.map((row) => new CaseSummaryDTO(row).toJSON());
   }
 }
 
