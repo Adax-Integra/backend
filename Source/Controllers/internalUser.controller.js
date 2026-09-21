@@ -1,14 +1,20 @@
-import GetAllCasesFromUser from '../../Domain/UseCases/getAllCasesFromUser.usecase';
-import getAllCasesDTO from '../DTOs/getAllCases.dto';
+import GetAllCasesFromUser from '../../Domain/UseCases/getAllCasesFromUser.usecase.js';
+import getAllCasesDTO from '../DTOs/getAllCases.dto.js';
 
 const getAllCasesFromUser = new GetAllCasesFromUser();
 
 class InternalUserController {
-  async getAllCasesFromUser(req, res) {
+  getAllCasesFromUser = async (req, res) => {
     try {
       const { userId } = req.params;
-      const data = await getAllCasesFromUser.execute(userId);
-      const payload = new getAllCasesDTO(data).toJson();
+      if (!userId) {
+        return res.status(400).json({
+          success: false,
+          error: 'userId parameter is required',
+        });
+      }
+      const rows = await getAllCasesFromUser.execute(userId);
+      const payload = getAllCasesDTO.fromRows(rows);
 
       return res.status(200).json({
         success: true,
@@ -20,7 +26,7 @@ class InternalUserController {
         error: error.message,
       });
     }
-  }
+  };
 }
 
 export default new InternalUserController();
