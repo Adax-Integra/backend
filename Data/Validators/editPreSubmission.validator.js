@@ -1,5 +1,6 @@
 import EmailValidator from './email.validator.js';
 import NameValidator from './name.validator.js';
+import DateValidator from './date.validator.js';
 
 const ALLOWED_PROFILE_KEYS = [
   'name',
@@ -18,8 +19,6 @@ const ALLOWED_ADDRESS_KEYS = [
   'city',
 ];
 const ALLOWED_DOCUMENT_KEYS = ['identity_document', 'proof_of_address'];
-
-const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 function validationError(message) {
   return new Error(message);
@@ -76,16 +75,7 @@ class EditPreSubmissionValidator {
           }
 
           if (key === 'birth_date') {
-            if (typeof value !== 'string' || !DATE_PATTERN.test(value)) {
-              errors.push('profile.birth_date must be in YYYY-MM-DD format.');
-            } else {
-              const parsed = new Date(`${value}T00:00:00.000Z`);
-              if (Number.isNaN(parsed.getTime())) {
-                errors.push('profile.birth_date must be a valid date.');
-              } else {
-                profile.birth_date = value;
-              }
-            }
+            profile.birth_date = DateValidator.validateDate(value);
             continue;
           }
 
