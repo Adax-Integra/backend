@@ -1,4 +1,5 @@
 import EmailValidator from './email.validator.js';
+import NameValidator from './name.validator.js';
 
 const ALLOWED_PROFILE_KEYS = [
   'name',
@@ -65,11 +66,7 @@ class EditPreSubmissionValidator {
           const value = prof[key];
 
           if (key === 'name' || key === 'last_name') {
-            if (typeof value !== 'string' || value.trim() === '') {
-              errors.push(`profile.${key} must be a non-empty string.`);
-            } else {
-              profile[key] = value.trim();
-            }
+            profile[key] = NameValidator.validateNameOrLastName(value);
             continue;
           }
 
