@@ -11,6 +11,7 @@ servers:
 tags:
   - name: Health
   - name: External Users
+  - name: Internal Users
 
 paths:
   /:
@@ -74,7 +75,7 @@ paths:
                     last_name: Taboada
                     email: carmen.taboada@gmail.com
                     birth_date: '1990-01-01'
-                    phone: '++524161234567'
+                    phone: '+524161234567'
                   address:
                     address_id: 22222222-2222-4222-8222-222222222222
                     address_line_1: Av. Francisco Villa 123
@@ -136,6 +137,27 @@ paths:
                 $ref: '#/components/schemas/PreSubmissionSuccessResponse'
         '400':
           description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/internal-users/{userId}/allCases:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+    get:
+      tags: [Internal Users]
+      summary: Get all cases from a specific user
+      description: Returns an array of case summaries associated with the internal user.
+      responses:
+        '200':
+          description: Successfully retrieved user cases
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AllCasesSuccessResponse'
+        '400':
+          description: Invalid request or missing userId
           content:
             application/json:
               schema:
@@ -299,6 +321,52 @@ components:
           example: true
         data:
           $ref: '#/components/schemas/PreSubmissionData'
+          
+    CaseSummary:
+      type: object
+      properties:
+        caseId:
+          type: string
+          nullable: true
+        writtenDescription:
+          type: string
+          nullable: true
+        writtenHelpsWanted:
+          type: string
+          nullable: true
+        hasLawyer:
+          type: boolean
+        state:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+          nullable: true
+        updatedAt:
+          type: string
+          format: date-time
+          nullable: true
+        helps:
+          type: array
+          items:
+            type: string
+        violenceTypes:
+          type: array
+          items:
+            type: string
+
+    AllCasesSuccessResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/CaseSummary'
 
     ErrorResponse:
       type: object
@@ -309,4 +377,4 @@ components:
           example: false
         error:
           type: string
-          example: userId must be a valid UUID.
+          example: userId parameter is required

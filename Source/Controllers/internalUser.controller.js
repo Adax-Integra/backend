@@ -13,7 +13,14 @@ class InternalUserController {
           error: 'userId parameter is required',
         });
       }
-      const rows = await getAllCasesFromUser.execute(userId);
+
+      const response = await getAllCasesFromUser.execute(userId);
+      const rows = Array.isArray(response) ? response : response?.cases;
+
+      if (!Array.isArray(rows)) {
+        throw new Error('The cases use case must return an array of cases.');
+      }
+
       const payload = getAllCasesDTO.fromRows(rows);
 
       return res.status(200).json({
