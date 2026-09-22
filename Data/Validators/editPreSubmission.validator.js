@@ -1,6 +1,7 @@
 import EmailValidator from './email.validator.js';
 import NameValidator from './name.validator.js';
 import DateValidator from './date.validator.js';
+import PhoneValidator from './phone.validator.js';
 
 const ALLOWED_PROFILE_KEYS = [
   'name',
@@ -80,11 +81,7 @@ class EditPreSubmissionValidator {
           }
 
           if (key === 'phone') {
-            if (typeof value !== 'string' || value.trim() === '') {
-              errors.push('profile.phone must be a non-empty string.');
-            } else {
-              profile.phone = value.trim();
-            }
+            profile.phone = PhoneValidator.validatePhone(value);
           }
         }
       }
