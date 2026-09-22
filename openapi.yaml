@@ -169,7 +169,7 @@ components:
       name: userId
       in: path
       required: true
-      description: User UUID
+      description: External user UUID
       schema:
         type: string
         format: uuid
