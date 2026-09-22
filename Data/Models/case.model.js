@@ -26,11 +26,18 @@ const CASE_COLUMNS = `
 `;
 
 //retrieval of data for when an external user checks progress of case (V-07)
+// besides,  additional info is retrieved like written_description and
+//  has_lawyer for case (V-11)
 const CASE_DETAIL_COLUMNS = `
   case_id,
   case_number,
+  written_description,
+  written_helps_wanted,
+  has_lawyer,
   state,
   record_id,
+  created_at,
+  updated_at,
   record!inner (
     record_id,
     user!inner (
@@ -43,6 +50,19 @@ const CASE_DETAIL_COLUMNS = `
     case_step_id,
     step_number,
     status
+  ),
+  case_violence (
+    violence_types!inner (
+      violence_id,
+      description,
+      severity
+    )
+  ),
+  case_help (
+    help_types!inner (
+      help_id,
+      description
+    )
   )
 `;
 
@@ -111,6 +131,9 @@ class CaseModel {
       .is('record.deleted_at', null)
       .is('record.user.deleted_at', null)
       .is('case_steps.deleted_at', null)
+      .is('case_violence.deleted_at', null)
+      .is('case_help.deleted_at', null)
+
       //order the steps to show progress correctly
       .order('step_number', {
         foreignTable: 'case_steps',
