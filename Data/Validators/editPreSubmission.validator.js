@@ -1,3 +1,5 @@
+import EmailValidator from './email.validator.js';
+
 const ALLOWED_PROFILE_KEYS = [
   'name',
   'last_name',
@@ -16,7 +18,6 @@ const ALLOWED_ADDRESS_KEYS = [
 ];
 const ALLOWED_DOCUMENT_KEYS = ['identity_document', 'proof_of_address'];
 
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 function validationError(message) {
@@ -73,14 +74,7 @@ class EditPreSubmissionValidator {
           }
 
           if (key === 'email') {
-            if (
-              typeof value !== 'string' ||
-              !EMAIL_PATTERN.test(value.trim())
-            ) {
-              errors.push('profile.email must be a valid email address.');
-            } else {
-              profile.email = value.trim().toLowerCase();
-            }
+            profile.email = EmailValidator.validateEmail(value);
             continue;
           }
 
