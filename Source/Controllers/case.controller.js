@@ -8,7 +8,29 @@ const getCaseByIdUseCase = new GetCaseByIdUseCase();
 class CaseController {
   async listCases(req, res) {
     // Query parameters arrive as strings. Use defaults only when omitted.
-    const { page: pageQuery = '1', limit: limitQuery = '20' } = req.query;
+    const {
+      page: pageQuery = '1',
+      limit: limitQuery = '20',
+      search = '',
+      urgency = '',
+    } = req.query;
+
+    if (typeof search !== 'string' || typeof urgency !== 'string') {
+      return res.status(400).json({
+        success: false,
+        error: 'search and urgency must be single text values.',
+      });
+    }
+
+    const urgencyFilter = urgency.trim();
+    if (
+      !['', 'Todas', 'Alta', 'Media', 'Baja', 'Sin evaluar'].includes(urgencyFilter)
+    ) {
+      return res.status(400).json({
+        success: false,
+        error: 'urgency must be Alta, Media, Baja, Sin evaluar, or Todas.',
+      });
+    }
 
     // Reject empty values, repeated parameters, objects, and non-integer text.
     if (
@@ -43,7 +65,12 @@ class CaseController {
     }
 
     try {
-      const result = await listCasesUseCase.execute({ page, limit });
+      const result = await listCasesUseCase.execute({
+        page,
+        limit,
+        search: search.trim(),
+        urgency: urgencyFilter,
+      });
       const payload = new CaseListDTO(result).toJSON();
 
       return res.status(200).json({
