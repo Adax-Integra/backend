@@ -1,8 +1,32 @@
 import CaseModel from '../../Data/Models/case.model.js';
 
+// Match names without requiring accents, capitalization, or exact spacing.
+function normalizeSearch(value) {
+  return value
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '')
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, ' ');
+}
+
 class ListCasesUseCase {
   // Collaborator authorization must be added before exposing this listing.
-  async execute({ page = 1, limit = 20 } = {}) {
+  async execute({ page = 1, limit = 20, search = '', urgency = '' } = {}) {
+    if (typeof search !== 'string' || typeof urgency !== 'string') {
+      throw new Error('search and urgency must be single text values.');
+    }
+
+    const query = normalizeSearch(search);
+    const urgencyFilter = urgency.trim();
+    if (
+      !['', 'Todas', 'Alta', 'Media', 'Baja', 'Sin evaluar'].includes(urgencyFilter)
+    ) {
+      throw new Error(
+        'urgency must be Alta, Media, Baja, Sin evaluar, or Todas.'
+      );
+    }
+
     // Validate the requested page before loading data.
     if (!Number.isSafeInteger(page) || page < 1) {
       throw new Error('page must be a positive integer.');
@@ -63,14 +87,29 @@ class ListCasesUseCase {
       return { ...caseData, severity, urgency };
     });
 
+    // Search and filter the complete list before counting and paginating it.
+    const matchingCases = casesWithUrgency.filter((caseData) => {
+      const user = caseData.record?.user;
+      const fullName = [user?.name, user?.last_name].filter(Boolean).join(' ');
+      const matchesSearch =
+        normalizeSearch(fullName).includes(query) ||
+        normalizeSearch(caseData.case_id ?? '').includes(query);
+      const matchesUrgency =
+        urgencyFilter === '' ||
+        urgencyFilter === 'Todas' ||
+        caseData.urgency === urgencyFilter;
+
+      return matchesSearch && matchesUrgency;
+    });
+
     // Higher severity comes first; null scores go last.
     // Equal scores retain the model's order by update time and case ID.
-    casesWithUrgency.sort((a, b) => (b.severity ?? 0) - (a.severity ?? 0));
+    matchingCases.sort((a, b) => (b.severity ?? 0) - (a.severity ?? 0));
 
     // slice excludes the end position. Paginate only after sorting all cases.
     return {
-      cases: casesWithUrgency.slice(from, to),
-      total: casesWithUrgency.length,
+      cases: matchingCases.slice(from, to),
+      total: matchingCases.length,
       page,
       limit,
     };
