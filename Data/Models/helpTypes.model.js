@@ -4,7 +4,8 @@ const HELP_TYPE_COLUMNS = `
     help_id,
     description
 `
-
+//Data model for the "help_types" catalogue, this feeds
+// the "¿Que ayuda esperas recibir?" dropdown
 class HelpTypesModel{
     static async findAllActicve(){
         const {data, error}= await supabase
@@ -20,6 +21,7 @@ class HelpTypesModel{
         return data ??[];
     }
 
+    //Confirm the selected option still exists and has not been retired
     static async findActiveById(helpId){
         const {data, error}= await supabase
         .from ('help_types')
