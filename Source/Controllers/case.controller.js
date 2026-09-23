@@ -1,6 +1,8 @@
 import GetCaseByIdUseCase from '../../Domain/UseCases/getCaseById.usecase.js';
 import ListCasesUseCase from '../../Domain/UseCases/listCases.usecase.js';
 import CaseListDTO from '../DTOs/caseList.dto.js';
+// DTO to format and structure the detailed case response (V-11)
+import CaseDetailDTO from '../DTOs/caseDetail.dto.js';
 
 const listCasesUseCase = new ListCasesUseCase();
 const getCaseByIdUseCase = new GetCaseByIdUseCase();
@@ -65,15 +67,27 @@ class CaseController {
     try {
       const { caseId } = req.params;
 
-      const data = await getCaseByIdUseCase.execute(caseId);
+      const caseData = await getCaseByIdUseCase.execute(caseId);
+
+      // Helps transform the raw data into a structured format for the response (V-11)
+      const payload = new CaseDetailDTO(caseData).toJSON();
 
       return res.status(200).json({
         success: true,
-        data: data,
+        data: payload,
       });
-    } catch {
-      return res.status(400).json({
+    } catch (error) {
+      if (error.message && error.message.includes('not found')) {
+        return res.status(404).json({
+          success: false,
+          error: error.message,
+        });
+      }
+      console.error('Failed to retrieve case by ID:', error);
+
+      return res.status(500).json({
         success: false,
+        error: 'Unable to retrieve case.',
       });
     }
   }
