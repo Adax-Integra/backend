@@ -31,9 +31,7 @@ class PrivacyPolicyModel {
     }
 
     if (!data) {
-      const notFound = new Error('No active privacy policy found.');
-      notFound.status = 404;
-      throw notFound;
+      throw new Error('No active privacy policy found.');
     }
 
     return data;
