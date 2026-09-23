@@ -3,45 +3,32 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 // Creates the JWT token after a successful login
 import UserModel from '../../Data/Models/user.model.js';
-
-// Creates an error with a message and an HTTP status code
-function creaError(message, status) {
-  const error = new Error(message);
-  error.status = status;
-  return error;
-}
+// Imports the validator used to check the login credentials
+import LoginCredentialsValidator from '../../Data/Validators/loginCredentials.validator.js';
 
 // Login logic
 class UserUseCase {
   async login(email, password) {
-    if (typeof email !== 'string' || typeof password !== 'string') {
-      throw creaError('Email and password are required.', 400);
-    } // Validates that the parameters are strings
+    // Validates the parameters and returns the cleaned email
+    // (trim() removes spaces at the beginning and end)
 
-    const cleanEmail = email.trim().toLowerCase();
-    // trim() removes spaces at the beginning and end
-    // Cleans the email before searching for it in the database
-
-    if (cleanEmail === '' || password === '') {
-      throw creaError('Email and password are required.', 400);
-    }
+    // Validates the email and password and returns the cleaned email
+    const cleanEmail = LoginCredentialsValidator.validateCredentials(
+      email,
+      password
+    );
 
     // Searches for the user in Supabase by email
     const user = await UserModel.findByEmail(cleanEmail);
 
     // If the user does not exist, a generic error message is sent to avoid giving clues to an attacker
-    if (!user) {
-      throw creaError('Invalid email or password.', 401);
-    }
+    LoginCredentialsValidator.assertUserExists(user);
 
     // Compares the entered password with the stored hash
     const passwordIsCorrect = await bcrypt.compare(password, user.password);
-    // const passwordIsCorrect = password === user.password;
     // bcrypt.compare() returns true if the password matches the hash, false otherwise
 
-    if (!passwordIsCorrect) {
-      throw creaError('Invalid email or password.', 401);
-    }
+    LoginCredentialsValidator.assertPasswordIsCorrect(passwordIsCorrect);
 
     // Creates the token with the user's ID, valid for 120 hours.
     const token = jwt.sign({ user_id: user.user_id }, process.env.JWT_SECRET, {
