@@ -1,68 +1,44 @@
-import sql from '../Config/db.js';
+import { supabase } from '../Config/supabase.js';
 
 class RegisterExternalUserModel {
   static async findByEmail(email) {
-    const [existing] = await sql`
-            SELECT user_id
-            FROM "user"
-            WHERE email = ${email}
-                AND deleted_at IS NULL
-            LIMIT 1
-        `;
+    const { data, error } = await supabase
+      .from('user')
+      .select('user_id')
+      .eq('email', email)
+      .is('deleted_at', null)
+      .maybeSingle();
 
-    return existing ?? null;
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return data ?? null;
   }
 
   static async create({ profile, address, roleId, hashedPassword }) {
-    return sql.begin(async (tx) => {
-      const [user] = await tx`
-                INSERT INTO "user" (name, last_name, email, password, birth_date, phone)
-                VALUES (
-                    ${profile.name},
-                    ${profile.last_name},
-                    ${profile.email},
-                    ${hashedPassword},
-                    ${profile.birth_date ?? null},
-                    ${profile.phone ?? null}
-                )
-                RETURNING user_id, name, last_name, email, birth_date::text AS birth_date, phone
-            `;
-
-      await tx`
-                INSERT INTO user_role (user_id, role_id)
-                VALUES (${user.user_id}, ${roleId})
-            `;
-
-      const [record] = await tx`
-                INSERT INTO record (user_id)
-                VALUES (${user.user_id})
-                RETURNING record_id
-            `;
-
-      const [createdAddress] = await tx`
-                INSERT INTO address (
-                    user_id, address_line_1, address_line_2, neighborhood,
-                    zip_code, country, state, city
-                )
-                VALUES (
-                    ${user.user_id},
-                    ${address.address_line_1},
-                    ${address.address_line_2 ?? null},
-                    ${address.neighborhood},
-                    ${address.zip_code},
-                    ${address.country},
-                    ${address.state},
-                    ${address.city}
-                )
-                RETURNING address_id
-            `;
-
-      return {
-        user,
-        record_id: record.record_id,
-        address_id: createdAddress.address_id,
-      };
+    const { data, error } = await supabase.rpc('register_external_user', {
+      p_name: profile.name,
+      p_last_name: profile.last_name,
+      p_email: profile.email,
+      p_password: hashedPassword,
+      p_birth_date: profile.birth_date ?? null,
+      p_phone: profile.phone ?? null,
+      p_role_id: roleId,
+      p_address_line_1: address.address_line_1,
+      p_address_line_2: address.address_line_2 ?? null,
+      p_neighborhood: address.neighborhood,
+      p_zip_code: address.zip_code,
+      p_country: address.country,
+      p_state: address.state,
+      p_city: address.city,
     });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return data;
   }
 }
 
