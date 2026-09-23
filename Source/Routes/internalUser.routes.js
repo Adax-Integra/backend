@@ -9,4 +9,10 @@ router.get(
   internalUserController.getAllCasesFromUser
 );
 
+// R-03 Register a new external user's expediente
+router.post(
+  '/internal-users/external-users',
+  internalUserController.registerExternalUser
+);
+
 export default router;
