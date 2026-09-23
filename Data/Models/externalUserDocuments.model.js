@@ -14,8 +14,8 @@ const SIGNED_URL_FIELDS = ['identity_document', 'proof_of_address'];
  * Data Model for external user access to the "user_documents" table.
  *
  * Files live in the "user-documents" Storage bucket.
- * The table stores path strings. attachSignedUrls adds short-lived
- * read URLs for API responses and does not write them.
+ * The table stores path strings. attachSignedUrls turns those paths into
+ * short-lived read URLs. API responses include the URLs, not the paths.
  */
 class ExternalUserDocumentsModel {
   static async findByUserId(userId) {
@@ -89,9 +89,8 @@ class ExternalUserDocumentsModel {
       }
     }
 
-    // Return the documents with the signed URLs
     return {
-      ...documents,
+      document_id: documents.document_id,
       identity_document_url:
         urlsByPath.get(documents.identity_document) ?? null,
       proof_of_address_url: urlsByPath.get(documents.proof_of_address) ?? null,
