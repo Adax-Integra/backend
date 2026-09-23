@@ -12,6 +12,7 @@ import { fileURLToPath } from 'node:url';
 import externalUserRoutes from '../Source/Routes/externalUser.routes.js';
 import caseRoutes from '../Source/Routes/case.routes.js';
 import internalUserRoutes from '../Source/Routes/internalUser.routes.js';
+import privacyPolicyRoutes from '../Source/Routes/privacyPolicy.routes.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const swaggerDocument = parseYaml(
@@ -41,6 +42,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 app.use('/api', externalUserRoutes);
 app.use('/api', internalUserRoutes);
 app.use('/api', caseRoutes);
+app.use('/api', privacyPolicyRoutes);
 
 // 404
 app.use((_req, res) => res.status(404).send('Not found.'));
