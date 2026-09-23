@@ -163,6 +163,62 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /api/internal-users/external-users:
+    post:
+      tags: [Internal Users]
+      summary: Register a new external user's expediente (R-03)
+      description: >
+        A collaborator registers a new external user at first contact.
+        Creates the user (with a temporary hashed password), assigns the
+        external role, and creates the record (expediente) and address in a
+        single transaction. Documents are not captured here. The temporary
+        password is emailed to the external user.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterExternalUserRequest'
+            example:
+              profile:
+                name: María Fernanda
+                last_name: Gómez Herrera
+                email: mariafernanda.gomez@gmail.com
+                birth_date: '1995-07-14'
+                phone: '+525512345678'
+              address:
+                address_line_1: Av. Insurgentes Sur 1234
+                address_line_2: Depto 5B
+                neighborhood: Del Valle
+                zip_code: '03100'
+                country: México
+                state: Ciudad de México
+                city: Benito Juárez
+      responses:
+        '201':
+          description: External user registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegisterExternalUserSuccessResponse'
+              example:
+                success: true
+                data:
+                  user_id: 4afc88b5-7956-47bf-9c30-d9e152bd8e9f
+                  name: María Fernanda
+                  last_name: Gómez Herrera
+                  email: mariafernanda.gomez@gmail.com
+                  birth_date: '1995-07-14'
+                  phone: '+525512345678'
+                  record_id: 673bd238-8c34-462e-b87e-4f5ec7f64863
+                  address_id: fc84680f-f9ba-4a04-8f5c-1002a33ce735
+        '400':
+          description: Validation error or duplicate email
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
 components:
   parameters:
     UserId:
@@ -367,6 +423,91 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/CaseSummary'
+
+    RegisterExternalUserProfile:
+      type: object
+      required: [name, last_name, email]
+      properties:
+        name:
+          type: string
+        last_name:
+          type: string
+        email:
+          type: string
+          format: email
+        birth_date:
+          type: string
+          format: date
+          description: Optional. Must be YYYY-MM-DD.
+        phone:
+          type: string
+          description: Optional.
+
+    RegisterExternalUserAddress:
+      type: object
+      required: [address_line_1, neighborhood, zip_code, country, state, city]
+      properties:
+        address_line_1:
+          type: string
+        address_line_2:
+          type: string
+          nullable: true
+        neighborhood:
+          type: string
+        zip_code:
+          type: string
+        country:
+          type: string
+        state:
+          type: string
+        city:
+          type: string
+
+    RegisterExternalUserRequest:
+      type: object
+      required: [profile, address]
+      properties:
+        profile:
+          $ref: '#/components/schemas/RegisterExternalUserProfile'
+        address:
+          $ref: '#/components/schemas/RegisterExternalUserAddress'
+
+    RegisterExternalUserData:
+      type: object
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        last_name:
+          type: string
+        email:
+          type: string
+          format: email
+        birth_date:
+          type: string
+          format: date
+          nullable: true
+        phone:
+          type: string
+          nullable: true
+        record_id:
+          type: string
+          format: uuid
+        address_id:
+          type: string
+          format: uuid
+
+    RegisterExternalUserSuccessResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          $ref: '#/components/schemas/RegisterExternalUserData'
 
     ErrorResponse:
       type: object
