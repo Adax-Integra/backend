@@ -2,6 +2,8 @@ import EmailValidator from './email.validator.js';
 import NameValidator from './name.validator.js';
 import DateValidator from './date.validator.js';
 import PhoneValidator from './phone.validator.js';
+import RequiredStringValidator from './requiredString.validator.js';
+import StoragePathValidator from './storagePath.validator.js';
 
 const ALLOWED_PROFILE_KEYS = [
   'name',
@@ -53,6 +55,7 @@ class EditPreSubmissionValidator {
     const documents = {};
     const errors = [];
 
+    // Validate profile
     if (updateData.profile !== undefined) {
       const prof = updateData.profile;
       if (prof === null || typeof prof !== 'object' || Array.isArray(prof)) {
@@ -87,6 +90,7 @@ class EditPreSubmissionValidator {
       }
     }
 
+    // Validate address
     if (updateData.address !== undefined) {
       const addr = updateData.address;
       if (addr === null || typeof addr !== 'object' || Array.isArray(addr)) {
@@ -111,16 +115,19 @@ class EditPreSubmissionValidator {
             continue;
           }
 
-          if (typeof value !== 'string' || value.trim() === '') {
-            errors.push(`address.${key} must be a non-empty string.`);
-            continue;
+          try {
+            address[key] = RequiredStringValidator.validateRequiredString(
+              value,
+              `address.${key}`
+            );
+          } catch (error) {
+            errors.push(error.message);
           }
-
-          address[key] = value.trim();
         }
       }
     }
 
+    // Validate documents
     if (updateData.documents !== undefined) {
       const docs = updateData.documents;
       if (docs === null || typeof docs !== 'object' || Array.isArray(docs)) {
@@ -131,21 +138,15 @@ class EditPreSubmissionValidator {
             continue;
           }
 
-          const value = docs[key];
-          if (typeof value !== 'string' || value.trim() === '') {
-            errors.push(
-              `documents.${key} must be a non-empty storage path string.`
+          try {
+            documents[key] = StoragePathValidator.validateStoragePath(
+              docs[key],
+              userId,
+              `documents.${key}`
             );
-            continue;
+          } catch (error) {
+            errors.push(error.message);
           }
-
-          const path = value.trim();
-          if (userId && !path.startsWith(`${userId}/`)) {
-            errors.push(`documents.${key} path must start with "${userId}/".`);
-            continue;
-          }
-
-          documents[key] = path;
         }
       }
     }
