@@ -4,6 +4,8 @@ import jwt from 'jsonwebtoken';
 // Creates the JWT token after a successful login
 import UserModel from '../../Data/Models/user.model.js';
 // Imports the validator used to check the login credentials
+import RoleModel from '../../Data/Models/role.model.js';
+// Imports the model used to retrieve the user's roles from the database
 import LoginCredentialsValidator from '../../Data/Validators/loginCredentials.validator.js';
 
 // Login logic
@@ -30,13 +32,20 @@ class UserUseCase {
 
     LoginCredentialsValidator.assertPasswordIsCorrect(passwordIsCorrect);
 
+    const roles = await RoleModel.findRolesByUserId(user.user_id);
+    // Gets the roles already assigned to the user
+
     // Creates the token with the user's ID, valid for 120 hours.
-    const token = jwt.sign({ user_id: user.user_id }, process.env.JWT_SECRET, {
-      expiresIn: '120h',
-    });
+    const token = jwt.sign(
+      { user_id: user.user_id, roles },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: '120h',
+      }
+    );
 
     // Returns the token and the user ID (never the password)
-    return { token, user_id: user.user_id };
+    return { token, user_id: user.user_id, roles };
   }
 }
 
