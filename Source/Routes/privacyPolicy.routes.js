@@ -9,4 +9,7 @@ router.get('/privacy-policy/current', privacyPolicyController.getLatest);
 // POST /api/privacy-policy/consent
 router.post('/privacy-policy/consent', privacyPolicyController.registerConsent);
 
+// GET /api/privacy-policy/consent
+router.get('/privacy-policy/consent', privacyPolicyController.getConsentStatus);
+
 export default router;

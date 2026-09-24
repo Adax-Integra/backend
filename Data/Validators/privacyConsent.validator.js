@@ -30,6 +30,13 @@ class PrivacyConsentValidator {
     }
     return consent;
   }
+
+  static validateUserId(userId) {
+    if (typeof userId !== 'string' || !UUID_PATTERN.test(userId.trim())) {
+      throw validationError('userId is required and must be a valid UUID.');
+    }
+    return userId.trim();
+  }
 }
 
 export default PrivacyConsentValidator;
