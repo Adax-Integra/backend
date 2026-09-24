@@ -77,12 +77,23 @@ class CaseController {
         data: payload,
       });
     } catch (error) {
+      if (
+        error.message === 'caseId is required.' ||
+        error.message === 'caseId must be a valid UUID.'
+      ) {
+        return res.status(400).json({
+          success: false,
+          error: error.message,
+        });
+      }
+
       if (error.message && error.message.includes('not found')) {
         return res.status(404).json({
           success: false,
           error: error.message,
         });
       }
+
       console.error('Failed to retrieve case by ID:', error);
 
       return res.status(500).json({
