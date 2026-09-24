@@ -37,6 +37,22 @@ class PrivacyPolicyModel {
     return data;
   }
 
+  // Returns a notice by id, or null when it does not exist or was deleted.
+  static async findById(policyId) {
+    const { data, error } = await supabase
+      .from('privacy_policy')
+      .select(POLICY_COLUMNS)
+      .eq('policy_id', policyId)
+      .is('deleted_at', null)
+      .maybeSingle();
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return data;
+  }
+
   //Builds the public URL for a stored PDF path.
   static getDocumentUrl(path) {
     if (!path || typeof path !== 'string') {
