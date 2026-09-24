@@ -1,3 +1,10 @@
+import EmailValidator from './email.validator.js';
+import NameValidator from './name.validator.js';
+import DateValidator from './date.validator.js';
+import PhoneValidator from './phone.validator.js';
+import RequiredStringValidator from './requiredString.validator.js';
+import StoragePathValidator from './storagePath.validator.js';
+
 const ALLOWED_PROFILE_KEYS = [
   'name',
   'last_name',
@@ -15,9 +22,6 @@ const ALLOWED_ADDRESS_KEYS = [
   'city',
 ];
 const ALLOWED_DOCUMENT_KEYS = ['identity_document', 'proof_of_address'];
-
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 function validationError(message) {
   return new Error(message);
@@ -51,6 +55,7 @@ class EditPreSubmissionValidator {
     const documents = {};
     const errors = [];
 
+    // Validate profile
     if (updateData.profile !== undefined) {
       const prof = updateData.profile;
       if (prof === null || typeof prof !== 'object' || Array.isArray(prof)) {
@@ -64,51 +69,28 @@ class EditPreSubmissionValidator {
           const value = prof[key];
 
           if (key === 'name' || key === 'last_name') {
-            if (typeof value !== 'string' || value.trim() === '') {
-              errors.push(`profile.${key} must be a non-empty string.`);
-            } else {
-              profile[key] = value.trim();
-            }
+            profile[key] = NameValidator.validateNameOrLastName(value);
             continue;
           }
 
           if (key === 'email') {
-            if (
-              typeof value !== 'string' ||
-              !EMAIL_PATTERN.test(value.trim())
-            ) {
-              errors.push('profile.email must be a valid email address.');
-            } else {
-              profile.email = value.trim().toLowerCase();
-            }
+            profile.email = EmailValidator.validateEmail(value);
             continue;
           }
 
           if (key === 'birth_date') {
-            if (typeof value !== 'string' || !DATE_PATTERN.test(value)) {
-              errors.push('profile.birth_date must be in YYYY-MM-DD format.');
-            } else {
-              const parsed = new Date(`${value}T00:00:00.000Z`);
-              if (Number.isNaN(parsed.getTime())) {
-                errors.push('profile.birth_date must be a valid date.');
-              } else {
-                profile.birth_date = value;
-              }
-            }
+            profile.birth_date = DateValidator.validateDate(value);
             continue;
           }
 
           if (key === 'phone') {
-            if (typeof value !== 'string' || value.trim() === '') {
-              errors.push('profile.phone must be a non-empty string.');
-            } else {
-              profile.phone = value.trim();
-            }
+            profile.phone = PhoneValidator.validatePhone(value);
           }
         }
       }
     }
 
+    // Validate address
     if (updateData.address !== undefined) {
       const addr = updateData.address;
       if (addr === null || typeof addr !== 'object' || Array.isArray(addr)) {
@@ -133,16 +115,19 @@ class EditPreSubmissionValidator {
             continue;
           }
 
-          if (typeof value !== 'string' || value.trim() === '') {
-            errors.push(`address.${key} must be a non-empty string.`);
-            continue;
+          try {
+            address[key] = RequiredStringValidator.validateRequiredString(
+              value,
+              `address.${key}`
+            );
+          } catch (error) {
+            errors.push(error.message);
           }
-
-          address[key] = value.trim();
         }
       }
     }
 
+    // Validate documents
     if (updateData.documents !== undefined) {
       const docs = updateData.documents;
       if (docs === null || typeof docs !== 'object' || Array.isArray(docs)) {
@@ -153,21 +138,15 @@ class EditPreSubmissionValidator {
             continue;
           }
 
-          const value = docs[key];
-          if (typeof value !== 'string' || value.trim() === '') {
-            errors.push(
-              `documents.${key} must be a non-empty storage path string.`
+          try {
+            documents[key] = StoragePathValidator.validateStoragePath(
+              docs[key],
+              userId,
+              `documents.${key}`
             );
-            continue;
+          } catch (error) {
+            errors.push(error.message);
           }
-
-          const path = value.trim();
-          if (userId && !path.startsWith(`${userId}/`)) {
-            errors.push(`documents.${key} path must start with "${userId}/".`);
-            continue;
-          }
-
-          documents[key] = path;
         }
       }
     }

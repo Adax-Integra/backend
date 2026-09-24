@@ -41,6 +41,10 @@ class EditPreSubmissionDataUseCase {
         await ExternalUserDocumentsModel.findByUserId(validUserId);
     }
 
+    result.documents = await ExternalUserDocumentsModel.attachSignedUrls(
+      result.documents
+    );
+
     return result;
   }
 }

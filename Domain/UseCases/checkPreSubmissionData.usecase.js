@@ -14,7 +14,11 @@ class CheckPreSubmissionDataUseCase {
       ExternalUserDocumentsModel.findByUserId(userId),
     ]);
 
-    return { profile, address, documents };
+    return {
+      profile,
+      address,
+      documents: await ExternalUserDocumentsModel.attachSignedUrls(documents),
+    };
   }
 }
 

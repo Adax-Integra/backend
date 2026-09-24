@@ -1,7 +1,10 @@
 import GetAllCasesFromUser from '../../Domain/UseCases/getAllCasesFromUser.usecase.js';
 import getAllCasesDTO from '../DTOs/getAllCases.dto.js';
+import RegisterExternalUserUseCase from '../../Domain/UseCases/registerExternalUser.usecase.js';
+import RegisterExternalUserDTO from '../DTOs/registerExternalUser.dto.js';
 
 const getAllCasesFromUser = new GetAllCasesFromUser();
+const registerExternalUserUseCase = new RegisterExternalUserUseCase();
 
 class InternalUserController {
   getAllCasesFromUser = async (req, res) => {
@@ -24,6 +27,23 @@ class InternalUserController {
       const payload = getAllCasesDTO.fromRows(rows);
 
       return res.status(200).json({
+        success: true,
+        data: payload,
+      });
+    } catch (error) {
+      return res.status(400).json({
+        success: false,
+        error: error.message,
+      });
+    }
+  };
+
+  registerExternalUser = async (req, res) => {
+    try {
+      const created = await registerExternalUserUseCase.execute(req.body);
+      const payload = new RegisterExternalUserDTO(created).toJSON();
+
+      return res.status(201).json({
         success: true,
         data: payload,
       });
