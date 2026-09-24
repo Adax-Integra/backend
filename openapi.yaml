@@ -10,6 +10,8 @@ servers:
 
 tags:
   - name: Health
+  - name: Authentication
+  - name: Cases
   - name: External Users
   - name: Internal Users
 
@@ -17,23 +19,20 @@ paths:
   /:
     get:
       tags: [Health]
-      summary: Server status
+      summary: Get server status
       responses:
         '200':
           description: Server is running
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    example: server running
+                $ref: '#/components/schemas/ServerStatusResponse'
+              example: { status: server running }
 
   /health:
     get:
       tags: [Health]
-      summary: Health check
+      summary: Check service health
       description: Used by mobile clients and load balancers.
       responses:
         '200':
@@ -41,25 +40,73 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    example: ok
+                $ref: '#/components/schemas/ServerStatusResponse'
+              example: { status: ok }
+
+  /api/auth/login:
+    post:
+      tags: [Authentication]
+      summary: Log in a user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            example:
+              email: maria.gomez@gmail.com
+              password: password123
+      responses:
+        '200':
+          description: Login succeeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginSuccessResponse'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500': { $ref: '#/components/responses/InternalServerError' }
+
+  /api/external-user/register:
+    post:
+      tags: [External Users]
+      summary: Create an external user account (G-01)
+      description: Creates an external account and hashes the selected password before storage.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAccountRequest'
+            example:
+              name: Maria
+              last_name: Gomez
+              email: maria.gomez@gmail.com
+              country_code: '+52'
+              phone: '5512345678'
+              password: password123
+              confirm_password: password123
+      responses:
+        '201':
+          description: External user account created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateAccountSuccessResponse'
+        '400': { $ref: '#/components/responses/BadRequest' }
 
   /api/external-users/{userId}/pre-submission:
     parameters:
       - $ref: '#/components/parameters/UserId'
-
     get:
       tags: [External Users]
-      summary: Get pre-submission data
-      description: >
-        Returns profile, address, and documents for an external user.
-        Each nested object has its own primary key:
-        `profile.user_id`, `address.address_id`, and `documents.document_id`
-        are different UUIDs.
-        Document URL fields are signed links that expire after 15 minutes.
+      summary: Get external user pre-submission data
+      description: Returns the user's profile, address, and documents. Document URLs are signed links.
       responses:
         '200':
           description: Pre-submission data retrieved
@@ -67,68 +114,17 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PreSubmissionSuccessResponse'
-              example:
-                success: true
-                data:
-                  profile:
-                    user_id: 11111111-1111-4111-8111-111111111111
-                    name: Carmen
-                    last_name: Taboada
-                    email: carmen.taboada@gmail.com
-                    birth_date: '1990-01-01'
-                    phone: '+524161234567'
-                  address:
-                    address_id: 22222222-2222-4222-8222-222222222222
-                    address_line_1: Av. Francisco Villa 123
-                    address_line_2: Casa 123
-                    neighborhood: San Juan de la Cruz
-                    zip_code: '29900'
-                    country: México
-                    state: Querétaro
-                    city: San Juan del Río
-                  documents:
-                    document_id: 33333333-3333-4333-8333-333333333333
-                    identity_document_url: https://example.supabase.co/storage/v1/object/sign/user-documents/11111111-1111-4111-8111-111111111111/identity/ine.pdf?token=example
-                    proof_of_address_url: https://example.supabase.co/storage/v1/object/sign/user-documents/11111111-1111-4111-8111-111111111111/address/comprobante_domicilio.pdf?token=example
-        '400':
-          description: Invalid request or user not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
+        '400': { $ref: '#/components/responses/BadRequest' }
     put:
       tags: [External Users]
-      summary: Update pre-submission data
-      description: >
-        Partially updates profile, address, and/or documents.
-        At least one of those sections must include a field.
-        Document values are storage paths inside the `user-documents` bucket
-        and must start with `{userId}/`.
+      summary: Update external user pre-submission data
+      description: At least one field in profile, address, or documents is required. Document values are storage paths beginning with the user ID.
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/PreSubmissionUpdateRequest'
-            example:
-              profile:
-                name: Miranda
-                last_name: Carrasco
-                email: miranda.carrasco@yahoo.com
-                birth_date: '1998-04-12'
-                phone: '+5215512345678'
-              address:
-                address_line_1: Av. Reforma 123
-                address_line_2: Casa 123
-                neighborhood: San Juan de la Cruz
-                zip_code: '06600'
-                country: México
-                state: Querétaro
-                city: Jalpan de Serra
-              documents:
-                identity_document: 11111111-1111-4111-8111-111111111111/identity/ine.pdf
-                proof_of_address: 11111111-1111-4111-8111-111111111111/address/comprobante_domicilio.pdf
       responses:
         '200':
           description: Pre-submission data updated
@@ -136,107 +132,34 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PreSubmissionSuccessResponse'
-        '400':
-          description: Validation error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+        '400': { $ref: '#/components/responses/BadRequest' }
 
   /api/internal-users/{userId}/allCases:
     parameters:
       - $ref: '#/components/parameters/UserId'
     get:
       tags: [Internal Users]
-      summary: Get all cases from a specific user
-      description: Returns an array of case summaries associated with the internal user.
+      summary: Get all cases for a user (V-10)
       responses:
         '200':
-          description: Successfully retrieved user cases
+          description: Cases retrieved
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AllCasesSuccessResponse'
-        '400':
-          description: Invalid request or missing userId
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  /api/external-users/register:
-    post:
-      tags: [External Users]
-      summary: Create a new external user account (G-01)
-      descriprion: >
-        Creates an external user account with the password selected during
-        registration. The password is hashed before storage and the external role
-        is assigned automatically.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateAccountRequest'
-            example: 
-              name: María
-              last_name: Gómez
-              email: maria.gomez@gmail.com
-              country_code: '+52'
-              phone: '5512345678'
-              password: password123
-              confirm_password: password123
-      responses: 
-        '201':
-          description: External user account created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CreateAccountSuccessResponse'
-        '400':
-          description: Invalid registration information
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '409':
-          description: An account with this email already exists
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/CaseSummaryListResponse'
+        '400': { $ref: '#/components/responses/BadRequest' }
 
   /api/internal-users/external-users:
     post:
       tags: [Internal Users]
-      summary: Register a new external user's expediente (R-03)
-      description: >
-        A collaborator registers a new external user at first contact.
-        Creates the user (with a temporary hashed password), assigns the
-        external role, and creates the record (expediente) and address in a
-        single transaction. Documents are not captured here. The temporary
-        password is emailed to the external user.
+      summary: Register an external user's expediente (R-03)
+      description: Creates the user, record, and address, then emails a temporary password.
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/RegisterExternalUserRequest'
-            example:
-              profile:
-                name: María Fernanda
-                last_name: Gómez Herrera
-                email: mariafernanda.gomez@gmail.com
-                birth_date: '1995-07-14'
-                phone: '+525512345678'
-              address:
-                address_line_1: Av. Insurgentes Sur 1234
-                address_line_2: Depto 5B
-                neighborhood: Del Valle
-                zip_code: '03100'
-                country: México
-                state: Ciudad de México
-                city: Benito Juárez
       responses:
         '201':
           description: External user registered
@@ -244,23 +167,57 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RegisterExternalUserSuccessResponse'
-              example:
-                success: true
-                data:
-                  user_id: 4afc88b5-7956-47bf-9c30-d9e152bd8e9f
-                  name: María Fernanda
-                  last_name: Gómez Herrera
-                  email: mariafernanda.gomez@gmail.com
-                  birth_date: '1995-07-14'
-                  phone: '+525512345678'
-                  record_id: 673bd238-8c34-462e-b87e-4f5ec7f64863
-                  address_id: fc84680f-f9ba-4a04-8f5c-1002a33ce735
-        '400':
-          description: Validation error or duplicate email
+        '400': { $ref: '#/components/responses/BadRequest' }
+
+  /api/cases:
+    get:
+      tags: [Cases]
+      summary: List cases
+      description: Returns cases filtered by name or case ID and ordered by calculated urgency.
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Search'
+        - $ref: '#/components/parameters/Urgency'
+      responses:
+        '200':
+          description: Cases retrieved
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/CaseListResponse'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+
+  /api/cases/{caseId}:
+    parameters:
+      - $ref: '#/components/parameters/CaseId'
+    get:
+      tags: [Cases]
+      summary: Get case details and progress (V-07)
+      responses:
+        '200':
+          description: Case details retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CaseDetailResponse'
+        '400': { $ref: '#/components/responses/BadRequest' }
+
+  /api/users/{userId}/cases:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+    get:
+      tags: [Cases]
+      summary: Get case summaries for a user
+      responses:
+        '200':
+          description: User cases retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CaseSummaryListResponse'
+        '400': { $ref: '#/components/responses/BadRequest' }
 
 components:
   parameters:
@@ -268,361 +225,332 @@ components:
       name: userId
       in: path
       required: true
-      description: External user UUID
+      description: User UUID
+      schema: { type: string, format: uuid }
+    CaseId:
+      name: caseId
+      in: path
+      required: true
+      description: Case UUID
+      schema: { type: string, format: uuid }
+    Page:
+      name: page
+      in: query
+      description: One-based page number.
+      schema: { type: integer, minimum: 1, default: 1 }
+    Limit:
+      name: limit
+      in: query
+      description: Number of cases per page.
+      schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+    Search:
+      name: search
+      in: query
+      description: Case ID or user name search text.
+      schema: { type: string, default: '' }
+    Urgency:
+      name: urgency
+      in: query
+      description: Urgency filter. Empty and Todas return all urgency levels.
       schema:
         type: string
-        format: uuid
-        example: 11111111-1111-4111-8111-111111111111
+        enum: ['', Todas, Alta, Media, Baja, Sin evaluar]
+        default: ''
+
+  responses:
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
 
   schemas:
-    Profile:
+    ServerStatusResponse:
       type: object
-      nullable: true
-      description: User profile row. Primary key is `user_id`.
-      properties:
-        user_id:
-          type: string
-          format: uuid
-          description: Primary key of the user/profile record. Not the same as address_id or document_id.
-          example: 11111111-1111-4111-8111-111111111111
-        name:
-          type: string
-        last_name:
-          type: string
-        email:
-          type: string
-          format: email
-        birth_date:
-          type: string
-          format: date
-        phone:
-          type: string
-
-    Address:
-      type: object
-      nullable: true
-      description: Address row linked to the user. Primary key is `address_id`.
-      properties:
-        address_id:
-          type: string
-          format: uuid
-          description: Primary key of the address record. Different from user_id and document_id.
-          example: 22222222-2222-4222-8222-222222222222
-        address_line_1:
-          type: string
-        address_line_2:
-          type: string
-          nullable: true
-        neighborhood:
-          type: string
-        zip_code:
-          type: string
-        country:
-          type: string
-        state:
-          type: string
-        city:
-          type: string
-
-    Documents:
-      type: object
-      nullable: true
-      description: >
-        Documents linked to the user. Primary key is `document_id`.
-        File paths stay in storage and are not returned.
-        URL fields are signed links that expire after 15 minutes.
-      properties:
-        document_id:
-          type: string
-          format: uuid
-          description: Primary key of the documents record. Different from user_id and address_id.
-          example: 33333333-3333-4333-8333-333333333333
-        identity_document_url:
-          type: string
-          format: uri
-          nullable: true
-          description: >
-            Signed read URL for the identity document. Null when no file is stored.
-            Expires after 15 minutes. Response only; do not send this on update.
-        proof_of_address_url:
-          type: string
-          format: uri
-          nullable: true
-          description: >
-            Signed read URL for the proof of address. Null when no file is stored.
-            Expires after 15 minutes. Response only; do not send this on update.
-
-    PreSubmissionData:
-      type: object
-      description: >
-        Nested objects each keep their own table primary key
-        (`user_id`, `address_id`, `document_id`). Those three values are distinct.
-      properties:
-        profile:
-          $ref: '#/components/schemas/Profile'
-        address:
-          $ref: '#/components/schemas/Address'
-        documents:
-          $ref: '#/components/schemas/Documents'
-
-    ProfileUpdate:
-      type: object
-      properties:
-        name:
-          type: string
-        last_name:
-          type: string
-        email:
-          type: string
-          format: email
-        birth_date:
-          type: string
-          format: date
-          description: Must be YYYY-MM-DD
-        phone:
-          type: string
-
-    AddressUpdate:
-      type: object
-      properties:
-        address_line_1:
-          type: string
-        address_line_2:
-          type: string
-          nullable: true
-        neighborhood:
-          type: string
-        zip_code:
-          type: string
-        country:
-          type: string
-        state:
-          type: string
-        city:
-          type: string
-
-    DocumentsUpdate:
-      type: object
-      properties:
-        identity_document:
-          type: string
-          description: Storage path that must start with `{userId}/`
-        proof_of_address:
-          type: string
-          description: Storage path that must start with `{userId}/`
-
-    PreSubmissionUpdateRequest:
-      type: object
-      description: Provide at least one of profile, address, or documents.
-      properties:
-        profile:
-          $ref: '#/components/schemas/ProfileUpdate'
-        address:
-          $ref: '#/components/schemas/AddressUpdate'
-        documents:
-          $ref: '#/components/schemas/DocumentsUpdate'
-
-    PreSubmissionSuccessResponse:
-      type: object
-      required: [success, data]
-      properties:
-        success:
-          type: boolean
-          example: true
-        data:
-          $ref: '#/components/schemas/PreSubmissionData'
-
-    CaseSummary:
-      type: object
-      properties:
-        caseId:
-          type: string
-          nullable: true
-        writtenDescription:
-          type: string
-          nullable: true
-        writtenHelpsWanted:
-          type: string
-          nullable: true
-        hasLawyer:
-          type: boolean
-        state:
-          type: string
-          nullable: true
-        createdAt:
-          type: string
-          format: date-time
-          nullable: true
-        updatedAt:
-          type: string
-          format: date-time
-          nullable: true
-        helps:
-          type: array
-          items:
-            type: string
-        violenceTypes:
-          type: array
-          items:
-            type: string
-
-    AllCasesSuccessResponse:
-      type: object
-      required: [success, data]
-      properties:
-        success:
-          type: boolean
-          example: true
-        data:
-          type: array
-          items:
-            $ref: '#/components/schemas/CaseSummary'
-
-    CreateAccountRequest:
-      type: object
-      required: [name, last_name, email, country_code, phone, password, confirm_password]
-      properties:
-        name:
-          type: string
-        last_name:
-          type: string
-        email: 
-          type: string
-          format: email
-        country_code:
-          type: string
-          pattern: '^\+\d{1,3}$'
-        phone:
-          type: string
-          pattern: '^\d{10}$'
-        password:
-          type: string
-          format: password
-          minLength: 8
-        confirm_password:
-          type: string
-          format: password
-          minLength: 8
-
-    CreateAccountData:
-      type: object
-      required: [userId, name, lastName, email, phone]
-      properties:
-        userId:
-          type: string
-          format: uuid
-        name: 
-          type: string
-        lastName:
-          type: string
-        email:
-          type: string
-          format: email
-        phone: 
-          type: string
-
-    CreateAccountSuccessResponse:
-      type: object
-      required: [success, data]
-      properties: 
-        success: 
-          type: boolean
-          example: true
-        data:
-          $ref: '#/components/schemas/CreateAccountData'
-
-    RegisterExternalUserProfile:
-      type: object
-      required: [name, last_name, email]
-      properties:
-        name:
-          type: string
-        last_name:
-          type: string
-        email:
-          type: string
-          format: email
-        birth_date:
-          type: string
-          format: date
-          description: Optional. Must be YYYY-MM-DD.
-        phone:
-          type: string
-          description: Optional.
-
-    RegisterExternalUserAddress:
-      type: object
-      required: [address_line_1, neighborhood, zip_code, country, state, city]
-      properties:
-        address_line_1:
-          type: string
-        address_line_2:
-          type: string
-          nullable: true
-        neighborhood:
-          type: string
-        zip_code:
-          type: string
-        country:
-          type: string
-        state:
-          type: string
-        city:
-          type: string
-
-    RegisterExternalUserRequest:
-      type: object
-      required: [profile, address]
-      properties:
-        profile:
-          $ref: '#/components/schemas/RegisterExternalUserProfile'
-        address:
-          $ref: '#/components/schemas/RegisterExternalUserAddress'
-
-    RegisterExternalUserData:
-      type: object
-      properties:
-        user_id:
-          type: string
-          format: uuid
-        name:
-          type: string
-        last_name:
-          type: string
-        email:
-          type: string
-          format: email
-        birth_date:
-          type: string
-          format: date
-          nullable: true
-        phone:
-          type: string
-          nullable: true
-        record_id:
-          type: string
-          format: uuid
-        address_id:
-          type: string
-          format: uuid
-
-    RegisterExternalUserSuccessResponse:
-      type: object
-      required: [success, data]
-      properties:
-        success:
-          type: boolean
-          example: true
-        data:
-          $ref: '#/components/schemas/RegisterExternalUserData'
+      required: [status]
+      properties: { status: { type: string } }
 
     ErrorResponse:
       type: object
       required: [success, error]
       properties:
-        success:
-          type: boolean
-          example: false
-        error:
+        success: { type: boolean, example: false }
+        error: { type: string }
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string, format: password }
+
+    LoginData:
+      type: object
+      required: [token, user_id]
+      properties:
+        token: { type: string }
+        user_id: { type: string, format: uuid }
+
+    LoginSuccessResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success: { type: boolean, example: true }
+        data: { $ref: '#/components/schemas/LoginData' }
+
+    Profile:
+      type: object
+      nullable: true
+      properties:
+        user_id: { type: string, format: uuid }
+        name: { type: string }
+        last_name: { type: string }
+        email: { type: string, format: email }
+        birth_date: { type: string, format: date }
+        phone: { type: string }
+
+    Address:
+      type: object
+      nullable: true
+      properties:
+        address_id: { type: string, format: uuid }
+        address_line_1: { type: string }
+        address_line_2: { type: string, nullable: true }
+        neighborhood: { type: string }
+        zip_code: { type: string }
+        country: { type: string }
+        state: { type: string }
+        city: { type: string }
+
+    Documents:
+      type: object
+      nullable: true
+      properties:
+        document_id: { type: string, format: uuid }
+        identity_document_url:
           type: string
-          example: userId parameter is required
+          format: uri
+          nullable: true
+          description: Signed URL that expires after 15 minutes.
+        proof_of_address_url:
+          type: string
+          format: uri
+          nullable: true
+          description: Signed URL that expires after 15 minutes.
+
+    PreSubmissionData:
+      type: object
+      required: [profile, address, documents]
+      properties:
+        profile: { $ref: '#/components/schemas/Profile' }
+        address: { $ref: '#/components/schemas/Address' }
+        documents: { $ref: '#/components/schemas/Documents' }
+
+    PreSubmissionSuccessResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success: { type: boolean, example: true }
+        data: { $ref: '#/components/schemas/PreSubmissionData' }
+
+    ProfileUpdate:
+      type: object
+      properties:
+        name: { type: string }
+        last_name: { type: string }
+        email: { type: string, format: email }
+        birth_date: { type: string, format: date }
+        phone: { type: string }
+
+    AddressUpdate:
+      type: object
+      properties:
+        address_line_1: { type: string }
+        address_line_2: { type: string, nullable: true }
+        neighborhood: { type: string }
+        zip_code: { type: string }
+        country: { type: string }
+        state: { type: string }
+        city: { type: string }
+
+    DocumentsUpdate:
+      type: object
+      properties:
+        identity_document: { type: string, description: Storage path beginning with the user ID. }
+        proof_of_address: { type: string, description: Storage path beginning with the user ID. }
+
+    PreSubmissionUpdateRequest:
+      type: object
+      minProperties: 1
+      properties:
+        profile: { $ref: '#/components/schemas/ProfileUpdate' }
+        address: { $ref: '#/components/schemas/AddressUpdate' }
+        documents: { $ref: '#/components/schemas/DocumentsUpdate' }
+
+    CreateAccountRequest:
+      type: object
+      required: [name, last_name, email, country_code, phone, password, confirm_password]
+      properties:
+        name: { type: string }
+        last_name: { type: string }
+        email: { type: string, format: email }
+        country_code: { type: string, pattern: '^\\+\\d{1,3}$' }
+        phone: { type: string, pattern: '^\\d{10}$' }
+        password: { type: string, format: password, minLength: 8 }
+        confirm_password: { type: string, format: password, minLength: 8 }
+
+    CreateAccountData:
+      type: object
+      required: [userId, name, lastName, email, phone]
+      properties:
+        userId: { type: string, format: uuid }
+        name: { type: string }
+        lastName: { type: string }
+        email: { type: string, format: email }
+        phone: { type: string }
+
+    CreateAccountSuccessResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success: { type: boolean, example: true }
+        data: { $ref: '#/components/schemas/CreateAccountData' }
+
+    RegisterExternalUserProfile:
+      type: object
+      required: [name, last_name, email]
+      properties:
+        name: { type: string }
+        last_name: { type: string }
+        email: { type: string, format: email }
+        birth_date: { type: string, format: date }
+        phone: { type: string }
+
+    RegisterExternalUserAddress:
+      type: object
+      required: [address_line_1, neighborhood, zip_code, country, state, city]
+      properties:
+        address_line_1: { type: string }
+        address_line_2: { type: string, nullable: true }
+        neighborhood: { type: string }
+        zip_code: { type: string }
+        country: { type: string }
+        state: { type: string }
+        city: { type: string }
+
+    RegisterExternalUserRequest:
+      type: object
+      required: [profile, address]
+      properties:
+        profile: { $ref: '#/components/schemas/RegisterExternalUserProfile' }
+        address: { $ref: '#/components/schemas/RegisterExternalUserAddress' }
+
+    RegisterExternalUserData:
+      type: object
+      properties:
+        user_id: { type: string, format: uuid }
+        name: { type: string }
+        last_name: { type: string }
+        email: { type: string, format: email }
+        birth_date: { type: string, format: date, nullable: true }
+        phone: { type: string, nullable: true }
+        record_id: { type: string, format: uuid }
+        address_id: { type: string, format: uuid }
+
+    RegisterExternalUserSuccessResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success: { type: boolean, example: true }
+        data: { $ref: '#/components/schemas/RegisterExternalUserData' }
+
+    CaseListItem:
+      type: object
+      properties:
+        case_id: { type: string, format: uuid }
+        name: { type: string }
+        violence_types:
+          type: array
+          items: { type: string }
+        state: { type: string, nullable: true }
+        severity: { type: integer, nullable: true, minimum: 1, maximum: 10 }
+        urgency: { type: string, enum: [Alta, Media, Baja, Sin evaluar] }
+        updated_at: { type: string, format: date-time, nullable: true }
+
+    CaseListData:
+      type: object
+      required: [cases, total, page, limit]
+      properties:
+        cases:
+          type: array
+          items: { $ref: '#/components/schemas/CaseListItem' }
+        total: { type: integer, minimum: 0 }
+        page: { type: integer, minimum: 1 }
+        limit: { type: integer, minimum: 1, maximum: 100 }
+
+    CaseListResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success: { type: boolean, example: true }
+        data: { $ref: '#/components/schemas/CaseListData' }
+
+    CaseSummary:
+      type: object
+      properties:
+        caseId: { type: string, format: uuid, nullable: true }
+        writtenDescription: { type: string, nullable: true }
+        writtenHelpsWanted: { type: string, nullable: true }
+        hasLawyer: { type: boolean }
+        state: { type: string, nullable: true }
+        createdAt: { type: string, format: date-time, nullable: true }
+        updatedAt: { type: string, format: date-time, nullable: true }
+        helps: { type: array, items: { type: string } }
+        violenceTypes: { type: array, items: { type: string } }
+
+    CaseSummaryListResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success: { type: boolean, example: true }
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/CaseSummary' }
+
+    CaseDetail:
+      type: object
+      properties:
+        case_id: { type: string, format: uuid }
+        case_number: { type: string, nullable: true }
+        state: { type: string, nullable: true }
+        record_id: { type: string, format: uuid }
+        record:
+          type: object
+          properties:
+            record_id: { type: string, format: uuid }
+            user:
+              type: object
+              properties:
+                user_id: { type: string, format: uuid }
+                name: { type: string }
+                last_name: { type: string }
+        case_steps:
+          type: array
+          items:
+            type: object
+            properties:
+              case_step_id: { type: string, format: uuid }
+              step_number: { type: integer }
+              status: { type: string }
+
+    CaseDetailResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success: { type: boolean, example: true }
+        data: { $ref: '#/components/schemas/CaseDetail' }

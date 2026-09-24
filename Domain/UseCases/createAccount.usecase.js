@@ -3,9 +3,9 @@
 
 import bcrypt from 'bcrypt';
 
-import CreateAccountValidator from '../../Data/Validators/createAccount.validator';
-import CreateAccountModel from '../../Data/Models/createAccount.model';
-import RoleModel from '.../../Data/Models/role.model.js';
+import CreateAccountValidator from '../../Data/Validators/createAccount.validator.js';
+import CreateAccountModel from '../../Data/Models/createAccount.model.js';
+import RoleModel from '../../Data/Models/role.model.js';
 
 const EXTERNAL_ROLE = 'external';
 const BCRYPT_SALT_ROUNDS = 10;

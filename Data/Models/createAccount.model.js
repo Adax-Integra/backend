@@ -5,7 +5,7 @@ import { supabase } from '../Config/supabase.js';
 
 class CreateAccountModel {
   // check wether an active account already uses this email
-  static async fingByEmail(email) {
+  static async findByEmail(email) {
     const { data, error } = await supabase
       .from('user')
       .select('user_id')
