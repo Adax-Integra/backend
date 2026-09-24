@@ -27,7 +27,9 @@ class CaseController {
 
     const urgencyFilter = urgency.trim();
     if (
-      !['', 'Todas', 'Alta', 'Media', 'Baja', 'Sin evaluar'].includes(urgencyFilter)
+      !['', 'Todas', 'Alta', 'Media', 'Baja', 'Sin evaluar'].includes(
+        urgencyFilter
+      )
     ) {
       return res.status(400).json({
         success: false,
@@ -101,9 +103,10 @@ class CaseController {
         success: true,
         data: data,
       });
-    } catch {
+    } catch (error) {
       return res.status(400).json({
         success: false,
+        error: error.message,
       });
     }
   }

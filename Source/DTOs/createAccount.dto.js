@@ -5,7 +5,7 @@ class CreateAccountDTO {
   constructor(data) {
     this.userId = data.user_id;
     this.name = data.name;
-    this.lastName = data.name;
+    this.lastName = data.last_name;
     this.email = data.email;
     this.phone = data.phone;
   }
