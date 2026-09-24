@@ -14,6 +14,7 @@ tags:
   - name: Cases
   - name: External Users
   - name: Internal Users
+  - name: Privacy Policy
 
 paths:
   /:
@@ -219,6 +220,59 @@ paths:
                 $ref: '#/components/schemas/CaseSummaryListResponse'
         '400': { $ref: '#/components/responses/BadRequest' }
 
+  /api/privacy-policy/current:
+    get:
+      tags: [Privacy Policy]
+      summary: Get the privacy notice in force (V-02)
+      description: Returns the newest notice that has not been soft deleted. The notice is a PDF and documentUrl is a public link to it. policyId and version must be sent back when the user accepts.
+      responses:
+        '200':
+          description: Notice in force retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrivacyPolicySuccessResponse'
+        '500': { $ref: '#/components/responses/InternalServerError' }
+
+  /api/privacy-policy/consent:
+    get:
+      tags: [Privacy Policy]
+      summary: Check whether a user accepted the notice in force (V-02)
+      description: Used on start-up to decide whether the privacy screen must be shown. It answers against the notice currently in force so publishing a new version makes every user consent again.
+      parameters:
+        - $ref: '#/components/parameters/UserIdQuery'
+      responses:
+        '200':
+          description: Consent status retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsentStatusSuccessResponse'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+    post:
+      tags: [Privacy Policy]
+      summary: Record that a user accepted the notice (V-02)
+      description: The server sets the version the timestamp the client IP and is_accepted. Calling it again for the same user and notice returns the existing consent instead of creating a duplicate.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterConsentRequest'
+            example:
+              userId: 90c44b0b-1578-42b6-ba35-d83ab84610ab
+              policyId: ee5d5ef6-e18c-4d20-81cc-6fb4106bff48
+      responses:
+        '201':
+          description: Consent recorded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegisterConsentSuccessResponse'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+
 components:
   parameters:
     UserId:
@@ -256,6 +310,12 @@ components:
         type: string
         enum: ['', Todas, Alta, Media, Baja, Sin evaluar]
         default: ''
+    UserIdQuery:
+      name: userId
+      in: query
+      required: true
+      description: User UUID
+      schema: { type: string, format: uuid }
 
   responses:
     BadRequest:
@@ -554,3 +614,64 @@ components:
       properties:
         success: { type: boolean, example: true }
         data: { $ref: '#/components/schemas/CaseDetail' }
+
+    PrivacyPolicyData:
+      type: object
+      required: [policyId, version, documentUrl]
+      properties:
+        policyId: { type: string, format: uuid }
+        version: { type: string, example: '1.0.0' }
+        documentUrl:
+          type: string
+          format: uri
+          nullable: true
+          description: Public link to the notice PDF in Storage.
+
+    PrivacyPolicySuccessResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success: { type: boolean, example: true }
+        data: { $ref: '#/components/schemas/PrivacyPolicyData' }
+
+    ConsentStatusData:
+      type: object
+      required: [hasAccepted, policyId, version, acceptedAt]
+      properties:
+        hasAccepted: { type: boolean, description: Whether the user accepted the notice in force. }
+        policyId: { type: string, format: uuid }
+        version: { type: string, example: '1.0.0' }
+        acceptedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: UTC. Null when the user has not accepted yet.
+
+    ConsentStatusSuccessResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success: { type: boolean, example: true }
+        data: { $ref: '#/components/schemas/ConsentStatusData' }
+
+    RegisterConsentRequest:
+      type: object
+      required: [userId, policyId]
+      properties:
+        userId: { type: string, format: uuid }
+        policyId: { type: string, format: uuid, description: The notice that was shown to the user. }
+
+    ConsentData:
+      type: object
+      required: [consentId, version, acceptedAt]
+      properties:
+        consentId: { type: string, format: uuid }
+        version: { type: string, example: '1.0.0' }
+        acceptedAt: { type: string, format: date-time, description: UTC timestamp generated by the database. }
+
+    RegisterConsentSuccessResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success: { type: boolean, example: true }
+        data: { $ref: '#/components/schemas/ConsentData' }
