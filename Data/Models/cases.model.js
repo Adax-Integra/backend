@@ -7,6 +7,22 @@ class CasesModel {
    * Returns an object array
    */
   static async getAllCasesFromUser(userId) {
+    const { data: records, error: recordsError } = await supabase
+      .from('record')
+      .select('record_id')
+      .eq('user_id', userId)
+      .is('deleted_at', null);
+
+    if (recordsError) {
+      throw new Error(recordsError.message);
+    }
+
+    const recordIds = (records ?? []).map(({ record_id }) => record_id);
+
+    if (recordIds.length === 0) {
+      return [];
+    }
+
     const { data, error } = await supabase
       .from('case')
       .select(
@@ -18,9 +34,6 @@ class CasesModel {
         state,
         created_at,
         updated_at,
-        record!inner (
-          user_id
-        ),
         case_help (
           deleted_at,
           help_types (
@@ -38,7 +51,7 @@ class CasesModel {
       `
       )
       .is('deleted_at', null)
-      .eq('record.user_id', userId)
+      .in('record_id', recordIds)
       .order('created_at', { ascending: false });
 
     if (error) {
