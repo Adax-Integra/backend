@@ -12,7 +12,7 @@ import { fileURLToPath } from 'node:url';
 import externalUserRoutes from '../Source/Routes/externalUser.routes.js';
 import caseRoutes from '../Source/Routes/case.routes.js';
 import internalUserRoutes from '../Source/Routes/internalUser.routes.js';
-import authRoutes from '..Source/Routes/auth.routes.js';
+import authRoutes from '../Source/Routes/auth.routes.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const swaggerDocument = parseYaml(
