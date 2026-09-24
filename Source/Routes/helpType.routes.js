@@ -3,7 +3,7 @@ import helpTypeController from '../Controllers/helpType.controller.js';
 
 const router = express.Router();
 
-//Cataloge for the "¿Que ayuda esperas recibir?" dropdown
+//Catalogue for the "¿Que ayuda esperas recibir?" dropdown
 router.get('/help-types', helpTypeController.listHelpTypes);
 
 export default router;

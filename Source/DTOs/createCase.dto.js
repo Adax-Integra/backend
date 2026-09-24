@@ -1,6 +1,6 @@
 //Response for a newly created case
 //Mirrors the field names of CaseSummaryDTO (getAllCases.dto.js) so the case
-//the app just created has the same shape as the one listed en "Mis casos"
+//the app just created has the same shape as the one listed in "Mis casos"
 class CreateCaseDTO {
   constructor({
     case_id,
