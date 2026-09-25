@@ -1,7 +1,6 @@
 import { supabase } from '../Config/supabase.js';
 
-const EXTERNAL_PROFILE_COLUMNS = `
-  user_id,
+const EXTERNAL_PROFILE_PRESUBMISSION_COLUMNS = `
   name,
   last_name,
   email,
@@ -17,7 +16,7 @@ class ExternalUserModel {
   static async findProfileById(userId) {
     const { data, error } = await supabase
       .from('user')
-      .select(EXTERNAL_PROFILE_COLUMNS)
+      .select(EXTERNAL_PROFILE_PRESUBMISSION_COLUMNS)
       .eq('user_id', userId)
       .is('deleted_at', null)
       .maybeSingle();
@@ -38,7 +37,7 @@ class ExternalUserModel {
       .update(payload)
       .eq('user_id', userId)
       .is('deleted_at', null)
-      .select(EXTERNAL_PROFILE_COLUMNS)
+      .select(EXTERNAL_PROFILE_PRESUBMISSION_COLUMNS)
       .single();
 
     if (error) {

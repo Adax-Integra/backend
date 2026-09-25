@@ -11,6 +11,7 @@ class EditPreSubmissionDataUseCase {
       EditPreSubmissionValidator.validateUpdateBody(updateData, validUserId);
 
     const result = {
+      user_id: validUserId,
       profile: null,
       address: null,
       documents: null,

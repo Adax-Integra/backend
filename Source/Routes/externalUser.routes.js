@@ -5,7 +5,7 @@ import { ownDataOnly } from '../Middlewares/role.middleware.js';
 
 const router = express.Router();
 
-// G-01 create a new external user account
+// Creates a new external user account
 router.post('/external-user/register', externalUserController.createAccount);
 
 // Gets the pre-submission data from an external user
