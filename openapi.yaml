@@ -307,7 +307,6 @@ components:
       type: object
       nullable: true
       properties:
-        user_id: { type: string, format: uuid }
         name: { type: string }
         last_name: { type: string }
         email: { type: string, format: email }
@@ -345,8 +344,9 @@ components:
 
     PreSubmissionData:
       type: object
-      required: [profile, address, documents]
+      required: [user_id, profile, address, documents]
       properties:
+        user_id: { type: string, format: uuid }
         profile: { $ref: '#/components/schemas/Profile' }
         address: { $ref: '#/components/schemas/Address' }
         documents: { $ref: '#/components/schemas/Documents' }
