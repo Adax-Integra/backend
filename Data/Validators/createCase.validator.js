@@ -3,11 +3,12 @@ The client disables the button, but the server repeats the same rule because
 nothing stops a request from reaching this endpoint outside the mobile app
 */
 import RequiredStringValidator from './requiredString.validator.js';
-import ValidIdValidator from './validId.validator.js';
 
 //"case".written_description has no length limit in Postgres
 //Cap it here so a single request cannot push an unbouned payload through the t3.nano instance
 const MAX_DESCRIPTION_LENGTH = 5000;
+//"¿Que ayuda esperas recibir?" text input limit defined by the UI
+const MAX_HELPS_WANTED_LENGTH = 400;
 
 //Builds an Error carrying the per-field reasons so the controller can answer
 //with { errors: { field:reason}} and the app can highlight each input
@@ -25,7 +26,7 @@ class CreateCaseValidator {
     }
 
     const errors = {};
-    const { writtenDescription, helpTypeId, hasExternalSupport } = body;
+    const { writtenDescription, writtenHelpsWanted, hasExternalSupport } = body;
 
     //"Descripción del caso": a value made only of spaces counts as empty, matching
     //the trim the client applies before enabling the button
@@ -43,18 +44,20 @@ class CreateCaseValidator {
       errors.writtenDescription = error.message;
     }
 
-    /*¿Que ayuda esperas recibir?: the dropdown sends a help_types id
-    Existence is confirmed later against the cataloge
-    The shared validators throw on the first failure, so the message is
-    caught here to keep collecting the rest of the per-field errors
-    */
-    let validHelpTypeId;
+    //¿Que ayuda esperas recibir?: free text stored in "case".written_helps_wanted
+    let validHelpsWanted;
     try{
-      validHelpTypeId = ValidIdValidator.validateId(helpTypeId,'helpTypeId');  
+      validHelpsWanted = RequiredStringValidator.validateRequiredString(
+        writtenHelpsWanted, 'writtenHelpsWanted'
+      );
+
+      if (validHelpsWanted.length > MAX_HELPS_WANTED_LENGTH){
+        errors.writtenHelpsWanted = `writtenHelpsWanted must be at most ${MAX_HELPS_WANTED_LENGTH} characters`;        
+      }
     }
-    catch (error){
-      errors.helpTypeId = error.message;
-    }
+    catch (error) {
+      errors.writtenHelpsWanted = error.message;
+    }  
 
     //¿Cuentas con apoyo externo?: the Sí/No dropdown maps to a boolean
     //Strings and numbers are rejected so "No" cannot arrive as a truthy value
@@ -67,8 +70,8 @@ class CreateCaseValidator {
     }
 
     return {
-      writtenDescription: writtenDescription.trim(),
-      helpTypeId: validHelpTypeId,
+      writtenDescription: validDescription,
+      writtenHelpsWanted: validHelpsWanted,
       hasExternalSupport,
     };
   }

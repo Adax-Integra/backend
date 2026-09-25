@@ -139,7 +139,7 @@ class CaseModel {
     state,
     stepStatus,
   }) {
-    const {data, error} = await supabase.rpc ('create_case_with_help',{
+    const {data, error} = await supabase.rpc ('create_case',{
       p_record_id: recordId,
       p_written_description: writtenDescription,
       p_written_helps_wanted: writtenHelpsWanted,
