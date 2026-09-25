@@ -1,9 +1,8 @@
 /*R-02: The external user fills three fields before "Crear caso" is enabled
 The client disables the button, but the server repeats the same rule because
-nothing stops a request ffrom reaching this endpoint outside the mobile app
+nothing stops a request from reaching this endpoint outside the mobile app
 */
-const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+import ValidIdValidator from './validId.validator.js';
 
 //"case".written_description has no length limit in Postgres
 //Cap it here so a single request cannot push an unbouned payload through the t3.nano instance
@@ -37,12 +36,17 @@ class CreateCaseValidator {
       errors.writtenDescription = `writtenDescription must be at most ${MAX_DESCRIPTION_LENGTH} characters`;
     }
 
-    //¿Que ayuda esperas recibir?: the dropdown sends a help_types id
-    //Existence is confirmed later against the cataloge
-    if (typeof helpTypeId !== 'string' || helpTypeId.trim() === '') {
-      errors.helpTypeId = 'helpTypeId is rquired';
-    } else if (!UUID_PATTERN.test(helpTypeId.trim())) {
-      errors.helpTypeId = 'helpTypeId must be a valid UUID';
+    /*¿Que ayuda esperas recibir?: the dropdown sends a help_types id
+    Existence is confirmed later against the cataloge
+    The shared validators throw on the first failure, so the message is
+    caught here to keep collecting the rest of the per-field errors
+    */
+    let validHelpTypeId;
+    try{
+      validHelpTypeId = ValidIdValidator.validateId(helpTypeId,'helpTypeId');  
+    }
+    catch (error){
+      errors.helpTypeId = error.message;
     }
 
     //¿Cuentas con apoyo externo?: the Sí/No dropdown maps to a boolean
@@ -57,7 +61,7 @@ class CreateCaseValidator {
 
     return {
       writtenDescription: writtenDescription.trim(),
-      helpTypeId: helpTypeId.trim(),
+      helpTypeId: validHelpTypeId,
       hasExternalSupport,
     };
   }
