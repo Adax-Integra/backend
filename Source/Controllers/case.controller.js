@@ -1,7 +1,6 @@
 import GetCaseByIdUseCase from '../../Domain/UseCases/getCaseById.usecase.js';
 import ListCasesUseCase from '../../Domain/UseCases/listCases.usecase.js';
 import CaseListDTO from '../DTOs/caseList.dto.js';
-// DTO to format and structure the detailed case response (V-11)
 import CaseDetailDTO from '../DTOs/caseDetail.dto.js';
 
 const listCasesUseCase = new ListCasesUseCase();
@@ -9,10 +8,8 @@ const getCaseByIdUseCase = new GetCaseByIdUseCase();
 
 class CaseController {
   async listCases(req, res) {
-    // Query parameters arrive as strings. Use defaults only when omitted.
     const { page: pageQuery = '1', limit: limitQuery = '20' } = req.query;
 
-    // Reject empty values, repeated parameters, objects, and non-integer text.
     if (
       typeof pageQuery !== 'string' ||
       typeof limitQuery !== 'string' ||
@@ -28,7 +25,6 @@ class CaseController {
     const page = Number(pageQuery);
     const limit = Number(limitQuery);
 
-    // Validate the requested range before calling the use case.
     if (
       !Number.isSafeInteger(page) ||
       page < 1 ||
@@ -53,7 +49,6 @@ class CaseController {
         data: payload,
       });
     } catch (error) {
-      // Keep database details in server logs instead of exposing them to clients.
       console.error('Failed to list cases:', error);
 
       return res.status(500).json({
@@ -69,7 +64,6 @@ class CaseController {
 
       const caseData = await getCaseByIdUseCase.execute(caseId);
 
-      // Helps transform the raw data into a structured format for the response (V-11)
       const payload = new CaseDetailDTO(caseData).toJSON();
 
       return res.status(200).json({
