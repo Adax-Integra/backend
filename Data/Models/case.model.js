@@ -152,6 +152,24 @@ class CaseModel {
 
     return data;
   }
+  // Closes a case atomically so that it only updates if it is not already Closed
+
+  static async closeCase(caseId) {
+    const { data, error } = await supabase
+      .from('case')
+      .update({ state: 'Closed' })
+      .eq('case_id', caseId)
+      .neq('state', 'Closed')
+      .is('deleted_at', null)
+      .select()
+      .maybeSingle();
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return data;
+  }
 }
 
 export default CaseModel;
