@@ -2,6 +2,7 @@
 The client disables the button, but the server repeats the same rule because
 nothing stops a request from reaching this endpoint outside the mobile app
 */
+import RequiredStringValidator from './requiredString.validator.js';
 import ValidIdValidator from './validId.validator.js';
 
 //"case".written_description has no length limit in Postgres
@@ -28,12 +29,18 @@ class CreateCaseValidator {
 
     //"Descripción del caso": a value made only of spaces counts as empty, matching
     //the trim the client applies before enabling the button
-    if (typeof writtenDescription !== 'string') {
-      errors.writtenDescription = 'writtenDescription must be a string';
-    } else if (writtenDescription.trim() === '') {
-      errors.writtenDescription = 'writtenDescription is required';
-    } else if (writtenDescription.trim().length > MAX_DESCRIPTION_LENGTH) {
-      errors.writtenDescription = `writtenDescription must be at most ${MAX_DESCRIPTION_LENGTH} characters`;
+    let validDescription;
+    try{
+      validDescription = RequiredStringValidator.validateRequiredString(
+        writtenDescription,'writtenDescription'
+      );
+
+      if (validDescription.length > MAX_DESCRIPTION_LENGTH){
+        errors.writtenDescription= `writtenDescription must be at most ${MAX_DESCRIPTION_LENGTH} characters`;  
+      }
+    }
+    catch(error){
+      errors.writtenDescription = error.message;
     }
 
     /*¿Que ayuda esperas recibir?: the dropdown sends a help_types id
