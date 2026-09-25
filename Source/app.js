@@ -44,7 +44,7 @@ app.use('/api', internalUserRoutes);
 app.use('/api', caseRoutes);
 app.use('/api/auth', authRoutes);
 
-// 404
+// 404s
 app.use((_req, res) => res.status(404).send('Not found.'));
 
 // Global error handler — prevents unhandled exceptions from crashing the serverless function
