@@ -57,6 +57,10 @@ class CaseSummaryDTO {
    * Maps an array of database rows to an array of serialized JSON objects.
    */
   static fromRows(rows = []) {
+    if (!Array.isArray(rows)) {
+      throw new TypeError('Case rows must be an array.');
+    }
+
     return rows.map((row) => new CaseSummaryDTO(row).toJSON());
   }
 }

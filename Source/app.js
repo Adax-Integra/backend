@@ -14,6 +14,7 @@ import caseRoutes from '../Source/Routes/case.routes.js';
 import internalUserRoutes from '../Source/Routes/internalUser.routes.js';
 import helpTypeRoutes from '../Source/Routes/helpType.routes.js';
 
+import authRoutes from '../Source/Routes/auth.routes.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const swaggerDocument = parseYaml(
@@ -44,6 +45,7 @@ app.use('/api', externalUserRoutes);
 app.use('/api', internalUserRoutes);
 app.use('/api', caseRoutes);
 app.use('/api', helpTypeRoutes);
+app.use('/api/auth', authRoutes);
 
 // 404s
 app.use((_req, res) => res.status(404).send('Not found.'));
