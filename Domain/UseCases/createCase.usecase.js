@@ -1,7 +1,6 @@
 import UserIdValidator from '../../Data/Validators/userId.validator.js';
 import CreateCaseValidator from '../../Data/Validators/createCase.validator.js';
 import RecordModel from '../../Data/Models/record.model.js';
-import HelpTypesModel from '../../Data/Models/helpTypes.model.js';
 import CaseModel from '../../Data/Models/case.model.js';
 
 //"case".state and "case_steps".status are NOT NULL and have no CHECK
@@ -15,18 +14,15 @@ const INITIAL_STEP_STATUS = 'PENDIENTE';
 class CreateCaseUseCase{
     async execute(userId, body){
         const validUserId = UserIdValidator.validateUserId(userId);
-        const {writtenDescription, helpTypeId, hasExternalSupport}=
+        const {writtenDescription, writtenHelpsWanted, hasExternalSupport}=
             CreateCaseValidator.validateCreateBody(body);
 
-        const [record, helpType] = await Promise.all([
-            RecordModel.findActiveByUserId(validUserId),
-            HelpTypesModel.findActiveById(helpTypeId),
-        ]);
+        const record = await RecordModel.findActiveByUserId(validUserId);
 
         const created = await CaseModel.create({
             recordId: record.record_id,
             writtenDescription,
-            writtenHelpsWanted: helpType.description,
+            writtenHelpsWanted,
             hasLawyer: hasExternalSupport,
             helpId: helpType.help_id,
             state: INITIAL_CASE_STATE,
@@ -36,7 +32,7 @@ class CreateCaseUseCase{
         return{
             ...created,
             written_description: writtenDescription,
-            written_helps_wanted: helpType.description,
+            written_helps_wanted: writtenHelpsWanted,
             has_lawyer: hasExternalSupport,
             helps:[helpType.description],
         };
