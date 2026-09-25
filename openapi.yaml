@@ -11,7 +11,7 @@ servers:
 tags:
   - name: Health
   - name: External Users
-
+  - name: Cases
 paths:
   /:
     get:
@@ -141,6 +141,49 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /api/cases/{caseId}:
+    parameters:
+      - $ref: '#/components/parameters/CaseId'
+
+    get:
+      tags: [Cases]
+      summary: Get case details
+      description: Returns the complete details of a case by its UUID.
+      responses:
+        '200':
+          description: Case details retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CaseDetailSuccessResponse'
+        '400':
+          description: Invalid case ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                error: caseId must be a valid UUID.
+        '404':
+          description: Case not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                error: Case with ID 11111111-1111-4111-8111-111111111111 not found.
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                error: Unable to retrieve case.
+
 components:
   parameters:
     UserId:
@@ -148,6 +191,16 @@ components:
       in: path
       required: true
       description: External user UUID
+      schema:
+        type: string
+        format: uuid
+        example: 11111111-1111-4111-8111-111111111111
+
+    CaseId:
+      name: caseId
+      in: path
+      required: true
+      description: Case UUID
       schema:
         type: string
         format: uuid
@@ -299,6 +352,104 @@ components:
           example: true
         data:
           $ref: '#/components/schemas/PreSubmissionData'
+
+    CaseDetail:
+      type: object
+      properties:
+        caseId:
+          type: string
+          format: uuid
+        caseNumber:
+          type: string
+          nullable: true
+        writtenDescription:
+          type: string
+          nullable: true
+        writtenHelpsWanted:
+          type: string
+          nullable: true
+        hasLawyer:
+          type: boolean
+        state:
+          type: string
+          nullable: true
+        recordId:
+          type: string
+          format: uuid
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+          nullable: true
+        updatedAt:
+          type: string
+          format: date-time
+          nullable: true
+        user:
+          type: object
+          properties:
+            userId:
+              type: string
+              format: uuid
+              nullable: true
+            name:
+              type: string
+              nullable: true
+            lastName:
+              type: string
+              nullable: true
+        steps:
+          type: array
+          items:
+            type: object
+            properties:
+              caseStepId:
+                type: string
+                format: uuid
+                nullable: true
+              stepNumber:
+                type: integer
+                nullable: true
+              status:
+                type: string
+                nullable: true
+        helps:
+          type: array
+          items:
+            type: object
+            properties:
+              helpId:
+                type: string
+                format: uuid
+                nullable: true
+              description:
+                type: string
+                nullable: true
+        violenceTypes:
+          type: array
+          items:
+            type: object
+            properties:
+              violenceId:
+                type: string
+                format: uuid
+                nullable: true
+              description:
+                type: string
+                nullable: true
+              severity:
+                type: integer
+                nullable: true
+
+    CaseDetailSuccessResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          $ref: '#/components/schemas/CaseDetail'
 
     ErrorResponse:
       type: object
