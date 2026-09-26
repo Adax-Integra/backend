@@ -96,6 +96,26 @@ class ExternalUserDocumentsModel {
       proof_of_address_url: urlsByPath.get(documents.proof_of_address) ?? null,
     };
   }
+
+  /* 
+  Checks if a file exists in the "user-documents" bucket
+  We need this method if the upload failed or never finished
+  */
+  static async pathExists(path) {
+    const lastSlash = path.lastIndexOf('/');
+    const folder = path.slice(0, lastSlash);
+    const fileName = path.slice(lastSlash + 1);
+
+    const { data, error } = await supabase.storage
+      .from(USER_DOCUMENTS_BUCKET)
+      .list(folder, { search: fileName });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return (data ?? []).some((file) => file.name === fileName);
+  }
 }
 
 export default ExternalUserDocumentsModel;

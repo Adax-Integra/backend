@@ -10,6 +10,23 @@ class EditPreSubmissionDataUseCase {
     const { profile, address, documents } =
       EditPreSubmissionValidator.validateUpdateBody(updateData, validUserId);
 
+    // Make sure every submitted document exists in storage before writing
+    const missingDocuments = (
+      await Promise.all(
+        Object.entries(documents).map(async ([key, path]) =>
+          (await ExternalUserDocumentsModel.pathExists(path)) ? null : key
+        )
+      )
+    ).filter(Boolean);
+
+    if (missingDocuments.length > 0) {
+      throw new Error(
+        missingDocuments
+          .map((key) => `documents.${key}: file not found in storage.`)
+          .join(' ')
+      );
+    }
+
     const result = {
       user_id: validUserId,
       profile: null,
