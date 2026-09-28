@@ -239,8 +239,6 @@ paths:
       tags: [Privacy Policy]
       summary: Check whether a user accepted the notice in force (V-02)
       description: Used on start-up to decide whether the privacy screen must be shown. It answers against the notice currently in force so publishing a new version makes every user consent again.
-      parameters:
-        - $ref: '#/components/parameters/UserIdQuery'
       responses:
         '200':
           description: Consent status retrieved
@@ -261,7 +259,6 @@ paths:
             schema:
               $ref: '#/components/schemas/RegisterConsentRequest'
             example:
-              userId: 90c44b0b-1578-42b6-ba35-d83ab84610ab
               policyId: ee5d5ef6-e18c-4d20-81cc-6fb4106bff48
       responses:
         '201':
@@ -310,12 +307,6 @@ components:
         type: string
         enum: ['', Todas, Alta, Media, Baja, Sin evaluar]
         default: ''
-    UserIdQuery:
-      name: userId
-      in: query
-      required: true
-      description: User UUID
-      schema: { type: string, format: uuid }
 
   responses:
     BadRequest:
@@ -656,9 +647,8 @@ components:
 
     RegisterConsentRequest:
       type: object
-      required: [userId, policyId]
+      required: [policyId]
       properties:
-        userId: { type: string, format: uuid }
         policyId: { type: string, format: uuid, description: The notice that was shown to the user. }
 
     ConsentData:
