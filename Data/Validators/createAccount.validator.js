@@ -1,6 +1,3 @@
-// Created by Lakshmi Jara on 23/09/26.
-// G-01
-
 import EmailValidator from './email.validator.js';
 import RequiredStringValidator from './requiredString.validator.js';
 
@@ -25,6 +22,15 @@ class CreateAccountValidator {
 
     const email = EmailValidator.validateEmail(body.email).toLowerCase();
 
+    const phone = RequiredStringValidator.validateRequiredString(
+      body.phone,
+      'phone'
+    );
+
+    if (!/^\d{10}$/.test(phone)) {
+      throw new Error('phone must contain exactly 10 digits.');
+    }
+
     if (
       typeof body.password !== 'string' ||
       body.password.length < MIN_PASSWORD_LENGTH
@@ -41,6 +47,7 @@ class CreateAccountValidator {
       name,
       lastName,
       email,
+      phone,
       password: body.password,
     };
   }

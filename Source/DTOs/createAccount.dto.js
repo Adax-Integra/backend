@@ -1,12 +1,10 @@
-// Created by Lakshmi Jara on 23/09/26.
-// G-01
-
 class CreateAccountDTO {
-  constructor({ user }) {
+  constructor(user) {
     this.userId = user.user_id;
     this.name = user.name;
     this.lastName = user.last_name;
     this.email = user.email;
+    this.phone = user.phone;
   }
 
   // return only the account information needed by the app
@@ -16,6 +14,7 @@ class CreateAccountDTO {
       name: this.name,
       lastName: this.lastName,
       email: this.email,
+      phone: this.phone,
     };
   }
 }
