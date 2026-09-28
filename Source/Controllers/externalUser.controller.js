@@ -51,10 +51,11 @@ class ExternalUserController {
         userId,
         req.body
       );
+      const payload = new PreSubmissionDTO(updatedData).toJSON();
 
       return res.status(200).json({
         success: true,
-        data: updatedData,
+        data: payload,
       });
     } catch (error) {
       return res.status(400).json({

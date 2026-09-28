@@ -15,6 +15,7 @@ class CheckPreSubmissionDataUseCase {
     ]);
 
     return {
+      user_id: userId,
       profile,
       address,
       documents: await ExternalUserDocumentsModel.attachSignedUrls(documents),
