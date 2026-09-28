@@ -44,6 +44,28 @@ _(Note: As with branches, omit the `({us-code})` scope if the commit is not tied
 
 - `docs: update project readme`
 
+### Conventional Comments
+
+When reviewing Pull Requests, please use [Conventional Comments](https://conventionalcomments.org/) to make feedback clear and actionable for your peers.
+
+**Format:**
+`<label> [subject]: <comment>`
+
+**Common Labels:**
+
+- `issue:` - A problem that needs fixing.
+- `suggestion:` - A proposed change (often paired with a code snippet).
+- `question:` - Asking for clarification or context.
+- `nitpick:` - A minor, trivial detail (e.g., a typo or formatting issue).
+- `praise:` - Positive feedback on a job well done.
+
+**Examples:**
+
+- `issue(blocking): This logic will fail if the user array is empty.`
+- `suggestion(non-blocking): We could extract this into a helper function to avoid repetition.`
+- `question(blocking): What happens if the API call times out here?`
+- `nitpick(non-blockin g): Typo in the variable name.`
+
 ## Pull Request Template & Contribution Guidelines
 
 ## Description
