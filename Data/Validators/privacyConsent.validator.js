@@ -13,22 +13,12 @@ class PrivacyConsentValidator {
       throw validationError('Request body must be an object.');
     }
 
-    const errors = [];
-    const consent = {};
-
-    for (const key of ['userId', 'policyId']) {
-      const value = body[key];
-      if (typeof value !== 'string' || !UUID_PATTERN.test(value.trim())) {
-        errors.push(`${key} is required and must be a valid UUID.`);
-      } else {
-        consent[key] = value.trim();
-      }
+    const policyId = body.policyId;
+    if (typeof policyId !== 'string' || !UUID_PATTERN.test(policyId.trim())) {
+      throw validationError('policyId is required and must be a valid UUID.');
     }
 
-    if (errors.length > 0) {
-      throw validationError(errors.join(' '));
-    }
-    return consent;
+    return { policyId: policyId.trim() };
   }
 
   static validateUserId(userId) {

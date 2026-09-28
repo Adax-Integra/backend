@@ -31,6 +31,7 @@ class PrivacyPolicyController {
   async registerConsent(req, res) {
     try {
       const consent = await registerPrivacyConsentUseCase.execute(
+        req.user.user_id,
         req.body,
         req.ip
       );
@@ -60,7 +61,7 @@ class PrivacyPolicyController {
   async getConsentStatus(req, res) {
     try {
       const consentStatus = await checkPrivacyConsentUseCase.execute(
-        req.query.userId
+        req.user.user_id
       );
 
       return res.status(200).json({

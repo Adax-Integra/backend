@@ -15,8 +15,9 @@ function requestError(message) {
  * stored evidence always matches a notice that really exists.
  */
 class RegisterPrivacyConsentUseCase {
-  async execute(body, ipAddress) {
-    const { userId, policyId } = PrivacyConsentValidator.validateBody(body);
+  async execute(userId, body, ipAddress) {
+    const validUserId = PrivacyConsentValidator.validateUserId(userId);
+    const { policyId } = PrivacyConsentValidator.validateBody(body);
 
     if (!ipAddress) {
       throw requestError('Could not determine the client IP address.');
@@ -29,7 +30,7 @@ class RegisterPrivacyConsentUseCase {
 
     // Accepting twice is not an error: the client may simply be retrying.
     const existing = await PrivacyPolicyConsentModel.findAccepted(
-      userId,
+      validUserId,
       policyId
     );
     if (existing) {
@@ -37,7 +38,7 @@ class RegisterPrivacyConsentUseCase {
     }
 
     return PrivacyPolicyConsentModel.create({
-      userId,
+      userId: validUserId,
       policyId,
       version: policy.version,
       ipAddress,
