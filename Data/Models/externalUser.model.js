@@ -1,13 +1,5 @@
 import { supabase } from '../Config/supabase.js';
 
-const EXTERNAL_PROFILE_PRESUBMISSION_COLUMNS = `
-  name,
-  last_name,
-  email,
-  birth_date,
-  phone
-`;
-
 /*
 Data Model for the "external-user".
 Domain use cases call this layer to talk to Supabase.
@@ -70,9 +62,7 @@ class ExternalUserModel {
     return data;
   }
 
-  /*
-  Find external user by email
-  */
+  // Find external user by email
   static async findByEmail(email) {
     const { data, error } = await supabase
       .from('user')
@@ -88,13 +78,11 @@ class ExternalUserModel {
     return data ?? null;
   }
 
-  /*
-  Find external user profile columns by id
-  */
+  // Find external user profile columns by id
   static async findProfileById(userId) {
     const { data, error } = await supabase
       .from('user')
-      .select(EXTERNAL_PROFILE_PRESUBMISSION_COLUMNS)
+      .select('*')
       .eq('user_id', userId)
       .is('deleted_at', null)
       .maybeSingle();
@@ -109,16 +97,14 @@ class ExternalUserModel {
     return data;
   }
 
-  /*
-  Update external user columns
-  */
+  // Update external user columns
   static async updateProfile(userId, payload) {
     const { data, error } = await supabase
       .from('user')
       .update(payload)
       .eq('user_id', userId)
       .is('deleted_at', null)
-      .select(EXTERNAL_PROFILE_PRESUBMISSION_COLUMNS)
+      .select('*')
       .single();
 
     if (error) {

@@ -1,9 +1,24 @@
 class PreSubmissionDTO {
   constructor({ user_id, profile, address, documents }) {
     this.user_id = user_id ?? null;
-    this.profile = profile ?? null;
-    this.address = address ?? null;
-    this.documents = documents ?? null;
+    this.profile = profile
+      ? {
+          name: profile.name,
+          last_name: profile.last_name,
+          birth_date: profile.birth_date,
+          phone: profile.phone,
+        }
+      : null;
+    this.address = address
+      ? { country: address.country, state: address.state, city: address.city }
+      : null;
+    this.documents = documents
+      ? {
+          document_id: documents.document_id,
+          identity_document_url: documents.identity_document_url,
+          proof_of_address_url: documents.proof_of_address_url,
+        }
+      : null;
   }
 
   toJSON() {

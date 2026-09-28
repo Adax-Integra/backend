@@ -1,27 +1,21 @@
 import { supabase } from '../Config/supabase.js';
 
-const DOCUMENT_COLUMNS = `
-  document_id,
-  identity_document,
-  proof_of_address
-`;
-
 const USER_DOCUMENTS_BUCKET = 'user-documents';
 const SIGNED_URL_EXPIRES_IN_SECONDS = 60 * 15;
 const SIGNED_URL_FIELDS = ['identity_document', 'proof_of_address'];
 
-/**
- * Data Model for external user access to the "user_documents" table.
- *
- * Files live in the "user-documents" Storage bucket.
- * The table stores path strings. attachSignedUrls turns those paths into
- * short-lived read URLs. API responses include the URLs, not the paths.
- */
+/*
+Data Model for external user access to the "user_documents" table.
+
+Files live in the "user-documents" Storage bucket.
+The table stores path strings. attachSignedUrls turns those paths into
+short-lived read URLs. API responses include the URLs, not the paths.
+*/
 class ExternalUserDocumentsModel {
   static async findByUserId(userId) {
     const { data, error } = await supabase
       .from('user_documents')
-      .select(DOCUMENT_COLUMNS)
+      .select('*')
       .eq('user_id', userId)
       .is('deleted_at', null)
       .maybeSingle();
@@ -39,7 +33,7 @@ class ExternalUserDocumentsModel {
       .update(payload)
       .eq('user_id', userId)
       .is('deleted_at', null)
-      .select(DOCUMENT_COLUMNS)
+      .select('*')
       .maybeSingle();
 
     if (error) {
