@@ -2,6 +2,8 @@ import GetLatestPrivacyPolicyUseCase from '../../Domain/UseCases/getLatestPrivac
 import RegisterPrivacyConsentUseCase from '../../Domain/UseCases/registerPrivacyConsent.usecase.js';
 import PrivacyPolicyDTO from '../DTOs/privacyPolicy.dto.js';
 import CheckPrivacyConsentUseCase from '../../Domain/UseCases/checkPrivacyConsent.usecase.js';
+import RegisterPrivacyConsentDTO from '../DTOs/registerPrivacyConsent.dto.js';
+import CheckPrivacyConsentDTO from '../DTOs/checkPrivacyConsent.dto.js';
 
 const getLatestPrivacyPolicyUseCase = new GetLatestPrivacyPolicyUseCase();
 const registerPrivacyConsentUseCase = new RegisterPrivacyConsentUseCase();
@@ -35,14 +37,11 @@ class PrivacyPolicyController {
         req.body,
         req.ip
       );
+      const payload = new RegisterPrivacyConsentDTO(consent).toJSON();
 
       return res.status(201).json({
         success: true,
-        data: {
-          consentId: consent.consent_id,
-          version: consent.version,
-          acceptedAt: consent.accepted_at,
-        },
+        data: payload,
       });
     } catch (error) {
       //Keep database details in server logs instead of exposing them.
@@ -63,15 +62,11 @@ class PrivacyPolicyController {
       const consentStatus = await checkPrivacyConsentUseCase.execute(
         req.user.user_id
       );
+      const payload = new CheckPrivacyConsentDTO(consentStatus).toJSON();
 
       return res.status(200).json({
         success: true,
-        data: {
-          hasAccepted: consentStatus.has_accepted,
-          policyId: consentStatus.policy_id,
-          version: consentStatus.version,
-          acceptedAt: consentStatus.accepted_at,
-        },
+        data: payload,
       });
     } catch (error) {
       //Keep database details in server logs instead of exposing them.
