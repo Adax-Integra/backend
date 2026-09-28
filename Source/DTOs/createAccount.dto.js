@@ -2,12 +2,11 @@
 // G-01
 
 class CreateAccountDTO {
-  constructor(data) {
-    this.userId = data.user_id;
-    this.name = data.name;
-    this.lastName = data.last_name;
-    this.email = data.email;
-    this.phone = data.phone;
+  constructor({ user }) {
+    this.userId = user.user_id;
+    this.name = user.name;
+    this.lastName = user.last_name;
+    this.email = user.email;
   }
 
   // return only the account information needed by the app
@@ -17,7 +16,6 @@ class CreateAccountDTO {
       name: this.name,
       lastName: this.lastName,
       email: this.email,
-      phone: this.phone,
     };
   }
 }

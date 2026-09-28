@@ -2,11 +2,8 @@
 // G-01
 
 import EmailValidator from './email.validator.js';
-import PhoneValidator from './phone.validator.js';
 import RequiredStringValidator from './requiredString.validator.js';
 
-const COUNTRY_CODE_PATTERN = /^\+\d{1,3}$/;
-const PHONE_NUMBER_PATTERN = /^\d{10}$/;
 const MIN_PASSWORD_LENGTH = 8;
 
 class CreateAccountValidator {
@@ -29,25 +26,6 @@ class CreateAccountValidator {
     const email = EmailValidator.validateEmail(body.email).toLowerCase();
 
     if (
-      typeof body.country_code !== 'string' ||
-      !COUNTRY_CODE_PATTERN.test(body.country_code)
-    ) {
-      throw new Error('country_code must be valid country code.');
-    }
-
-    if (
-      typeof body.phone !== 'string' ||
-      !PHONE_NUMBER_PATTERN.test(body.phone)
-    ) {
-      throw new Error('phone must contain exactly 10 digits.');
-    }
-
-    // store the phone with its country code
-    const phone = PhoneValidator.validatePhone(
-      `${body.country_code}${body.phone}`
-    );
-
-    if (
       typeof body.password !== 'string' ||
       body.password.length < MIN_PASSWORD_LENGTH
     ) {
@@ -63,7 +41,6 @@ class CreateAccountValidator {
       name,
       lastName,
       email,
-      phone,
       password: body.password,
     };
   }
