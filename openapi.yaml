@@ -75,7 +75,7 @@ paths:
   /api/external-user/register:
     post:
       tags: [External Users]
-      summary: Create an external user account (G-01)
+      summary: Create an external user account by self-signup
       description: Creates an external account and hashes the selected password before storage.
       requestBody:
         required: true
