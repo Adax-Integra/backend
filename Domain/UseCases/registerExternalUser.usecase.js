@@ -3,19 +3,20 @@ import bcrypt from 'bcrypt';
 
 import RegisterExternalUserValidator from '../../Data/Validators/registerExternalUser.validator.js';
 import RoleModel from '../../Data/Models/role.model.js';
-import RegisterExternalUserModel from '../../Data/Models/registerExternalUser.model.js';
+import externalUserModel from '../../Data/Models/externalUser.model.js';
 import MailerService from '../../Data/Services/mailer.service.js';
 
 const EXTERNAL_ROLE = 'external';
 const TEMP_PASSWORD_BYTES = 12;
 const BCRYPT_SALT_ROUNDS = 10;
 
+// External user signup by internal user use case
 class RegisterExternalUserUseCase {
   async execute(body) {
     const { profile, address } =
       RegisterExternalUserValidator.validateBody(body);
 
-    const existing = await RegisterExternalUserModel.findByEmail(profile.email);
+    const existing = await externalUserModel.findByEmail(profile.email);
     if (existing) {
       throw new Error('An external user with this email already exists.');
     }
@@ -30,7 +31,7 @@ class RegisterExternalUserUseCase {
       BCRYPT_SALT_ROUNDS
     );
 
-    const created = await RegisterExternalUserModel.create({
+    const created = await externalUserModel.create({
       profile,
       address,
       roleId,

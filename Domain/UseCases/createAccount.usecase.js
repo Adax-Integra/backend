@@ -4,18 +4,19 @@
 import bcrypt from 'bcrypt';
 
 import CreateAccountValidator from '../../Data/Validators/createAccount.validator.js';
-import CreateAccountModel from '../../Data/Models/createAccount.model.js';
+import ExternalUserModel from '../../Data/Models/externalUser.model.js';
 import RoleModel from '../../Data/Models/role.model.js';
 
 const EXTERNAL_ROLE = 'external';
 const BCRYPT_SALT_ROUNDS = 10;
 
+// External user self-sigup use case
 class CreateAccountUseCase {
   async execute(body) {
     // validate the information received from the registration form
     const account = CreateAccountValidator.validateBody(body);
 
-    const existingAccount = await CreateAccountModel.findByEmail(account.email);
+    const existingAccount = await ExternalUserModel.findByEmail(account.email);
 
     if (existingAccount) {
       const error = new Error('An account with this email already exists.');
@@ -32,11 +33,10 @@ class CreateAccountUseCase {
       BCRYPT_SALT_ROUNDS
     );
 
-    return CreateAccountModel.create({
+    return ExternalUserModel.createAccount({
       name: account.name,
       lastName: account.lastName,
       email: account.email,
-      phone: account.phone,
       hashedPassword,
       roleId,
     });

@@ -76,7 +76,7 @@ paths:
   /api/external-user/register:
     post:
       tags: [External Users]
-      summary: Create an external user account (G-01)
+      summary: Create an external user account by self-signup
       description: Creates an external account and hashes the selected password before storage.
       requestBody:
         required: true
@@ -88,8 +88,6 @@ paths:
               name: Maria
               last_name: Gomez
               email: maria.gomez@gmail.com
-              country_code: '+52'
-              phone: '5512345678'
               password: password123
               confirm_password: password123
       responses:
@@ -107,7 +105,7 @@ paths:
     get:
       tags: [External Users]
       summary: Get external user pre-submission data
-      description: Returns the user's profile, address, and documents. Document URLs are signed links.
+      description: Returns the user's profile (name, last name, birth date, phone), full address, and documents. Document URLs are signed links.
       responses:
         '200':
           description: Pre-submission data retrieved
@@ -119,7 +117,7 @@ paths:
     put:
       tags: [External Users]
       summary: Update external user pre-submission data
-      description: At least one field in profile, address, or documents is required. Document values are storage paths beginning with the user ID.
+      description: At least one field in profile, address, or documents is required. Document values are storage paths that start with the user ID, contain no empty, ".", or ".." segments, and must already exist in storage.
       requestBody:
         required: true
         content:
@@ -358,10 +356,8 @@ components:
       type: object
       nullable: true
       properties:
-        user_id: { type: string, format: uuid }
         name: { type: string }
         last_name: { type: string }
-        email: { type: string, format: email }
         birth_date: { type: string, format: date }
         phone: { type: string }
 
@@ -369,7 +365,6 @@ components:
       type: object
       nullable: true
       properties:
-        address_id: { type: string, format: uuid }
         address_line_1: { type: string }
         address_line_2: { type: string, nullable: true }
         neighborhood: { type: string }
@@ -396,8 +391,9 @@ components:
 
     PreSubmissionData:
       type: object
-      required: [profile, address, documents]
+      required: [user_id, profile, address, documents]
       properties:
+        user_id: { type: string, format: uuid }
         profile: { $ref: '#/components/schemas/Profile' }
         address: { $ref: '#/components/schemas/Address' }
         documents: { $ref: '#/components/schemas/Documents' }
@@ -432,8 +428,12 @@ components:
     DocumentsUpdate:
       type: object
       properties:
-        identity_document: { type: string, description: Storage path beginning with the user ID. }
-        proof_of_address: { type: string, description: Storage path beginning with the user ID. }
+        identity_document:
+          type: string
+          description: Storage path that starts with "{userId}/", has no empty, ".", or ".." segments, and already exists in storage.
+        proof_of_address:
+          type: string
+          description: Storage path that starts with "{userId}/", has no empty, ".", or ".." segments, and already exists in storage.
 
     PreSubmissionUpdateRequest:
       type: object
@@ -445,25 +445,22 @@ components:
 
     CreateAccountRequest:
       type: object
-      required: [name, last_name, email, country_code, phone, password, confirm_password]
+      required: [name, last_name, email, password, confirm_password]
       properties:
         name: { type: string }
         last_name: { type: string }
         email: { type: string, format: email }
-        country_code: { type: string, pattern: '^\\+\\d{1,3}$' }
-        phone: { type: string, pattern: '^\\d{10}$' }
         password: { type: string, format: password, minLength: 8 }
         confirm_password: { type: string, format: password, minLength: 8 }
 
     CreateAccountData:
       type: object
-      required: [userId, name, lastName, email, phone]
+      required: [userId, name, lastName, email]
       properties:
         userId: { type: string, format: uuid }
         name: { type: string }
         lastName: { type: string }
         email: { type: string, format: email }
-        phone: { type: string }
 
     CreateAccountSuccessResponse:
       type: object

@@ -129,6 +129,36 @@ class CaseModel {
 
     return data;
   }
+ //Creates a case with its help type and its three steps
+  static async create({
+    recordId,
+    writtenDescription,
+    writtenHelpsWanted,
+    hasLawyer,
+    helpId,
+    state,
+    stepStatus,
+  }) {
+    const {data, error} = await supabase.rpc ('create_case',{
+      p_record_id: recordId,
+      p_written_description: writtenDescription,
+      p_written_helps_wanted: writtenHelpsWanted,
+      p_has_lawyer: hasLawyer,
+      p_help_id: helpId,
+      p_state:state,
+      p_step_status: stepStatus,
+    });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    if (!data){
+      throw new Error('The case could not be created');
+    }
+
+    return data;
+  }
 }
 
 export default CaseModel;
