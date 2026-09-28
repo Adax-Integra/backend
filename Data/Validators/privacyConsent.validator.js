@@ -1,8 +1,6 @@
-const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+import ValidIdValidator from './validId.validator.js';
 
-function validationError(message) {
-  const error = new Error(message);
+function requestError(error) {
   error.status = 400;
   return error;
 }
@@ -10,22 +8,16 @@ function validationError(message) {
 class PrivacyConsentValidator {
   static validateBody(body = {}) {
     if (body === null || typeof body !== 'object' || Array.isArray(body)) {
-      throw validationError('Request body must be an object.');
+      throw requestError(new Error('Request body must be an object.'));
     }
 
-    const policyId = body.policyId;
-    if (typeof policyId !== 'string' || !UUID_PATTERN.test(policyId.trim())) {
-      throw validationError('policyId is required and must be a valid UUID.');
+    try {
+      return {
+        policyId: ValidIdValidator.validateId(body.policyId, 'policyId'),
+      };
+    } catch (error) {
+      throw requestError(error);
     }
-
-    return { policyId: policyId.trim() };
-  }
-
-  static validateUserId(userId) {
-    if (typeof userId !== 'string' || !UUID_PATTERN.test(userId.trim())) {
-      throw validationError('userId is required and must be a valid UUID.');
-    }
-    return userId.trim();
   }
 }
 

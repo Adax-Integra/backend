@@ -6,7 +6,6 @@ import { supabase } from '../Config/supabase.js';
  * Holds the evidence that a user accepted a specific version of the notice.
  */
 class PrivacyPolicyConsentModel {
-  // Returns the user´s acceptance of a notice, or null if there is none.
   static async findAccepted(userId, policyId) {
     const { data, error } = await supabase
       .from('privacy_policy_consent')
@@ -15,8 +14,6 @@ class PrivacyPolicyConsentModel {
       .eq('policy_id', policyId)
       .eq('is_accepted', true)
       .is('deleted_at', null)
-      // No unique constraint protects this table, so duplicates are possible
-      .limit(1)
       .maybeSingle();
 
     if (error) {

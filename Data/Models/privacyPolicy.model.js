@@ -11,16 +11,15 @@ const PRIVACY_POLICY_BUCKET = 'privacy-policy';
  * Data model for the "privacy_policy" catalogue table.
  *
  * The notice is a PDF that lives in the "privacy-policy" storage bucket.
- * This model only stores/reads the path string.
+ * This model only reads the path string.
  */
 class PrivacyPolicyModel {
-  // Returns the newest privacy notice that has not been soft deleted
   static async findLatest() {
     const { data, error } = await supabase
       .from('privacy_policy')
       .select(POLICY_COLUMNS)
       .is('deleted_at', null)
-      //version is a varchar: "1.10" would sort before "1.9"
+      // version is a varchar: "1.10" would sort before "1.9"
       .order('created_at', { ascending: false })
       .order('policy_id', { ascending: true })
       .limit(1)
@@ -37,7 +36,6 @@ class PrivacyPolicyModel {
     return data;
   }
 
-  // Returns a notice by id, or null when it does not exist or was deleted.
   static async findById(policyId) {
     const { data, error } = await supabase
       .from('privacy_policy')
@@ -53,7 +51,6 @@ class PrivacyPolicyModel {
     return data;
   }
 
-  //Builds the public URL for a stored PDF path.
   static getDocumentUrl(path) {
     if (!path || typeof path !== 'string') {
       return null;

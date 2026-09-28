@@ -1,4 +1,4 @@
-import PrivacyConsentValidator from '../../Data/Validators/privacyConsent.validator.js';
+import UserIdValidator from '../../Data/Validators/userId.validator.js';
 import PrivacyPolicyModel from '../../Data/Models/privacyPolicy.model.js';
 import PrivacyPolicyConsentModel from '../../Data/Models/privacyPolicyConsent.model.js';
 
@@ -9,7 +9,7 @@ import PrivacyPolicyConsentModel from '../../Data/Models/privacyPolicyConsent.mo
  */
 class CheckPrivacyConsentUseCase {
   async execute(userId) {
-    const validUserId = PrivacyConsentValidator.validateUserId(userId);
+    const validUserId = UserIdValidator.validateUserId(userId);
     const policy = await PrivacyPolicyModel.findLatest();
 
     const consent = await PrivacyPolicyConsentModel.findAccepted(

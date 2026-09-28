@@ -1,4 +1,5 @@
 import PrivacyConsentValidator from '../../Data/Validators/privacyConsent.validator.js';
+import UserIdValidator from '../../Data/Validators/userId.validator.js';
 import PrivacyPolicyModel from '../../Data/Models/privacyPolicy.model.js';
 import PrivacyPolicyConsentModel from '../../Data/Models/privacyPolicyConsent.model.js';
 
@@ -16,7 +17,7 @@ function requestError(message) {
  */
 class RegisterPrivacyConsentUseCase {
   async execute(userId, body, ipAddress) {
-    const validUserId = PrivacyConsentValidator.validateUserId(userId);
+    const validUserId = UserIdValidator.validateUserId(userId);
     const { policyId } = PrivacyConsentValidator.validateBody(body);
 
     if (!ipAddress) {
