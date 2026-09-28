@@ -10,7 +10,15 @@ class PreSubmissionDTO {
         }
       : null;
     this.address = address
-      ? { country: address.country, state: address.state, city: address.city }
+      ? {
+          address_line_1: address.address_line_1,
+          address_line_2: address.address_line_2,
+          neighborhood: address.neighborhood,
+          zip_code: address.zip_code,
+          country: address.country,
+          state: address.state,
+          city: address.city,
+        }
       : null;
     this.documents = documents
       ? {

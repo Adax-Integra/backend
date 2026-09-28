@@ -104,7 +104,7 @@ paths:
     get:
       tags: [External Users]
       summary: Get external user pre-submission data
-      description: Returns the user's profile (name, last name, birth date, phone), address (country, state, city), and documents. Document URLs are signed links.
+      description: Returns the user's profile (name, last name, birth date, phone), full address, and documents. Document URLs are signed links.
       responses:
         '200':
           description: Pre-submission data retrieved
@@ -314,6 +314,10 @@ components:
       type: object
       nullable: true
       properties:
+        address_line_1: { type: string }
+        address_line_2: { type: string, nullable: true }
+        neighborhood: { type: string }
+        zip_code: { type: string }
         country: { type: string }
         state: { type: string }
         city: { type: string }
