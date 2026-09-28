@@ -87,8 +87,6 @@ paths:
               name: Maria
               last_name: Gomez
               email: maria.gomez@gmail.com
-              country_code: '+52'
-              phone: '5512345678'
               password: password123
               confirm_password: password123
       responses:
@@ -118,7 +116,7 @@ paths:
     put:
       tags: [External Users]
       summary: Update external user pre-submission data
-      description: At least one field in profile, address, or documents is required. Document values are storage paths beginning with the user ID.
+      description: At least one field in profile, address, or documents is required. Document values are storage paths that start with the user ID, contain no empty, ".", or ".." segments, and must already exist in storage.
       requestBody:
         required: true
         content:
@@ -381,8 +379,12 @@ components:
     DocumentsUpdate:
       type: object
       properties:
-        identity_document: { type: string, description: Storage path beginning with the user ID. }
-        proof_of_address: { type: string, description: Storage path beginning with the user ID. }
+        identity_document:
+          type: string
+          description: Storage path that starts with "{userId}/", has no empty, ".", or ".." segments, and already exists in storage.
+        proof_of_address:
+          type: string
+          description: Storage path that starts with "{userId}/", has no empty, ".", or ".." segments, and already exists in storage.
 
     PreSubmissionUpdateRequest:
       type: object
@@ -394,25 +396,22 @@ components:
 
     CreateAccountRequest:
       type: object
-      required: [name, last_name, email, country_code, phone, password, confirm_password]
+      required: [name, last_name, email, password, confirm_password]
       properties:
         name: { type: string }
         last_name: { type: string }
         email: { type: string, format: email }
-        country_code: { type: string, pattern: '^\\+\\d{1,3}$' }
-        phone: { type: string, pattern: '^\\d{10}$' }
         password: { type: string, format: password, minLength: 8 }
         confirm_password: { type: string, format: password, minLength: 8 }
 
     CreateAccountData:
       type: object
-      required: [userId, name, lastName, email, phone]
+      required: [userId, name, lastName, email]
       properties:
         userId: { type: string, format: uuid }
         name: { type: string }
         lastName: { type: string }
         email: { type: string, format: email }
-        phone: { type: string }
 
     CreateAccountSuccessResponse:
       type: object
