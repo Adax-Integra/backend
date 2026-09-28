@@ -1,5 +1,6 @@
 import express from 'express';
 import privacyPolicyController from '../Controllers/privacyPolicy.controller.js';
+import authMiddleware from '../Middlewares/auth.middleware.js';
 
 const router = express.Router();
 
@@ -7,9 +8,17 @@ const router = express.Router();
 router.get('/privacy-policy/current', privacyPolicyController.getLatest);
 
 // POST /api/privacy-policy/consent
-router.post('/privacy-policy/consent', privacyPolicyController.registerConsent);
+router.post(
+  '/privacy-policy/consent',
+  authMiddleware,
+  privacyPolicyController.registerConsent
+);
 
 // GET /api/privacy-policy/consent
-router.get('/privacy-policy/consent', privacyPolicyController.getConsentStatus);
+router.get(
+  '/privacy-policy/consent',
+  authMiddleware,
+  privacyPolicyController.getConsentStatus
+);
 
 export default router;
