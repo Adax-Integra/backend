@@ -1,5 +1,9 @@
+//A missing or blank value is always a client error, so it carries a 400
+//status for the controllers that answer with error.status
 function validationError(message) {
-  return new Error(message);
+  const error = new Error(message);
+  error.status = 400;
+  return error;
 }
 
 class RequiredStringValidator {
