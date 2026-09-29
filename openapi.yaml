@@ -1,0 +1,791 @@
+openapi: 3.0.3
+info:
+  title: Adax Integra API
+  version: 1.0.0
+  description: Backend API for Adax Integra.
+
+servers:
+  - url: http://localhost:3001
+    description: Local development
+
+tags:
+  - name: Health
+  - name: Authentication
+  - name: Cases
+  - name: External Users
+  - name: Internal Users
+  - name: Privacy Policy
+
+paths:
+  /:
+    get:
+      tags: [Health]
+      summary: Get server status
+      responses:
+        '200':
+          description: Server is running
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerStatusResponse'
+              example: { status: server running }
+
+  /health:
+    get:
+      tags: [Health]
+      summary: Check service health
+      description: Used by mobile clients and load balancers.
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerStatusResponse'
+              example: { status: ok }
+
+  /api/auth/login:
+    post:
+      tags: [Authentication]
+      summary: Log in a user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            example:
+              email: maria.gomez@gmail.com
+              password: password123
+      responses:
+        '200':
+          description: Login succeeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginSuccessResponse'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500': { $ref: '#/components/responses/InternalServerError' }
+
+  /api/external-user/register:
+    post:
+      tags: [External Users]
+      summary: Create an external user account by self-signup
+      description: Creates an external account and hashes the selected password before storage.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAccountRequest'
+            example:
+              name: Maria
+              last_name: Gomez
+              email: maria.gomez@gmail.com
+              password: password123
+              confirm_password: password123
+      responses:
+        '201':
+          description: External user account created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateAccountSuccessResponse'
+        '400': { $ref: '#/components/responses/BadRequest' }
+
+  /api/external-users/{userId}/pre-submission:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+    get:
+      tags: [External Users]
+      summary: Get external user pre-submission data
+      description: Returns the user's profile (name, last name, birth date, phone), full address, and documents. Document URLs are signed links.
+      responses:
+        '200':
+          description: Pre-submission data retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PreSubmissionSuccessResponse'
+        '400': { $ref: '#/components/responses/BadRequest' }
+    put:
+      tags: [External Users]
+      summary: Update external user pre-submission data
+      description: At least one field in profile, address, or documents is required. Document values are storage paths that start with the user ID, contain no empty, ".", or ".." segments, and must already exist in storage.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PreSubmissionUpdateRequest'
+      responses:
+        '200':
+          description: Pre-submission data updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PreSubmissionSuccessResponse'
+        '400': { $ref: '#/components/responses/BadRequest' }
+  
+  /api/external-users/{userId}/cases:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+    post:
+      tags: [External Users]
+      summary: Create a case for an external user (R02)
+      description: Register a new case in the user's active record
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCaseRequest'
+      responses:
+        '201':
+          description: Case created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateCaseSuccessResponse'
+        '400':
+          description: Invalid userId or request body. When the body is invalid, errors has the reason for each field.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateCaseErrorResponse'
+              examples:
+                invalidBody:
+                  summary: Invalid body fields
+                  value:
+                    success: false
+                    error: writtenDescription must be a non-empty string. hasExternalSupport must be true or false
+                    errors:
+                      writtenDescription: writtenDescription must be a non-empty string.
+                      hasExternalSupport: hasExternalSupport must be true or false
+                invalidUserId:
+                  summary: Invalid userId
+                  value:
+                    success: false
+                    error: userId must be a valid UUID
+                    errors: null
+        '404':
+          description: The user has no active record
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateCaseErrorResponse'
+              example:
+                success: false
+                error: Record not found for this user
+                errors: null
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+
+  /api/internal-users/{userId}/allCases:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+    get:
+      tags: [Internal Users]
+      summary: Get all cases for a user (V-10)
+      responses:
+        '200':
+          description: Cases retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CaseSummaryListResponse'
+        '400': { $ref: '#/components/responses/BadRequest' }
+
+  /api/internal-users/external-users:
+    post:
+      tags: [Internal Users]
+      summary: Register an external user's expediente (R-03)
+      description: Creates the user, record, and address, then emails a temporary password.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterExternalUserRequest'
+      responses:
+        '201':
+          description: External user registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegisterExternalUserSuccessResponse'
+        '400': { $ref: '#/components/responses/BadRequest' }
+
+  /api/cases:
+    get:
+      tags: [Cases]
+      summary: List cases
+      description: Returns cases filtered by name or case ID and ordered by calculated urgency.
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Search'
+        - $ref: '#/components/parameters/Urgency'
+      responses:
+        '200':
+          description: Cases retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CaseListResponse'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+
+  /api/cases/{caseId}:
+    parameters:
+      - $ref: '#/components/parameters/CaseId'
+    get:
+      tags: [Cases]
+      summary: Get case details and progress (V-07)
+      responses:
+        '200':
+          description: Case details retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CaseDetailResponse'
+        '400': { $ref: '#/components/responses/BadRequest' }
+
+  /api/users/{userId}/cases:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+    get:
+      tags: [Cases]
+      summary: Get case summaries for a user
+      responses:
+        '200':
+          description: User cases retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CaseSummaryListResponse'
+        '400': { $ref: '#/components/responses/BadRequest' }
+
+  /api/privacy-policy/current:
+    get:
+      tags: [Privacy Policy]
+      summary: Get the privacy notice in force (V-02)
+      description: Returns the newest notice that has not been soft deleted. The notice is a PDF and documentUrl is a public link to it. policyId and version must be sent back when the user accepts.
+      responses:
+        '200':
+          description: Notice in force retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrivacyPolicySuccessResponse'
+        '500': { $ref: '#/components/responses/InternalServerError' }
+
+  /api/privacy-policy/consent:
+    get:
+      tags: [Privacy Policy]
+      summary: Check whether a user accepted the notice in force (V-02)
+      description: Used on start-up to decide whether the privacy screen must be shown. It answers against the notice currently in force so publishing a new version makes every user consent again.
+      responses:
+        '200':
+          description: Consent status retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsentStatusSuccessResponse'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+    post:
+      tags: [Privacy Policy]
+      summary: Record that a user accepted the notice (V-02)
+      description: The server sets the version the timestamp the client IP and is_accepted. Calling it again for the same user and notice returns the existing consent instead of creating a duplicate.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterConsentRequest'
+            example:
+              policyId: ee5d5ef6-e18c-4d20-81cc-6fb4106bff48
+      responses:
+        '201':
+          description: Consent recorded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegisterConsentSuccessResponse'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+
+components:
+  parameters:
+    UserId:
+      name: userId
+      in: path
+      required: true
+      description: User UUID
+      schema: { type: string, format: uuid }
+    CaseId:
+      name: caseId
+      in: path
+      required: true
+      description: Case UUID
+      schema: { type: string, format: uuid }
+    Page:
+      name: page
+      in: query
+      description: One-based page number.
+      schema: { type: integer, minimum: 1, default: 1 }
+    Limit:
+      name: limit
+      in: query
+      description: Number of cases per page.
+      schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+    Search:
+      name: search
+      in: query
+      description: Case ID or user name search text.
+      schema: { type: string, default: '' }
+    Urgency:
+      name: urgency
+      in: query
+      description: Urgency filter. Empty and Todas return all urgency levels.
+      schema:
+        type: string
+        enum: ['', Todas, Alta, Media, Baja, Sin evaluar]
+        default: ''
+  
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer 
+      bearerFormat: JWT
+      description: Token returned by /api/auth/login. It expires after 120 hours
+
+  responses:
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    Unauthorized:
+      description: Missing, invalid or expired token.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    Forbidden:
+      description: The token belongs to another user and the caller is not staff
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  schemas:
+    ServerStatusResponse:
+      type: object
+      required: [status]
+      properties: { status: { type: string } }
+
+    ErrorResponse:
+      type: object
+      required: [success, error]
+      properties:
+        success: { type: boolean, example: false }
+        error: { type: string }
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string, format: password }
+
+    LoginData:
+      type: object
+      required: [token, user_id]
+      properties:
+        token: { type: string }
+        user_id: { type: string, format: uuid }
+
+    LoginSuccessResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success: { type: boolean, example: true }
+        data: { $ref: '#/components/schemas/LoginData' }
+
+    Profile:
+      type: object
+      nullable: true
+      properties:
+        name: { type: string }
+        last_name: { type: string }
+        birth_date: { type: string, format: date }
+        phone: { type: string }
+
+    Address:
+      type: object
+      nullable: true
+      properties:
+        address_line_1: { type: string }
+        address_line_2: { type: string, nullable: true }
+        neighborhood: { type: string }
+        zip_code: { type: string }
+        country: { type: string }
+        state: { type: string }
+        city: { type: string }
+
+    Documents:
+      type: object
+      nullable: true
+      properties:
+        document_id: { type: string, format: uuid }
+        identity_document_url:
+          type: string
+          format: uri
+          nullable: true
+          description: Signed URL that expires after 15 minutes.
+        proof_of_address_url:
+          type: string
+          format: uri
+          nullable: true
+          description: Signed URL that expires after 15 minutes.
+
+    PreSubmissionData:
+      type: object
+      required: [user_id, profile, address, documents]
+      properties:
+        user_id: { type: string, format: uuid }
+        profile: { $ref: '#/components/schemas/Profile' }
+        address: { $ref: '#/components/schemas/Address' }
+        documents: { $ref: '#/components/schemas/Documents' }
+
+    PreSubmissionSuccessResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success: { type: boolean, example: true }
+        data: { $ref: '#/components/schemas/PreSubmissionData' }
+
+    ProfileUpdate:
+      type: object
+      properties:
+        name: { type: string }
+        last_name: { type: string }
+        email: { type: string, format: email }
+        birth_date: { type: string, format: date }
+        phone: { type: string }
+
+    AddressUpdate:
+      type: object
+      properties:
+        address_line_1: { type: string }
+        address_line_2: { type: string, nullable: true }
+        neighborhood: { type: string }
+        zip_code: { type: string }
+        country: { type: string }
+        state: { type: string }
+        city: { type: string }
+
+    DocumentsUpdate:
+      type: object
+      properties:
+        identity_document:
+          type: string
+          description: Storage path that starts with "{userId}/", has no empty, ".", or ".." segments, and already exists in storage.
+        proof_of_address:
+          type: string
+          description: Storage path that starts with "{userId}/", has no empty, ".", or ".." segments, and already exists in storage.
+
+    PreSubmissionUpdateRequest:
+      type: object
+      minProperties: 1
+      properties:
+        profile: { $ref: '#/components/schemas/ProfileUpdate' }
+        address: { $ref: '#/components/schemas/AddressUpdate' }
+        documents: { $ref: '#/components/schemas/DocumentsUpdate' }
+
+    CreateAccountRequest:
+      type: object
+      required: [name, last_name, email, password, confirm_password]
+      properties:
+        name: { type: string }
+        last_name: { type: string }
+        email: { type: string, format: email }
+        password: { type: string, format: password, minLength: 8 }
+        confirm_password: { type: string, format: password, minLength: 8 }
+
+    CreateAccountData:
+      type: object
+      required: [userId, name, lastName, email]
+      properties:
+        userId: { type: string, format: uuid }
+        name: { type: string }
+        lastName: { type: string }
+        email: { type: string, format: email }
+
+    CreateAccountSuccessResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success: { type: boolean, example: true }
+        data: { $ref: '#/components/schemas/CreateAccountData' }
+
+    RegisterExternalUserProfile:
+      type: object
+      required: [name, last_name, email]
+      properties:
+        name: { type: string }
+        last_name: { type: string }
+        email: { type: string, format: email }
+        birth_date: { type: string, format: date }
+        phone: { type: string }
+
+    RegisterExternalUserAddress:
+      type: object
+      required: [address_line_1, neighborhood, zip_code, country, state, city]
+      properties:
+        address_line_1: { type: string }
+        address_line_2: { type: string, nullable: true }
+        neighborhood: { type: string }
+        zip_code: { type: string }
+        country: { type: string }
+        state: { type: string }
+        city: { type: string }
+
+    RegisterExternalUserRequest:
+      type: object
+      required: [profile, address]
+      properties:
+        profile: { $ref: '#/components/schemas/RegisterExternalUserProfile' }
+        address: { $ref: '#/components/schemas/RegisterExternalUserAddress' }
+
+    RegisterExternalUserData:
+      type: object
+      properties:
+        user_id: { type: string, format: uuid }
+        name: { type: string }
+        last_name: { type: string }
+        email: { type: string, format: email }
+        birth_date: { type: string, format: date, nullable: true }
+        phone: { type: string, nullable: true }
+        record_id: { type: string, format: uuid }
+        address_id: { type: string, format: uuid }
+
+    RegisterExternalUserSuccessResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success: { type: boolean, example: true }
+        data: { $ref: '#/components/schemas/RegisterExternalUserData' }
+
+    CaseListItem:
+      type: object
+      properties:
+        case_id: { type: string, format: uuid }
+        name: { type: string }
+        violence_types:
+          type: array
+          items: { type: string }
+        state: { type: string, nullable: true }
+        severity: { type: integer, nullable: true, minimum: 1, maximum: 10 }
+        urgency: { type: string, enum: [Alta, Media, Baja, Sin evaluar] }
+        updated_at: { type: string, format: date-time, nullable: true }
+
+    CaseListData:
+      type: object
+      required: [cases, total, page, limit]
+      properties:
+        cases:
+          type: array
+          items: { $ref: '#/components/schemas/CaseListItem' }
+        total: { type: integer, minimum: 0 }
+        page: { type: integer, minimum: 1 }
+        limit: { type: integer, minimum: 1, maximum: 100 }
+
+    CaseListResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success: { type: boolean, example: true }
+        data: { $ref: '#/components/schemas/CaseListData' }
+
+    CaseSummary:
+      type: object
+      properties:
+        caseId: { type: string, format: uuid, nullable: true }
+        writtenDescription: { type: string, nullable: true }
+        writtenHelpsWanted: { type: string, nullable: true }
+        hasLawyer: { type: boolean }
+        state: { type: string, nullable: true }
+        createdAt: { type: string, format: date-time, nullable: true }
+        updatedAt: { type: string, format: date-time, nullable: true }
+        helps: { type: array, items: { type: string } }
+        violenceTypes: { type: array, items: { type: string } }
+
+    CaseSummaryListResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success: { type: boolean, example: true }
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/CaseSummary' }
+
+    CreateCaseRequest:
+      type: object
+      required: [writtenDescription, writtenHelpsWanted, hasExternalSupport]
+      properties:
+        writtenDescription:
+          type: string
+          minLength: 1
+          maxLength: 5000
+          description: Case description. Cannot be black.
+        writtenHelpsWanted:
+          type: string
+          minLength: 1
+          maxLength: 400
+          description: Help the user expects to recieve, as free tet. Cannot be blank.
+        hasExternalSupport:
+          type: boolean
+          description: Whether the user has external support (Yes/No in the app). Must be a JSON boolean
+      
+    CreateCaseData:
+      type: object
+      properties:
+        caseId: {type: string, format: uuid}
+        state: {type: string, example: NUEVO}
+        createdAt: {type: string, format: date-time}
+        writtenDescription: {type: string}
+        writtenHelpsWanted: {type: string}
+        hasLawyer:
+          type: boolean
+          description: Same value sent as hasExternalSupport.
+        helps:
+          type: array
+          items: {type: string}
+          description: Always empty. Kept so the shape matches CaseSummary.
+
+    CreateCaseSuccessResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success: {type: boolean, example: true}
+        data: { $ref: '#/components/schemas/CreateCaseData'}
+
+    CreateCaseErrorResponse:
+      type: object
+      required: [success, error]
+      properties:
+        success: {type: boolean, example: false}
+        error: {type: string}
+        errors:
+          type: object
+          nullable: true
+          additionalProperties: {type: string}
+          description: Reason for each invalid body field
+
+    CaseDetail:
+      type: object
+      properties:
+        case_id: { type: string, format: uuid }
+        case_number: { type: string, nullable: true }
+        state: { type: string, nullable: true }
+        record_id: { type: string, format: uuid }
+        record:
+          type: object
+          properties:
+            record_id: { type: string, format: uuid }
+            user:
+              type: object
+              properties:
+                user_id: { type: string, format: uuid }
+                name: { type: string }
+                last_name: { type: string }
+        case_steps:
+          type: array
+          items:
+            type: object
+            properties:
+              case_step_id: { type: string, format: uuid }
+              step_number: { type: integer }
+              status: { type: string }
+
+    CaseDetailResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success: { type: boolean, example: true }
+        data: { $ref: '#/components/schemas/CaseDetail' }
+
+    PrivacyPolicyData:
+      type: object
+      required: [policyId, version, documentUrl]
+      properties:
+        policyId: { type: string, format: uuid }
+        version: { type: string, example: '1.0.0' }
+        documentUrl:
+          type: string
+          format: uri
+          nullable: true
+          description: Public link to the notice PDF in Storage.
+
+    PrivacyPolicySuccessResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success: { type: boolean, example: true }
+        data: { $ref: '#/components/schemas/PrivacyPolicyData' }
+
+    ConsentStatusData:
+      type: object
+      required: [hasAccepted, policyId, version, acceptedAt]
+      properties:
+        hasAccepted: { type: boolean, description: Whether the user accepted the notice in force. }
+        policyId: { type: string, format: uuid }
+        version: { type: string, example: '1.0.0' }
+        acceptedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: UTC. Null when the user has not accepted yet.
+
+    ConsentStatusSuccessResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success: { type: boolean, example: true }
+        data: { $ref: '#/components/schemas/ConsentStatusData' }
+
+    RegisterConsentRequest:
+      type: object
+      required: [policyId]
+      properties:
+        policyId: { type: string, format: uuid, description: The notice that was shown to the user. }
+
+    ConsentData:
+      type: object
+      required: [consentId, version, acceptedAt]
+      properties:
+        consentId: { type: string, format: uuid }
+        version: { type: string, example: '1.0.0' }
+        acceptedAt: { type: string, format: date-time, description: UTC timestamp generated by the database. }
+
+    RegisterConsentSuccessResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success: { type: boolean, example: true }
+        data: { $ref: '#/components/schemas/ConsentData' }
