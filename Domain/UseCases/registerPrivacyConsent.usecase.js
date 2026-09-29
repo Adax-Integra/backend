@@ -1,5 +1,4 @@
-import PrivacyConsentValidator from '../../Data/Validators/privacyConsent.validator.js';
-import UserIdValidator from '../../Data/Validators/userId.validator.js';
+import ValidIdValidator from '../../Data/Validators/validId.validator.js';
 import PrivacyPolicyModel from '../../Data/Models/privacyPolicy.model.js';
 import PrivacyPolicyConsentModel from '../../Data/Models/privacyPolicyConsent.model.js';
 
@@ -17,8 +16,16 @@ function requestError(message) {
  */
 class RegisterPrivacyConsentUseCase {
   async execute(userId, body, ipAddress) {
-    const validUserId = UserIdValidator.validateUserId(userId);
-    const { policyId } = PrivacyConsentValidator.validateBody(body);
+    const validUserId = ValidIdValidator.validateId(userId, 'userId');
+
+    let policyId;
+    try {
+      policyId = ValidIdValidator.validateId(body?.policyId, 'policyId');
+    } catch (error) {
+      // The policy id comes from the client, so a bad value is a 400. The
+      // shared validator throws without a status.
+      throw requestError(error.message);
+    }
 
     if (!ipAddress) {
       throw requestError('Could not determine the client IP address.');
