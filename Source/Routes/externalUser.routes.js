@@ -24,7 +24,12 @@ router.put(
   externalUserController.editPreSubmissionData
 );
 
-//R-02 Create a caso once the user confirmed her data in R-01
-router.post('/external-users/:userId/cases', externalUserController.createCase);
+//R-02 Create a case once the user confirmed her data in R-01
+router.post(
+  '/external-users/:userId/cases',
+  authMiddleware,
+  ownDataOnly,
+  externalUserController.createCase
+);
 
 export default router;

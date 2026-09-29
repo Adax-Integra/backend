@@ -176,7 +176,6 @@ class CaseModel {
     writtenDescription,
     writtenHelpsWanted,
     hasLawyer,
-    helpId,
     state,
     stepStatus,
   }) {
@@ -185,7 +184,6 @@ class CaseModel {
       p_written_description: writtenDescription,
       p_written_helps_wanted: writtenHelpsWanted,
       p_has_lawyer: hasLawyer,
-      p_help_id: helpId,
       p_state: state,
       p_step_status: stepStatus,
     });

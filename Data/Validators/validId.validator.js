@@ -3,11 +3,15 @@ import RequiredStringValidator from './requiredString.validator.js';
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
+//A malformed id is a client error, so it carries a 400 status for the
+//controllers that answer with error.status
 function validationError(message) {
-  return new Error(message);
+  const error = new Error(message);
+  error.status = 400;
+  return error;
 }
 
-//Shared by every table whose primary key is a UUID (users, help_types, cases, etc)
+//Shared by every table whose primary key is a UUID (users, cases, records, etc)
 class ValidIdValidator {
   static validateId(value, fieldName) {
     const id = RequiredStringValidator.validateRequiredString(value, fieldName);
