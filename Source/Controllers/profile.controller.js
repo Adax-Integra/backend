@@ -3,7 +3,7 @@ import ProfileUseCase from '../../domain/useCases/profile.usecase.js';
 const profileUseCase = new ProfileUseCase();
 
 class ProfileController {
-  async getProfile(req, res) {
+  async getProfileByUserId(req, res) {
     const userId = req.user.id;
 
     try {

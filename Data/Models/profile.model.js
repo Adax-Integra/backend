@@ -13,7 +13,7 @@ const PROFILE_COLUMNS = `
 
 //model to be able to display needed information to users in profile tab (g-13)
 class ProfileModel {
-  static async findByUserId(userId) {
+  static async getProfileByUserId(userId) {
     const { data, error } = await supabase
       .from('profile')
       .select(PROFILE_COLUMNS)
