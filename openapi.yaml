@@ -132,6 +132,63 @@ paths:
               schema:
                 $ref: '#/components/schemas/PreSubmissionSuccessResponse'
         '400': { $ref: '#/components/responses/BadRequest' }
+  
+  /api/external-users/{userId}/cases:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+    post:
+      tags: [External Users]
+      summary: Create a case for an external user (R02)
+      description: Register a new case in the user's active record
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCaseRequest'
+      responses:
+        '201':
+          description: Case created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateCaseSuccessResponse'
+        '400':
+          description: Invalid userId or request body. When the body is invalid, errors has the reason for each field.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateCaseErrorResponse'
+              examples:
+                invalidBody:
+                  summary: Invalid body fields
+                  value:
+                    success: false
+                    error: writtenDescription must be a non-empty string. hasExternalSupport must be true or false
+                    errors:
+                      writtenDescription: writtenDescription must be a non-empty string.
+                      hasExternalSupport: hasExternalSupport must be true or false
+                invalidUserId:
+                  summary: Invalid userId
+                  value:
+                    success: false
+                    error: userId must be a valid UUID
+                    errors: null
+        '404':
+          description: The user has no active record
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateCaseErrorResponse'
+              example:
+                success: false
+                error: Record not found for this user
+                errors: null
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
 
   /api/internal-users/{userId}/allCases:
     parameters:
@@ -305,10 +362,27 @@ components:
         type: string
         enum: ['', Todas, Alta, Media, Baja, Sin evaluar]
         default: ''
+  
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer 
+      bearerFormat: JWT
+      description: Token returned by /api/auth/login. It expires after 120 hours
 
   responses:
     BadRequest:
       description: Invalid request
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    Unauthorized:
+      description: Missing, invalid or expired token.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    Forbidden:
+      description: The token belongs to another user and the caller is not staff
       content:
         application/json:
           schema: { $ref: '#/components/schemas/ErrorResponse' }
@@ -569,6 +643,59 @@ components:
         data:
           type: array
           items: { $ref: '#/components/schemas/CaseSummary' }
+
+    CreateCaseRequest:
+      type: object
+      required: [writtenDescription, writtenHelpsWanted, hasExternalSupport]
+      properties:
+        writtenDescription:
+          type: string
+          minLength: 1
+          maxLength: 5000
+          description: Case description. Cannot be black.
+        writtenHelpsWanted:
+          type: string
+          minLength: 1
+          maxLength: 400
+          description: Help the user expects to recieve, as free tet. Cannot be blank.
+        hasExternalSupport:
+          type: boolean
+          description: Whether the user has external support (Yes/No in the app). Must be a JSON boolean
+      
+    CreateCaseData:
+      type: object
+      properties:
+        caseId: {type: string, format: uuid}
+        state: {type: string, example: NUEVO}
+        createdAt: {type: string, format: date-time}
+        writtenDescription: {type: string}
+        writtenHelpsWanted: {type: string}
+        hasLawyer:
+          type: boolean
+          description: Same value sent as hasExternalSupport.
+        helps:
+          type: array
+          items: {type: string}
+          description: Always empty. Kept so the shape matches CaseSummary.
+
+    CreateCaseSuccessResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success: {type: boolean, example: true}
+        data: { $ref: '#/components/schemas/CreateCaseData'}
+
+    CreateCaseErrorResponse:
+      type: object
+      required: [success, error]
+      properties:
+        success: {type: boolean, example: false}
+        error: {type: string}
+        errors:
+          type: object
+          nullable: true
+          additionalProperties: {type: string}
+          description: Reason for each invalid body field
 
     CaseDetail:
       type: object

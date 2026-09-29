@@ -9,35 +9,32 @@ import CaseModel from '../../Data/Models/case.model.js';
 const INITIAL_CASE_STATE = 'NUEVO';
 const INITIAL_STEP_STATUS = 'PENDIENTE';
 
-//Reached only after the user confirms her data in R-01, wich means the
+//Reached only after the user confirms her data in R-01, which means the
 // expediente ("record") is expected to exist by the time this runs
-class CreateCaseUseCase{
-    async execute(userId, body){
-        const validUserId = UserIdValidator.validateUserId(userId);
-        const {writtenDescription, writtenHelpsWanted, hasExternalSupport}=
-            CreateCaseValidator.validateCreateBody(body);
+class CreateCaseUseCase {
+  async execute(userId, body) {
+    const validUserId = UserIdValidator.validateUserId(userId);
+    const { writtenDescription, writtenHelpsWanted, hasExternalSupport } =
+      CreateCaseValidator.validateCreateBody(body);
 
-        const record = await RecordModel.findActiveByUserId(validUserId);
+    const record = await RecordModel.findActiveByUserId(validUserId);
 
-        const created = await CaseModel.create({
-            recordId: record.record_id,
-            writtenDescription,
-            writtenHelpsWanted,
-            hasLawyer: hasExternalSupport,
-            helpId: helpType.help_id,
-            state: INITIAL_CASE_STATE,
-            stepStatus: INITIAL_STEP_STATUS,
-        });
+    const created = await CaseModel.create({
+      recordId: record.record_id,
+      writtenDescription,
+      writtenHelpsWanted,
+      hasLawyer: hasExternalSupport,
+      state: INITIAL_CASE_STATE,
+      stepStatus: INITIAL_STEP_STATUS,
+    });
 
-        return{
-            ...created,
-            written_description: writtenDescription,
-            written_helps_wanted: writtenHelpsWanted,
-            has_lawyer: hasExternalSupport,
-            helps:[helpType.description],
-        };
-
-    }
+    return {
+      ...created,
+      written_description: writtenDescription,
+      written_helps_wanted: writtenHelpsWanted,
+      has_lawyer: hasExternalSupport,
+    };
+  }
 }
 
 export default CreateCaseUseCase;
