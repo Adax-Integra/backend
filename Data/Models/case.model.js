@@ -30,7 +30,7 @@ const CASE_COLUMNS = `
 //  has_lawyer for case (V-11)
 
 const CASE_DETAIL_COLUMNS = `
-   case_id,
+  case_id,
   case_number,
   written_description,
   written_helps_wanted,
