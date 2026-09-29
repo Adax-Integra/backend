@@ -3,10 +3,12 @@ import ListCasesUseCase from '../../Domain/UseCases/listCases.usecase.js';
 import CaseListDTO from '../DTOs/caseList.dto.js';
 import GetAllCasesFromUser from '../../Domain/UseCases/getAllCasesFromUser.usecase.js';
 import CaseSummaryDTO from '../DTOs/getAllCases.dto.js';
+import CloseCaseUseCase from '../../Domain/UseCases/closeCase.usecase.js';
 
 const listCasesUseCase = new ListCasesUseCase();
 const getCaseByIdUseCase = new GetCaseByIdUseCase();
 const getAllCasesFromUser = new GetAllCasesFromUser();
+const closeCaseUseCase = new CloseCaseUseCase();
 
 class CaseController {
   async listCases(req, res) {
@@ -107,6 +109,48 @@ class CaseController {
       return res.status(400).json({
         success: false,
         error: error.message,
+      });
+    }
+  }
+
+  //  handles patch request to close a case (V-11) with atomic operation to ensure it only updates if not already closed
+  async closeCase(req, res) {
+    try {
+      const { caseId } = req.params;
+
+      const closedCase = await closeCaseUseCase.execute(caseId);
+
+      return res.status(200).json({
+        success: true,
+        data: {
+          caseId: closedCase.case_id,
+          state: closedCase.state,
+          updatedAt: closedCase.updated_at,
+        },
+      });
+    } catch (error) {
+      if (
+        error.message === 'caseId is required' ||
+        error.message === 'caseId must be a valid UUID'
+      ) {
+        return res.status(400).json({
+          success: false,
+          error: error.message,
+        });
+      }
+
+      if (error.message && error.message.includes('already closed')) {
+        return res.status(409).json({
+          success: false,
+          error: error.message,
+        });
+      }
+
+      console.error('Failed to close case:', error);
+
+      return res.status(500).json({
+        success: false,
+        error: 'Unable to close case.',
       });
     }
   }
