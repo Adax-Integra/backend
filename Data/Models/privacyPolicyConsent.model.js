@@ -9,7 +9,7 @@ class PrivacyPolicyConsentModel {
   static async findAccepted(userId, policyId) {
     const { data, error } = await supabase
       .from('privacy_policy_consent')
-      .select('consent_id, version, accepted_at')
+      .select('*')
       .eq('user_id', userId)
       .eq('policy_id', policyId)
       .eq('is_accepted', true)
@@ -34,7 +34,7 @@ class PrivacyPolicyConsentModel {
         is_accepted: true,
         ip_address: ipAddress,
       })
-      .select('consent_id, version, accepted_at')
+      .select('*')
       .single();
 
     if (error) {

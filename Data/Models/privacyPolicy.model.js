@@ -1,10 +1,5 @@
 import { supabase } from '../Config/supabase.js';
 
-const POLICY_COLUMNS = `
-    policy_id,
-    version,
-    content
-`;
 const PRIVACY_POLICY_BUCKET = 'privacy-policy';
 
 /**
@@ -17,7 +12,7 @@ class PrivacyPolicyModel {
   static async findLatest() {
     const { data, error } = await supabase
       .from('privacy_policy')
-      .select(POLICY_COLUMNS)
+      .select('*')
       .is('deleted_at', null)
       // version is a varchar: "1.10" would sort before "1.9"
       .order('created_at', { ascending: false })
@@ -39,7 +34,7 @@ class PrivacyPolicyModel {
   static async findById(policyId) {
     const { data, error } = await supabase
       .from('privacy_policy')
-      .select(POLICY_COLUMNS)
+      .select('*')
       .eq('policy_id', policyId)
       .is('deleted_at', null)
       .maybeSingle();
