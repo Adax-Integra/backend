@@ -28,4 +28,7 @@ router.get(
   caseController.listCases
 );
 
+// Updates the state of a case to "Closed" if it is not already closed for V-11 close button
+router.patch('/cases/:caseId/close', caseController.closeCase);
+
 export default router;
