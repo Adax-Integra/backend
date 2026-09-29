@@ -1,6 +1,3 @@
-// Created by Lakshmi Jara on 23/09/26.
-// G-01
-
 import bcrypt from 'bcrypt';
 
 import CreateAccountValidator from '../../Data/Validators/createAccount.validator.js';
@@ -37,6 +34,7 @@ class CreateAccountUseCase {
       name: account.name,
       lastName: account.lastName,
       email: account.email,
+      phone: account.phone,
       hashedPassword,
       roleId,
     });
