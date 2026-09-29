@@ -358,10 +358,27 @@ components:
         type: string
         enum: ['', Todas, Alta, Media, Baja, Sin evaluar]
         default: ''
+  
+  securitySchemes:
+    BearerAuth:
+      type: hhtp
+      scheme: bearer 
+      bearerFormat: JWT
+      description: Token returned by /api/auth/login. It expires after 120 hours
 
   responses:
     BadRequest:
       description: Invalid request
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    Unauthorized:
+      description: Missing, invalid or expired token.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    Forbidden:
+      description: The token belongs to another user and the caller is not staff
       content:
         application/json:
           schema: { $ref: '#/components/schemas/ErrorResponse' }
