@@ -140,6 +140,8 @@ paths:
       tags: [External Users]
       summary: Create a case for an external user (R02)
       description: Register a new case in the user's active record
+      security:
+        - BearerAuth: []
       requestBody:
         required: true
         content:
@@ -152,7 +154,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CreateSuccessResponse'
+                $ref: '#/components/schemas/CreateCaseSuccessResponse'
         '400':
           description: Invalid userId or request body. When the body is invalid, errors has the reason for each field.
           content:
@@ -363,7 +365,7 @@ components:
   
   securitySchemes:
     BearerAuth:
-      type: hhtp
+      type: http
       scheme: bearer 
       bearerFormat: JWT
       description: Token returned by /api/auth/login. It expires after 120 hours
