@@ -129,7 +129,27 @@ class CaseModel {
 
     return data;
   }
- //Creates a case with its help type and its three steps
+
+  // Closes a case atomically so that it only updates if it is not already Closed for V-11 cancel button
+
+  static async closeCase(caseId) {
+    const { data, error } = await supabase
+      .from('case')
+      .update({ state: 'Closed' })
+      .eq('case_id', caseId)
+      .neq('state', 'Closed')
+      .is('deleted_at', null)
+      .select()
+      .maybeSingle();
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return data;
+  }
+
+  //Creates a case with its help type and its three steps
   static async create({
     recordId,
     writtenDescription,
@@ -139,13 +159,13 @@ class CaseModel {
     state,
     stepStatus,
   }) {
-    const {data, error} = await supabase.rpc ('create_case',{
+    const { data, error } = await supabase.rpc('create_case', {
       p_record_id: recordId,
       p_written_description: writtenDescription,
       p_written_helps_wanted: writtenHelpsWanted,
       p_has_lawyer: hasLawyer,
       p_help_id: helpId,
-      p_state:state,
+      p_state: state,
       p_step_status: stepStatus,
     });
 
@@ -153,7 +173,7 @@ class CaseModel {
       throw new Error(error.message);
     }
 
-    if (!data){
+    if (!data) {
       throw new Error('The case could not be created');
     }
 
