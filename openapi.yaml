@@ -147,44 +147,46 @@ paths:
             schema:
               $ref: '#/components/schemas/CreateCaseRequest'
       responses:
-      '202':
-        description: Case created
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateAccountSuccessResponse'
-      '400':
-        description: Invalid userId or request body. When the body is invalid, errors has the reason for each field.
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateCaseErrorResponse'
-            exaples:
-              invalidBody:
-                summary: Invalid body fields
-                value:
-                  success: false
-                  error: writtenDescription must be a non-empty string. hasExternalSupport must be true or false
-                  erors:
-                    writtenDescription: writtenDescription must be a non-empty string.
-                    hasExternalSupport: hasExternalSupport must be true or false
-              invalidUserId:
-                summary: Invalid userId
-                value:
-                  success: false
-                  error: userId must be a valid UUID
-                  errors: null
-      '404':
-        description: The user has no active record
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateCaseErrorResponse'
-            example:
-              success: false
-              error: Record not found for this user
-              errors: null
-      '500':{ $ref: '#/components/responses/InternalServerError'}
+        '201':
+          description: Case created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateSuccessResponse'
+        '400':
+          description: Invalid userId or request body. When the body is invalid, errors has the reason for each field.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateCaseErrorResponse'
+              examples:
+                invalidBody:
+                  summary: Invalid body fields
+                  value:
+                    success: false
+                    error: writtenDescription must be a non-empty string. hasExternalSupport must be true or false
+                    errors:
+                      writtenDescription: writtenDescription must be a non-empty string.
+                      hasExternalSupport: hasExternalSupport must be true or false
+                invalidUserId:
+                  summary: Invalid userId
+                  value:
+                    success: false
+                    error: userId must be a valid UUID
+                    errors: null
+        '404':
+          description: The user has no active record
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateCaseErrorResponse'
+              example:
+                success: false
+                error: Record not found for this user
+                errors: null
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
 
   /api/internal-users/{userId}/allCases:
     parameters:
