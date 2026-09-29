@@ -130,8 +130,8 @@ class CaseController {
       });
     } catch (error) {
       if (
-        error.message === 'caseId is required.' ||
-        error.message === 'caseId must be a valid UUID.'
+        error.message === 'caseId is required' ||
+        error.message === 'caseId must be a valid UUID'
       ) {
         return res.status(400).json({
           success: false,
