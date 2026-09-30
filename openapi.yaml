@@ -190,6 +190,42 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
         '500': { $ref: '#/components/responses/InternalServerError' }
 
+  /api/internal-users:
+    post:
+      tags: [Internal Users]
+      summary: Create a collaborator account (G-03)
+      description: Admin only. Creates an internal user (collaborator). The email must not belong to any existing account. Validation errors include an "errors" object with one message per field.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCollaboratorRequest'
+      responses:
+        '201':
+          description: Collaborator created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateCollaboratorSuccessResponse'
+        '400':
+          description: Invalid or missing fields
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateCollaboratorErrorResponse'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409':
+          description: An account with this email already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateCollaboratorErrorResponse'
+        '500': { $ref: '#/components/responses/InternalServerError' }
+
   /api/internal-users/{userId}/allCases:
     parameters:
       - $ref: '#/components/parameters/UserId'
@@ -789,3 +825,43 @@ components:
       properties:
         success: { type: boolean, example: true }
         data: { $ref: '#/components/schemas/ConsentData' }
+
+    CreateCollaboratorRequest:
+      type: object
+      required: [name, last_name, email, password, phone]
+      properties:
+        name: { type: string }
+        last_name: { type: string }
+        email: { type: string, format: email }
+        password: { type: string, format: password, minLength: 8 }
+        phone: { type: string, example: '4421513555', description: Exactly 10 digits }
+
+    CollaboratorData:
+      type: object
+      required: [user_id, name, last_name, email, phone, role]
+      properties:
+        user_id: { type: string, format: uuid }
+        name: { type: string }
+        last_name: { type: string }
+        email: { type: string, format: email }
+        phone: { type: string }
+        role: { type: string, example: internal }
+
+    CreateCollaboratorSuccessResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success: { type: boolean, example: true }
+        data: { $ref: '#/components/schemas/CollaboratorData' }
+
+    CreateCollaboratorErrorResponse:
+      type: object
+      required: [success, error]
+      properties:
+        success: { type: boolean, example: false }
+        error: { type: string }
+        errors:
+          type: object
+          nullable: true
+          additionalProperties: { type: string }
+          example: { email: An account with this email already exists. }
