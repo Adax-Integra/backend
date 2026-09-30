@@ -46,7 +46,7 @@ app.use('/api', internalUserRoutes);
 app.use('/api', caseRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api', privacyPolicyRoutes);
-app.use('api/', locationRoutes);
+app.use('/api', locationRoutes);
 
 // 404s
 app.use((_req, res) => res.status(404).send('Not found.'));
