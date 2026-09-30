@@ -1,9 +1,9 @@
 import CountriesAndStatesModel from '../../Data/Models/countriesAndStates.model.js';
 
-class GetAllCountriesWithStates {
+class GetAllCountriesWithStatesUseCase {
   async execute() {
     return await CountriesAndStatesModel.getAllCountriesWithStates();
   }
 }
 
-export default GetAllCountriesWithStates;
+export default GetAllCountriesWithStatesUseCase;
