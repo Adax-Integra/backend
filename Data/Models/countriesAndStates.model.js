@@ -1,6 +1,6 @@
 import { supabase } from '../Config/supabase.js';
 
-class CountryModel {
+class CountriesAndStatesModel {
   // Get all countries with their respective states
   static async getAllCountriesWithStates() {
     const { data, error } = await supabase
@@ -24,7 +24,7 @@ class CountryModel {
       .eq('states.is_active', true)
       // Sort the "countries" table by alphabetical order
       .order('name_es')
-      // Sort the nested "states" table by alpahebetical order
+      // Sort the nested "states" table by alphabetical order
       .order('name_es', { referencedTable: 'states' });
 
     if (error) {
@@ -35,4 +35,4 @@ class CountryModel {
   }
 }
 
-export default CountryModel;
+export default CountriesAndStatesModel;
