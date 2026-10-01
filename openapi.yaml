@@ -657,6 +657,7 @@ components:
         birth_date: { type: string, format: date, nullable: true }
         phone: { type: string, nullable: true }
         record_id: { type: string, format: uuid }
+        record_number: { type: string, example: EXP-2026-0001, nullable: true }
         address_id: { type: string, format: uuid }
 
     RegisterExternalUserSuccessResponse:
