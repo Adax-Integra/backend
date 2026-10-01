@@ -879,19 +879,19 @@ components:
     StateOption:
       type: object
       properties:
-        stateId: { type: string }
-        nameEn: { type: string }
-        nameEs: { type: string }
+        state_id: { type: string }
+        name_en: { type: string }
+        name_es: { type: string }
         code: { type: string, nullable: true }
 
     CountryWithStates:
       type: object
       properties:
-        countryId: { type: string }
+        country_id: { type: string }
         iso2: { type: string, example: MX }
-        nameEn: { type: string }
-        nameEs: { type: string }
-        phoneCode: { type: string, nullable: true }
+        name_en: { type: string }
+        name_es: { type: string }
+        phone_code: { type: string, nullable: true }
         states:
           type: array
           items: { $ref: '#/components/schemas/StateOption' }
