@@ -14,6 +14,7 @@ import caseRoutes from '../Source/Routes/case.routes.js';
 import internalUserRoutes from '../Source/Routes/internalUser.routes.js';
 import authRoutes from '../Source/Routes/auth.routes.js';
 import privacyPolicyRoutes from '../Source/Routes/privacyPolicy.routes.js';
+import recordRoutes from '../Source/Routes/record.routes.js';
 import profileRoutes from '../Source/Routes/profile.routes.js';
 import locationRoutes from '../Source/Routes/location.routes.js';
 
@@ -47,6 +48,7 @@ app.use('/api', internalUserRoutes);
 app.use('/api', caseRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api', privacyPolicyRoutes);
+app.use('/api', recordRoutes);
 app.use('/api', profileRoutes);
 app.use('/api', locationRoutes);
 
