@@ -7,6 +7,10 @@ import EmailValidator from './email.validator.js';
 import RequiredStringValidator from './requiredString.validator.js';
 
 const MIN_PASSWORD_LENGTH = 8;
+const MAX_NAME_LENGTH = 50;
+const MAX_LAST_NAME_LENGTH = 50;
+const MAX_EMAIL_LENGTH = 128;
+const MAX_PASSWORD_LENGTH = 128;
 //Same phone rule as the self-registration (G-01): exactly 10 digits
 const PHONE_PATTERN = /^\d{10}$/;
 
@@ -29,27 +33,40 @@ class CreateCollaboratorValidator {
     const errors = {};
 
     try {
-      collaborator.name = RequiredStringValidator.validateRequiredString(
+      const name = RequiredStringValidator.validateRequiredString(
         body.name,
         'name'
       );
+      if (name.length > MAX_NAME_LENGTH) {
+        errors.name = `name must be at most ${MAX_NAME_LENGTH} characters.`;
+      } else {
+        collaborator.name = name;
+      }
     } catch (error) {
       errors.name = error.message;
     }
 
     try {
-      collaborator.lastName = RequiredStringValidator.validateRequiredString(
+      const lastName = RequiredStringValidator.validateRequiredString(
         body.last_name,
         'last_name'
       );
+      if (lastName.length > MAX_LAST_NAME_LENGTH) {
+        errors.last_name = `last_name must be at most ${MAX_LAST_NAME_LENGTH} characters.`;
+      } else {
+        collaborator.lastName = lastName;
+      }
     } catch (error) {
       errors.last_name = error.message;
     }
 
     try {
-      collaborator.email = EmailValidator.validateEmail(
-        body.email
-      ).toLowerCase();
+      const email = EmailValidator.validateEmail(body.email).toLowerCase();
+      if (email.length > MAX_EMAIL_LENGTH) {
+        errors.email = `email must be at most ${MAX_EMAIL_LENGTH} characters.`;
+      } else {
+        collaborator.email = email;
+      }
     } catch (error) {
       errors.email = error.message;
     }
@@ -58,7 +75,9 @@ class CreateCollaboratorValidator {
       typeof body.password !== 'string' ||
       body.password.length < MIN_PASSWORD_LENGTH
     ) {
-      errors.password = 'password must be at least 8 characters long.';
+      errors.password = `password must be at least ${MIN_PASSWORD_LENGTH} characters long.`;
+    } else if (body.password.length > MAX_PASSWORD_LENGTH) {
+      errors.password = `password must be at most ${MAX_PASSWORD_LENGTH} characters.`;
     } else {
       collaborator.password = body.password;
     }

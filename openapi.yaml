@@ -830,11 +830,11 @@ components:
       type: object
       required: [name, last_name, email, password, phone]
       properties:
-        name: { type: string }
-        last_name: { type: string }
-        email: { type: string, format: email }
-        password: { type: string, format: password, minLength: 8 }
-        phone: { type: string, example: '4421513555', description: Exactly 10 digits }
+          name: { type: string, maxLength: 50 }
+          last_name: { type: string, maxLength: 50 }
+          email: { type: string, format: email, maxLength: 128 }
+          password: { type: string, format: password, minLength: 8, maxLength: 128 }
+          phone: { type: string, example: '4421513555', description: Exactly 10 digits }
 
     CollaboratorData:
       type: object
