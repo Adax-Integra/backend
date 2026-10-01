@@ -15,7 +15,7 @@ const PROFILE_COLUMNS = `
 class ProfileModel {
   static async getProfileByUserId(userId) {
     const { data, error } = await supabase
-      .from('profile')
+      .from('user')
       .select(PROFILE_COLUMNS)
       .eq('user_id', userId)
       .is('deleted_at', null)

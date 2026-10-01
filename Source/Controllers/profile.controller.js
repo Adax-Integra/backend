@@ -5,7 +5,7 @@ const profileUseCase = new ProfileUseCase();
 class ProfileController {
   //simply obtain data for the profile view depending on the userId obtained from the session (g-13)
   async getProfileByUserId(req, res) {
-    const userId = req.user.id;
+    const userId = req.user.user_id;
 
     try {
       const profileData = await profileUseCase.execute(userId);
