@@ -15,6 +15,8 @@ import internalUserRoutes from '../Source/Routes/internalUser.routes.js';
 import authRoutes from '../Source/Routes/auth.routes.js';
 import privacyPolicyRoutes from '../Source/Routes/privacyPolicy.routes.js';
 import recordRoutes from '../Source/Routes/record.routes.js';
+import profileRoutes from '../Source/Routes/profile.routes.js';
+import locationRoutes from '../Source/Routes/location.routes.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const swaggerDocument = parseYaml(
@@ -47,6 +49,8 @@ app.use('/api', caseRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api', privacyPolicyRoutes);
 app.use('/api', recordRoutes);
+app.use('/api', profileRoutes);
+app.use('/api', locationRoutes);
 
 // 404s
 app.use((_req, res) => res.status(404).send('Not found.'));
