@@ -1,5 +1,5 @@
 class RegisterExternalUserDTO {
-  constructor({ user, record_id, address_id }) {
+  constructor({ user, record_id, record_number, address_id }) {
     this.user_id = user?.user_id ?? null;
     this.name = user?.name ?? null;
     this.last_name = user?.last_name ?? null;
@@ -7,6 +7,7 @@ class RegisterExternalUserDTO {
     this.birth_date = user?.birth_date ?? null;
     this.phone = user?.phone ?? null;
     this.record_id = record_id ?? null;
+    this.record_number = record_number ?? null;
     this.address_id = address_id ?? null;
   }
 
@@ -19,6 +20,7 @@ class RegisterExternalUserDTO {
       birth_date: this.birth_date,
       phone: this.phone,
       record_id: this.record_id,
+      record_number: this.record_number,
       address_id: this.address_id,
     };
   }
