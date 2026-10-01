@@ -15,6 +15,7 @@ tags:
   - name: External Users
   - name: Internal Users
   - name: Privacy Policy
+  - name: Locations
 
 paths:
   /:
@@ -105,7 +106,9 @@ paths:
     get:
       tags: [External Users]
       summary: Get external user pre-submission data
-      description: Returns the user's profile (name, last name, birth date, phone), full address, and documents. Document URLs are signed links.
+      description: Returns the user's profile (name, last name, birth date, phone), full address, and documents. Document URLs are signed links. Staff or the owner of this userId may call it.
+      security:
+        - BearerAuth: []
       responses:
         '200':
           description: Pre-submission data retrieved
@@ -114,10 +117,14 @@ paths:
               schema:
                 $ref: '#/components/schemas/PreSubmissionSuccessResponse'
         '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
     put:
       tags: [External Users]
       summary: Update external user pre-submission data
-      description: At least one field in profile, address, or documents is required. Document values are storage paths that start with the user ID, contain no empty, ".", or ".." segments, and must already exist in storage.
+      description: At least one field in profile, address, or documents is required. Document values are storage paths that start with the user ID, contain no empty, ".", or ".." segments, and must already exist in storage. Staff or the owner of this userId may call it.
+      security:
+        - BearerAuth: []
       requestBody:
         required: true
         content:
@@ -132,6 +139,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/PreSubmissionSuccessResponse'
         '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
   
   /api/external-users/{userId}/cases:
     parameters:
@@ -196,6 +205,9 @@ paths:
     get:
       tags: [Internal Users]
       summary: Get all cases for a user (V-10)
+      description: Admin and internal users only.
+      security:
+        - BearerAuth: []
       responses:
         '200':
           description: Cases retrieved
@@ -204,12 +216,16 @@ paths:
               schema:
                 $ref: '#/components/schemas/CaseSummaryListResponse'
         '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
 
   /api/internal-users/external-users:
     post:
       tags: [Internal Users]
       summary: Register an external user's expediente (R-03)
-      description: Creates the user, record, and address, then emails a temporary password.
+      description: Creates the user, record, and address, then emails a temporary password. Admin and internal users only.
+      security:
+        - BearerAuth: []
       requestBody:
         required: true
         content:
@@ -224,6 +240,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/RegisterExternalUserSuccessResponse'
         '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
 
   /api/cases:
     get:
@@ -260,6 +278,43 @@ paths:
                 $ref: '#/components/schemas/CaseDetailResponse'
         '400': { $ref: '#/components/responses/BadRequest' }
 
+  /api/cases/{caseId}/close:
+    parameters:
+      - $ref: '#/components/parameters/CaseId'
+    patch:
+      tags: [Cases]
+      summary: Close a case (V-11)
+      description: Sets the case state to Closed when it is not already closed. A missing case and an already closed case both return 409.
+      responses:
+        '200':
+          description: Case closed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CloseCaseSuccessResponse'
+              example:
+                success: true
+                data:
+                  caseId: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+                  state: Closed
+                  updatedAt: '2026-09-30T18:00:00.000Z'
+        '400':
+          description: caseId is missing or is not a UUID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: The case is already closed or does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                error: Case with ID 3fa85f64-5717-4562-b3fc-2c963f66afa6 is already closed or does not exist.
+        '500': { $ref: '#/components/responses/InternalServerError' }
+
   /api/users/{userId}/cases:
     parameters:
       - $ref: '#/components/parameters/UserId'
@@ -293,7 +348,9 @@ paths:
     get:
       tags: [Privacy Policy]
       summary: Check whether a user accepted the notice in force (V-02)
-      description: Used on start-up to decide whether the privacy screen must be shown. It answers against the notice currently in force so publishing a new version makes every user consent again.
+      description: Used on start-up to decide whether the privacy screen must be shown. The user is taken from the token. It answers against the notice currently in force so publishing a new version makes every user consent again.
+      security:
+        - BearerAuth: []
       responses:
         '200':
           description: Consent status retrieved
@@ -302,11 +359,14 @@ paths:
               schema:
                 $ref: '#/components/schemas/ConsentStatusSuccessResponse'
         '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
         '500': { $ref: '#/components/responses/InternalServerError' }
     post:
       tags: [Privacy Policy]
       summary: Record that a user accepted the notice (V-02)
-      description: The server sets the version the timestamp the client IP and is_accepted. Calling it again for the same user and notice returns the existing consent instead of creating a duplicate.
+      description: The user is taken from the token. The server sets the version, the timestamp, the client IP, and is_accepted. Calling it again for the same user and notice returns the existing consent instead of creating a duplicate.
+      security:
+        - BearerAuth: []
       requestBody:
         required: true
         content:
@@ -323,6 +383,21 @@ paths:
               schema:
                 $ref: '#/components/schemas/RegisterConsentSuccessResponse'
         '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+
+  /api/countries-states:
+    get:
+      tags: [Locations]
+      summary: List countries and their states
+      description: Returns active countries with their active states, both ordered by Spanish name. Used to fill country and state dropdowns.
+      responses:
+        '200':
+          description: Countries and states retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CountriesWithStatesSuccessResponse'
         '500': { $ref: '#/components/responses/InternalServerError' }
 
 components:
@@ -697,13 +772,33 @@ components:
           additionalProperties: {type: string}
           description: Reason for each invalid body field
 
+    CloseCaseData:
+      type: object
+      required: [caseId, state, updatedAt]
+      properties:
+        caseId: { type: string, format: uuid }
+        state: { type: string, example: Closed }
+        updatedAt: { type: string, format: date-time, nullable: true }
+
+    CloseCaseSuccessResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success: { type: boolean, example: true }
+        data: { $ref: '#/components/schemas/CloseCaseData' }
+
     CaseDetail:
       type: object
       properties:
         case_id: { type: string, format: uuid }
         case_number: { type: string, nullable: true }
+        written_description: { type: string, nullable: true }
+        written_helps_wanted: { type: string, nullable: true }
+        has_lawyer: { type: boolean }
         state: { type: string, nullable: true }
         record_id: { type: string, format: uuid }
+        created_at: { type: string, format: date-time, nullable: true }
+        updated_at: { type: string, format: date-time, nullable: true }
         record:
           type: object
           properties:
@@ -722,6 +817,56 @@ components:
               case_step_id: { type: string, format: uuid }
               step_number: { type: integer }
               status: { type: string }
+        case_violence:
+          type: array
+          items:
+            type: object
+            properties:
+              violence_types:
+                type: object
+                properties:
+                  violence_id: { type: string, format: uuid }
+                  description: { type: string }
+                  severity: { type: integer, nullable: true }
+        case_help:
+          type: array
+          items:
+            type: object
+            properties:
+              help_types:
+                type: object
+                properties:
+                  help_id: { type: string, format: uuid }
+                  description: { type: string }
+
+    StateOption:
+      type: object
+      properties:
+        stateId: { type: string }
+        nameEn: { type: string }
+        nameEs: { type: string }
+        code: { type: string, nullable: true }
+
+    CountryWithStates:
+      type: object
+      properties:
+        countryId: { type: string }
+        iso2: { type: string, example: MX }
+        nameEn: { type: string }
+        nameEs: { type: string }
+        phoneCode: { type: string, nullable: true }
+        states:
+          type: array
+          items: { $ref: '#/components/schemas/StateOption' }
+
+    CountriesWithStatesSuccessResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success: { type: boolean, example: true }
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/CountryWithStates' }
 
     CaseDetailResponse:
       type: object
