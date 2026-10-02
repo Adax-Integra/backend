@@ -1,12 +1,21 @@
-// imports
+import app from '../Source/app.js';
+import request from 'supertest';
 
-// Unit testing for all US related to cases
-// Inside the describe block, add the different tests for each of the US related
-// to cases inside an 'it' block
+/* 
+Unit testing for all user stories related to cases
+Each User Story should have its own 'describe' block, inside it, there should 
+be different 'it' blocks of different functions
+*/
 
-describe('Unit test for cases', () => {
-  it('Unit tests for V-10, getting all of the cases from a user', () => {
-    const number = 1;
-    expect(1).toBe(number);
+describe('Unit tests for V-10', () => {
+  describe('GET /api/internal-users/{userId}/allCases - get all the cases from a user', () => {
+    describe('It contains an emtpy userId', () => {
+      it('Should ask for a valid user id', async () => {
+        const response = await request(app).get(
+          '/api/internal-users//allCases'
+        );
+        expect(response.statusCode).toBe(404);
+      });
+    });
   });
 });
