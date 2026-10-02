@@ -979,7 +979,7 @@ components:
           last_name: { type: string, maxLength: 50 }
           email: { type: string, format: email, maxLength: 128 }
           password: { type: string, format: password, minLength: 8, maxLength: 128 }
-          phone: { type: string, example: '4421513555', description: Exactly 10 digits }
+          phone: { type: string, example: '+524421513555', description: Country code with + followed by 10 digits }
 
     CollaboratorData:
       type: object

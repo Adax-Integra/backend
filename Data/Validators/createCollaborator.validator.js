@@ -4,6 +4,7 @@ repeats the same rules because a request can reach this endpoint outside
 the mobile app
 */
 import EmailValidator from './email.validator.js';
+import PhoneValidator from './phone.validator.js';
 import RequiredStringValidator from './requiredString.validator.js';
 
 const MIN_PASSWORD_LENGTH = 8;
@@ -11,8 +12,6 @@ const MAX_NAME_LENGTH = 50;
 const MAX_LAST_NAME_LENGTH = 50;
 const MAX_EMAIL_LENGTH = 128;
 const MAX_PASSWORD_LENGTH = 128;
-//Same phone rule as the self-registration (G-01): exactly 10 digits
-const PHONE_PATTERN = /^\d{10}$/;
 
 //Builds an Error carrying the per-field reasons so the controller can answer
 //with { errors: { field: reason } } and the app can highlight each input
@@ -82,16 +81,9 @@ class CreateCollaboratorValidator {
       collaborator.password = body.password;
     }
 
+    //Same phone format as the rest of the backend: + country code + 10 digits
     try {
-      const phone = RequiredStringValidator.validateRequiredString(
-        body.phone,
-        'phone'
-      );
-      if (!PHONE_PATTERN.test(phone)) {
-        errors.phone = 'phone must contain exactly 10 digits.';
-      } else {
-        collaborator.phone = phone;
-      }
+      collaborator.phone = PhoneValidator.validatePhone(body.phone);
     } catch (error) {
       errors.phone = error.message;
     }
