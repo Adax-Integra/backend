@@ -11,6 +11,25 @@ const editPreSubmissionDataUseCase = new EditPreSubmissionDataUseCase();
 const createCaseUseCase = new CreateCaseUseCase();
 const createAccountUseCase = new CreateAccountUseCase();
 
+// In multer requests, nested objects arrive as JSON strings
+const JSON_FIELDS = ['profile', 'address'];
+
+function parseJsonFields(body = {}) {
+  const parsed = { ...body };
+
+  for (const field of JSON_FIELDS) {
+    if (typeof parsed[field] !== 'string') continue;
+
+    try {
+      parsed[field] = JSON.parse(parsed[field]);
+    } catch {
+      throw new Error(`${field} must be valid JSON.`);
+    }
+  }
+
+  return parsed;
+}
+
 class ExternalUserController {
   async createAccount(req, res) {
     try {
@@ -52,7 +71,8 @@ class ExternalUserController {
       const { userId } = req.params;
       const updatedData = await editPreSubmissionDataUseCase.execute(
         userId,
-        req.body
+        parseJsonFields(req.body),
+        req.files
       );
       const payload = new PreSubmissionDTO(updatedData).toJSON();
 

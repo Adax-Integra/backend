@@ -34,6 +34,7 @@
     "helmet": "^8.3.0",
     "jest": "^30.5.2",
     "jsonwebtoken": "^9.0.3",
+    "multer": "^2.4.0",
     "nodemailer": "^10.0.10",
     "supertest": "^7.3.0",
     "swagger-ui-express": "^5.0.1",

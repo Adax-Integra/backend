@@ -122,12 +122,25 @@ paths:
     put:
       tags: [External Users]
       summary: Update external user pre-submission data
-      description: At least one field in profile, address, or documents is required. Document values are storage paths that start with the user ID, contain no empty, ".", or ".." segments, and must already exist in storage. Staff or the owner of this userId may call it.
+      description: |
+        At least one field in profile, address, or documents is required. Staff or the owner of this userId may call it.
+
+        Two request formats are accepted:
+        - **multipart/form-data**: upload the documents as files (PDF, JPEG or PNG, max 5 MB each). Files are stored under "{userId}/identity/" or "{userId}/address/" and replace any path sent for the same document. profile and address must be sent as JSON strings.
+        - **application/json**: document values are storage paths that start with the user ID, contain no empty, ".", or ".." segments, and must already exist in storage.
       security:
         - BearerAuth: []
       requestBody:
         required: true
         content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PreSubmissionMultipartRequest'
+            encoding:
+              profile: { contentType: application/json }
+              address: { contentType: application/json }
+              identity_document: { contentType: 'application/pdf, image/jpeg, image/png' }
+              proof_of_address: { contentType: 'application/pdf, image/jpeg, image/png' }
           application/json:
             schema:
               $ref: '#/components/schemas/PreSubmissionUpdateRequest'
@@ -628,6 +641,27 @@ components:
         address: { $ref: '#/components/schemas/AddressUpdate' }
         documents: { $ref: '#/components/schemas/DocumentsUpdate' }
 
+    PreSubmissionMultipartRequest:
+      type: object
+      minProperties: 1
+      properties:
+        profile:
+          type: string
+          description: JSON string of ProfileUpdate.
+          example: '{"name":"Ana","phone":"5512345678"}'
+        address:
+          type: string
+          description: JSON string of AddressUpdate.
+          example: '{"city":"Monterrey"}'
+        identity_document:
+          type: string
+          format: binary
+          description: PDF, JPEG or PNG, max 5 MB.
+        proof_of_address:
+          type: string
+          format: binary
+          description: PDF, JPEG or PNG, max 5 MB.
+
     CreateAccountRequest:
       type: object
       required: [name, last_name, email, password, confirm_password]
@@ -879,19 +913,19 @@ components:
     StateOption:
       type: object
       properties:
-        stateId: { type: string }
-        nameEn: { type: string }
-        nameEs: { type: string }
+        state_id: { type: string }
+        name_en: { type: string }
+        name_es: { type: string }
         code: { type: string, nullable: true }
 
     CountryWithStates:
       type: object
       properties:
-        countryId: { type: string }
+        country_id: { type: string }
         iso2: { type: string, example: MX }
-        nameEn: { type: string }
-        nameEs: { type: string }
-        phoneCode: { type: string, nullable: true }
+        name_en: { type: string }
+        name_es: { type: string }
+        phone_code: { type: string, nullable: true }
         states:
           type: array
           items: { $ref: '#/components/schemas/StateOption' }

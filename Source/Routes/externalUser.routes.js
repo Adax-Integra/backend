@@ -2,6 +2,7 @@ import express from 'express';
 import externalUserController from '../Controllers/externalUser.controller.js';
 import authMiddleware from '../Middlewares/auth.middleware.js';
 import { ownDataOnly } from '../Middlewares/role.middleware.js';
+import preSubmissionUpload from '../Middlewares/upload.middleware.js';
 
 const router = express.Router();
 
@@ -21,6 +22,7 @@ router.put(
   '/external-users/:userId/pre-submission',
   authMiddleware,
   ownDataOnly,
+  preSubmissionUpload,
   externalUserController.editPreSubmissionData
 );
 
