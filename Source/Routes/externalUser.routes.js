@@ -6,7 +6,7 @@ import preSubmissionUpload from '../Middlewares/upload.middleware.js';
 
 const router = express.Router();
 
-// Creates a new external user account
+// G-01 sends registration requests to the account creation controller
 router.post('/external-user/register', externalUserController.createAccount);
 
 // Gets the pre-submission data from an external user

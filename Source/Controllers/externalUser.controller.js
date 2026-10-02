@@ -31,11 +31,15 @@ function parseJsonFields(body = {}) {
 }
 
 class ExternalUserController {
+  // receives the registration request and sends the result to the app
   async createAccount(req, res) {
     try {
+      // passes the form data to the use case to create the account
       const created = await createAccountUseCase.execute(req.body);
+      // prepares the account information that will be sent to the app
       const payload = new CreateAccountDTO(created).toJSON();
 
+      // indicates that the account was created
       return res.status(201).json({
         success: true,
         data: payload,
