@@ -774,8 +774,7 @@ components:
       properties:
         success: { type: boolean, example: true }
         data: { $ref: '#/components/schemas/RegisterExternalUserData' }
-    
-        RecordListItem:
+    RecordListItem:
       type: object
       properties:
         record_id: { type: string, format: uuid }
