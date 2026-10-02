@@ -1,12 +1,13 @@
-import bcrypt from 'bcrypt';
+import AuthUserModel from '../../Data/Models/authUser.model.js'; // Laura added this
+// Creates the login account in Supabase Auth
+// import bcrypt from 'bcrypt'; --- Laura deleted this
 
 import CreateAccountValidator from '../../Data/Validators/createAccount.validator.js';
 import ExternalUserModel from '../../Data/Models/externalUser.model.js';
 import RoleModel from '../../Data/Models/role.model.js';
 
 const EXTERNAL_ROLE = 'external';
-// number of rounds used by bcrypt to hash the password
-const BCRYPT_SALT_ROUNDS = 10;
+// const BCRYPT_SALT_ROUNDS = 10; --- Laura deleted this
 
 // handles the steps needed for an external user to create an account
 class CreateAccountUseCase {
@@ -26,21 +27,34 @@ class CreateAccountUseCase {
     // gets the external role ID from the database
     const roleId = await RoleModel.findIdByDescription(EXTERNAL_ROLE);
 
-    // store only the encrypted version of the password
-    const hashedPassword = await bcrypt.hash(
+    /*const hashedPassword = await bcrypt.hash(
       account.password,
       BCRYPT_SALT_ROUNDS
     );
+    */ // Laura deleted this
 
-    // pases the account data, password hash, and rode ID to the model
-    return ExternalUserModel.createAccount({
-      name: account.name,
-      lastName: account.lastName,
-      email: account.email,
-      phone: account.phone,
-      hashedPassword,
-      roleId,
-    });
+    // Supabase Auth stores the password and gives us the user id --- Laura added this
+    const userId = await AuthUserModel.create(account.email, account.password);
+
+    try {
+      // --- Laura added this
+      // If saving the profile fails the auth account is deleted so no half-created user is left behind
+      return await ExternalUserModel.createAccount({
+        userId, // Laura added this
+        name: account.name,
+        lastName: account.lastName,
+        email: account.email,
+        phone: account.phone,
+        // hashedPassword, --- Laura deleted this
+        roleId,
+      });
+    } catch (error) {
+      // --- Laura added this
+      // Delete the auth account created above because its profile could not be saved
+      await AuthUserModel.delete(userId);
+      // Pass the error to the controller (the original error)
+      throw error;
+    }
   }
 }
 
