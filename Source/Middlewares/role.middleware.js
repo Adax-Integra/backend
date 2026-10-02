@@ -33,3 +33,18 @@ export function ownDataOnly(req, res, next) {
     error: 'You do not have permission',
   });
 }
+
+// G-03: Only admins can continue
+export function adminOnly(req, res, next) {
+  const roles = req.user.roles || [];
+
+  if (roles.includes('admin')) {
+    return next();
+  }
+
+  // The user is authenticated but is not an admin
+  return res.status(403).json({
+    success: false,
+    error: 'You do not have permission',
+  });
+}
