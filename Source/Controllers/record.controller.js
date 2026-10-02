@@ -9,6 +9,7 @@ class RecordController {
       page: pageQuery = '1',
       search = '',
       hasOpenCases: hasOpenCasesQuery,
+      status: statusQuery,
     } = req.query;
 
     // Reject repeated parameters, objects, and non-integer page values.
@@ -52,6 +53,19 @@ class RecordController {
       });
     }
 
+    // Only teh four lifecycle status are valid filter values.
+    const ALLOWED_STATUSES = ['SIN_EMPEZAR', 'EN_REVISION', 'EN_SEGUIMIENTO', 'COMPLETADO'];
+
+    if (statusQuery !== undefined && !ALLOWED_STATUSES.includes(statusQuery)) {
+      return res.status(400).json({
+        success: false,
+        error: 'status must be a valid record status when provided.',
+      });
+    }
+    
+    // Omission means no status filter.
+    const status = statusQuery === undefined ? null : statusQuery;
+
     // Converts the filter text to a boolean; null means no filter.
     const hasOpenCases =
       hasOpenCasesQuery === undefined ? null : hasOpenCasesQuery === 'true';
@@ -61,6 +75,7 @@ class RecordController {
         page,
         search: search.trim(),
         hasOpenCases,
+        status,
       });
 
       // Formats the result into the response structure expected by the client.
