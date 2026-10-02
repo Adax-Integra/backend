@@ -33,3 +33,29 @@ export function ownDataOnly(req, res, next) {
     error: 'You do not have permission',
   });
 }
+
+// Only the admin role can continue (G-07)
+export function adminOnly(req, res, next) {
+  const roles = req.user.roles || [];
+
+  if (roles.includes('admin')) {
+    return next();
+  }
+
+  return res.status(403).json({
+    success: false,
+    error: 'You do not have permission',
+  });
+}
+
+// Only the owner of the data can continue
+export function ownerOnly(req, res, next) {
+  if (req.user.user_id === req.params.userId) {
+    return next();
+  }
+
+  return res.status(403).json({
+    success: false,
+    error: 'You do not have permission',
+  });
+}
