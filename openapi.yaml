@@ -16,6 +16,7 @@ tags:
   - name: Internal Users
   - name: Privacy Policy
   - name: Locations
+  - name: Records
 
 paths:
   /:
@@ -151,6 +152,43 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PreSubmissionSuccessResponse'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /api/records:
+    get:
+      tags: [Records]
+      summary: List expedientes (records) for internal staff (V-05)
+      description: Returns a paginated list of 10 expedientes per page. Supports search by the usuaria's name or folio, and filters by whether the record has open cases and by lifecycle status. Admin and internal users only.
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, minimum: 1, default: 1 }
+          description: Page number (10 records per page).
+        - in: query
+          name: search
+          schema: { type: string }
+          description: Matches the usuaria's name or the record folio (record_number).
+        - in: query
+          name: hasOpenCases
+          schema: { type: boolean }
+          description: When true, only records with open cases; when false, only records without open cases.
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [SIN_EMPEZAR, EN_REVISION, EN_SEGUIMIENTO, COMPLETADO]
+          description: Filters by the record lifecycle status.
+      responses:
+        '200':
+          description: Records retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecordListSuccessResponse'
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
@@ -736,6 +774,34 @@ components:
       properties:
         success: { type: boolean, example: true }
         data: { $ref: '#/components/schemas/RegisterExternalUserData' }
+    
+        RecordListItem:
+      type: object
+      properties:
+        record_id: { type: string, format: uuid }
+        user_id: { type: string, format: uuid }
+        name: { type: string, example: Daniela Alejandra Herrera Ocampo }
+        record_number: { type: string, nullable: true, example: EXP-2026-0001 }
+        status:
+          type: string
+          enum: [SIN_EMPEZAR, EN_REVISION, EN_SEGUIMIENTO, COMPLETADO]
+          example: SIN_EMPEZAR
+        active_cases_count: { type: integer, example: 2 }
+        updated_at: { type: string, format: date-time, nullable: true }
+
+    RecordListSuccessResponse:
+      type: object
+      properties:
+        success: { type: boolean, example: true }
+        data:
+          type: object
+          properties:
+            records:
+              type: array
+              items: { $ref: '#/components/schemas/RecordListItem' }
+            total: { type: integer, example: 42 }
+            page: { type: integer, example: 1 }
+            limit: { type: integer, example: 10 }
 
     CaseListItem:
       type: object
