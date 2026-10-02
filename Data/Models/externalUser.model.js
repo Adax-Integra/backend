@@ -10,6 +10,7 @@ class ExternalUserModel {
   This function is a transaction that creates a user and creates a row
   inside the address table for the same user.
   */
+
   static async createAccount({
     userId, // Laura added this
     // hashedPassword ---  Laura deleted this
