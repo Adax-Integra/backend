@@ -10,7 +10,7 @@ servers:
 
 tags:
   - name: Health
-  - name: Authentication
+  # - name: Authentication --- Laura deleted this
   - name: Cases
   - name: External Users
   - name: Internal Users
@@ -46,40 +46,40 @@ paths:
                 $ref: '#/components/schemas/ServerStatusResponse'
               example: { status: ok }
 
-  /api/auth/login:
-    post:
-      tags: [Authentication]
-      summary: Log in a user
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/LoginRequest'
-            example:
-              email: maria.gomez@gmail.com
-              password: password123
-      responses:
-        '200':
-          description: Login succeeded
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/LoginSuccessResponse'
-        '400': { $ref: '#/components/responses/BadRequest' }
-        '401':
-          description: Invalid credentials
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500': { $ref: '#/components/responses/InternalServerError' }
+  # /api/auth/login: --- Laura deleted this
+  #  post:
+  #    tags: [Authentication]
+  #    summary: Log in a user
+  #    requestBody:
+  #      required: true
+  #      content:
+  #        application/json:
+  #          schema:
+  #            $ref: '#/components/schemas/LoginRequest'
+  #          example:
+  #            email: maria.gomez@gmail.com
+  #            password: password123
+  #    responses:
+  #      '200':
+  #        description: Login succeeded
+  #        content:
+  #          application/json:
+  #            schema:
+  #              $ref: '#/components/schemas/LoginSuccessResponse'
+  #      '400': { $ref: '#/components/responses/BadRequest' }
+  #      '401':
+  #        description: Invalid credentials
+  #        content:
+  #          application/json:
+  #            schema:
+  #              $ref: '#/components/schemas/ErrorResponse'
+  #      '500': { $ref: '#/components/responses/InternalServerError' }
 
   /api/external-user/register:
     post:
       tags: [External Users]
       summary: Create an external user account by self-signup
-      description: Creates an external account and hashes the selected password before storage.
+      description: Creates an external account and creates the login account in Supabase Auth.
       requestBody:
         required: true
         content:
@@ -530,7 +530,7 @@ components:
       type: http
       scheme: bearer 
       bearerFormat: JWT
-      description: Token returned by /api/auth/login. It expires after 120 hours
+      description: Supabase Auth access token. The mobile app gets it by logging in with the Supabase SDK. It expires after 1 hour.
 
   responses:
     BadRequest:
@@ -567,26 +567,26 @@ components:
         success: { type: boolean, example: false }
         error: { type: string }
 
-    LoginRequest:
-      type: object
-      required: [email, password]
-      properties:
-        email: { type: string, format: email }
-        password: { type: string, format: password }
+  #  LoginRequest: --- Laura deleted this
+  #    type: object
+  #    required: [email, password]
+  #    properties:
+  #      email: { type: string, format: email }
+  #      password: { type: string, format: password }
 
-    LoginData:
-      type: object
-      required: [token, user_id]
-      properties:
-        token: { type: string }
-        user_id: { type: string, format: uuid }
+  #  LoginData:
+  #    type: object
+  #    required: [token, user_id]
+  #    properties:
+  #      token: { type: string }
+  #      user_id: { type: string, format: uuid }
 
-    LoginSuccessResponse:
-      type: object
-      required: [success, data]
-      properties:
-        success: { type: boolean, example: true }
-        data: { $ref: '#/components/schemas/LoginData' }
+  #  LoginSuccessResponse:
+  #    type: object
+  #    required: [success, data]
+  #    properties:
+  #      success: { type: boolean, example: true }
+  #      data: { $ref: '#/components/schemas/LoginData' }
 
     Profile:
       type: object
