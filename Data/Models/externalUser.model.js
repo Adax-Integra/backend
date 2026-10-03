@@ -10,26 +10,22 @@ class ExternalUserModel {
   This function is a transaction that creates a user and creates a row
   inside the address table for the same user.
   */
-
   static async createAccount({
-    userId, // Laura added this
-    // hashedPassword ---  Laura deleted this
     name,
     lastName,
     email,
     phone,
+    hashedPassword,
     roleId,
   }) {
     // sends the registration data to the supabase function
     const { data, error } = await supabase.rpc(
       'create_self_registered_account',
       {
-        p_user_id: userId, // Laura added this
-        // p_password: hashedPassword, ---  Laura deleted this
         p_name: name,
         p_last_name: lastName,
         p_email: email,
-        // p_password: hashedPassword, --- Laura deleted this
+        p_password: hashedPassword,
         p_phone: phone,
         p_role_id: roleId,
       }
@@ -48,15 +44,12 @@ class ExternalUserModel {
   This function is a transaction that creates a user and creates a row
   inside the address table for the same user.
   */
-  static async create({ userId, profile, address, roleId }) {
-    // Laura added this
-    // static async create({ profile, address, roleId, hashedPassword }) {  ---  Laura deleted this
+  static async create({ profile, address, roleId, hashedPassword }) {
     const { data, error } = await supabase.rpc('register_external_user', {
-      p_user_id: userId, // Laura added this
-      // p_password: hashedPassword, ---  Laura deleted this
       p_name: profile.name,
       p_last_name: profile.last_name,
       p_email: profile.email,
+      p_password: hashedPassword,
       p_role_id: roleId,
       p_birth_date: profile.birth_date ?? null,
       p_phone: profile.phone ?? null,

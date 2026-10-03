@@ -14,10 +14,9 @@ class InternalUserModel {
     name,
     lastName,
     email,
-    // hashedPassword, --- Laura deleted this
+    hashedPassword,
     phone,
     roleId,
-    userId, // Laura added this
   }) {
     const { data: user, error: userError } = await supabase
       .from('user')
@@ -25,8 +24,7 @@ class InternalUserModel {
         name,
         last_name: lastName,
         email,
-        // password: hashedPassword, --- Laura deleted this
-        user_id: userId, // Laura added this
+        password: hashedPassword,
         phone,
       })
       .select('user_id, name, last_name, email, phone')

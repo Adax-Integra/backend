@@ -1,5 +1,4 @@
-// import bcrypt from 'bcrypt'; --- Laura deleted this
-import AuthUserModel from '../../Data/Models/authUser.model.js'; // Laura added this
+import bcrypt from 'bcrypt';
 
 import CreateCollaboratorValidator from '../../Data/Validators/createCollaborator.validator.js';
 import UserModel from '../../Data/Models/user.model.js';
@@ -7,7 +6,7 @@ import RoleModel from '../../Data/Models/role.model.js';
 import InternalUserModel from '../../Data/Models/internalUser.model.js';
 
 const INTERNAL_ROLE = 'internal';
-// const BCRYPT_SALT_ROUNDS = 10; --- Laura deleted this
+const BCRYPT_SALT_ROUNDS = 10;
 
 // G-03: The admin creates a new collaborator (internal user) account
 class CreateCollaboratorUseCase {
@@ -25,39 +24,21 @@ class CreateCollaboratorUseCase {
 
     // the role is assigned by the backend, the admin cannot choose it
     const roleId = await RoleModel.findIdByDescription(INTERNAL_ROLE);
-    const userId = await AuthUserModel.create(
-      collaborator.email,
-      collaborator.password
-    ); // Laura added this
-    // Supabase Auth stores the password and gives us the user id --- Laura added this
 
-    /* store only the encrypted version of the password
+    // store only the encrypted version of the password
     const hashedPassword = await bcrypt.hash(
       collaborator.password,
       BCRYPT_SALT_ROUNDS
     );
-    */ // Laura deleted this
 
-    let user; // --- Laura added this
-    // Declared outside the try so it can be returned at the end
-    try {
-      // --- Laura added this
-      // If saving the profile fails, delete the auth account so no half-created user is left behind
-      user = await InternalUserModel.create({
-        userId, // Laura added this
-        name: collaborator.name,
-        lastName: collaborator.lastName,
-        email: collaborator.email,
-        // hashedPassword, --- Laura deleted this
-        phone: collaborator.phone,
-        roleId,
-      });
-    } catch (error) {
-      // --- Laura added this
-      // remove the login account so no half-created user is left behind
-      await AuthUserModel.delete(userId);
-      throw error;
-    }
+    const user = await InternalUserModel.create({
+      name: collaborator.name,
+      lastName: collaborator.lastName,
+      email: collaborator.email,
+      hashedPassword,
+      phone: collaborator.phone,
+      roleId,
+    });
 
     return { user, role: INTERNAL_ROLE };
   }
