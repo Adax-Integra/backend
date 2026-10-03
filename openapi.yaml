@@ -774,7 +774,6 @@ components:
       properties:
         success: { type: boolean, example: true }
         data: { $ref: '#/components/schemas/RegisterExternalUserData' }
-    
     RecordListItem:
       type: object
       properties:
