@@ -34,6 +34,26 @@ class MailerService {
         'Ingresa a la app con tu correo y esta contraseña, y cámbiala en tu primer inicio de sesión.',
     });
   }
+
+  // G-07: tells the external user her data changed without listing the new
+  // values, in case someone else has access to her inbox
+  static async sendProfileUpdatedNotice(email) {
+    if (!transporter) {
+      console.warn(
+        `[mailer] SMTP not configured. Profile update notice for ${email} was not emailed.`
+      );
+      return;
+    }
+
+    await transporter.sendMail({
+      from: MAIL_FROM ?? MAIL_USER,
+      to: email,
+      subject: 'Actualización de tus datos en Adax',
+      text:
+        'Te informamos que el equipo de Adax actualizó los datos de tu cuenta con tu autorización.\n\n' +
+        'Si no reconoces este cambio, siéntete libre de comunicarte con Adax por sus medios oficiales.',
+    });
+  }
 }
 
 export default MailerService;
