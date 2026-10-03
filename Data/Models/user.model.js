@@ -4,7 +4,8 @@ import { supabase } from '../Config/supabase.js';
 class UserModel {
   static TABLE = 'user';
 
-  static AUTH_COLUMNS = 'user_id, email, password';
+  // static AUTH_COLUMNS = 'user_id, email, password'; --- Laura deleted this
+  static AUTH_COLUMNS = 'user_id, email'; // Laura added this
 
   /**
    * Return back the data if the email is found in the database, otherwise returns null.
