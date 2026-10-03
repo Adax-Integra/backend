@@ -118,6 +118,62 @@ class ExternalUserModel {
 
     return data;
   }
+
+  // G-07: profile columns the admin can see, without the password hash
+  static async findEditableProfileById(userId) {
+    const { data, error } = await supabase
+      .from('user')
+      .select('user_id, name, last_name, email, birth_date, phone')
+      .eq('user_id', userId)
+      .is('deleted_at', null)
+      .maybeSingle();
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return data ?? null;
+  }
+
+  /*
+  G-07: updates the user and address rows and writes the activity log
+  inside the same supabase rpc, so a change is never saved without its log.
+  */
+  static async updateProfileWithLog({
+    userId,
+    actorId,
+    profile,
+    address,
+    changes,
+    reason,
+  }) {
+    const { data, error } = await supabase.rpc(
+      'update_external_profile_with_log',
+      {
+        p_user_id: userId,
+        p_actor_id: actorId,
+        p_profile: profile,
+        p_address: address,
+        p_changes: changes,
+        p_reason: reason,
+        p_consent_confirmed: true,
+      }
+    );
+
+    if (error) {
+      // 23505 is the unique violation code. The email can still belong to a
+      // deleted account, which findByEmail does not return
+      if (error.code === '23505') {
+        const conflict = new Error('This email is already registered');
+        conflict.status = 409;
+        throw conflict;
+      }
+
+      throw new Error(error.message);
+    }
+
+    return data;
+  }
 }
 
 export default ExternalUserModel;
