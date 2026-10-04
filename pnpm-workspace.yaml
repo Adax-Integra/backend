@@ -1,7 +1,7 @@
 # Scarf is a package that helps track the usage of packages.
 # Since we are not using it, we will be denying its scripts. Swagger UI still works without them.
 allowBuilds:
-  '@parcel/watcher': set this to true or false
+  '@parcel/watcher': true
   '@scarf/scarf': false
   bcrypt: true
-  unrs-resolver: set this to true or false
+  unrs-resolver: true
