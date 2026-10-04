@@ -19,17 +19,14 @@ class ExternalUserModel {
     roleId,
   }) {
     // sends the registration data to the supabase function
-    const { data, error } = await supabase.rpc(
-      'create_self_registered_account',
-      {
-        p_name: name,
-        p_last_name: lastName,
-        p_email: email,
-        p_password: hashedPassword,
-        p_phone: phone,
-        p_role_id: roleId,
-      }
-    );
+    const { data, error } = await supabase.rpc('create_external_account', {
+      p_name: name,
+      p_last_name: lastName,
+      p_email: email,
+      p_password: hashedPassword,
+      p_phone: phone,
+      p_role_id: roleId,
+    });
 
     // pases the database error back to the use case if creation fails
     if (error) {
