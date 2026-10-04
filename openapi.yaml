@@ -107,7 +107,7 @@ paths:
     get:
       tags: [External Users]
       summary: Get external user pre-submission data
-      description: Returns the user's profile (name, last name, birth date, phone), full address, and documents. Document URLs are signed links. Staff or the owner of this userId may call it.
+      description: Returns the user's profile (name, last name, birth date, phone), full address, and documents. Document URLs are signed links. Only the owner of this userId may call it.
       security:
         - BearerAuth: []
       responses:
@@ -124,7 +124,7 @@ paths:
       tags: [External Users]
       summary: Update external user pre-submission data
       description: |
-        At least one field in profile, address, or documents is required. Staff or the owner of this userId may call it.
+        At least one field in profile, address, or documents is required. Only the owner of this userId may call it.
 
         Two request formats are accepted:
         - **multipart/form-data**: upload the documents as files (PDF, JPEG or PNG, max 5 MB each). Files are stored under "{userId}/identity/" or "{userId}/address/" and replace any path sent for the same document. profile and address must be sent as JSON strings.
@@ -544,7 +544,7 @@ components:
         application/json:
           schema: { $ref: '#/components/schemas/ErrorResponse' }
     Forbidden:
-      description: The token belongs to another user and the caller is not staff
+      description: The caller does not have permission to access this resource.
       content:
         application/json:
           schema: { $ref: '#/components/schemas/ErrorResponse' }
