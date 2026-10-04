@@ -1,7 +1,10 @@
 import express from 'express';
 import internalUserController from '../Controllers/internalUser.controller.js';
 import authMiddleware from '../Middlewares/auth.middleware.js';
-import { adminInternalOnly } from '../Middlewares/role.middleware.js';
+import {
+  adminInternalOnly,
+  adminOnly,
+} from '../Middlewares/role.middleware.js';
 
 const router = express.Router();
 
@@ -19,6 +22,14 @@ router.post(
   authMiddleware,
   adminInternalOnly,
   internalUserController.registerExternalUser
+);
+
+// G-03 Admin creates a new collaborator (internal user) account
+router.post(
+  '/internal-users',
+  authMiddleware,
+  adminOnly,
+  internalUserController.createCollaborator
 );
 
 export default router;
