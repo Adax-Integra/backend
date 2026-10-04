@@ -28,7 +28,7 @@ class AuthController {
         // If UserUseCase threw an error that contains an HTTP status code in "error.status", we use that same code to respond
       }
 
-      //console.error('Login failed:', error); // Message shown in the server console
+      console.error('Login failed:', error); // Message shown in the server console
 
       return res.status(500).json({
         // Something went wrong on the server while trying to log in
