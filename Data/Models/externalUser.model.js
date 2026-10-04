@@ -79,7 +79,8 @@ class ExternalUserModel {
       .maybeSingle();
 
     if (error) {
-      throw new Error(error.message);
+      console.error('Supabase findByEmail error:', error);
+      throw new Error(error.message, { cause: error });
     }
 
     return data ?? null;
