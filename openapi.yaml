@@ -243,6 +243,116 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
 
+  /api/internal-users/external-users/{userId}:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+    get:
+      tags: [Internal Users]
+      summary: Get the personal data of an external user (G-07)
+      description: Returns the profile and address the admin reviews before editing them. Admin only. Accounts that are not external users return 404.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: External user data retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExternalProfileSuccessResponse'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403':
+          description: The caller is not an admin
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: The user does not exist or is not an external user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                error: External user not found
+        '500': { $ref: '#/components/responses/InternalServerError' }
+    patch:
+      tags: [Internal Users]
+      summary: Update the text data of an external user (G-07)        
+      description: Admin only. Only email, phone and address can change. name, last name and birth date are rejected. The change and its activity_log entry are saved in one transaction. The external user is notified by email, to the old and the new address when the email changes.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExternalProfileUpdateRequest'
+            example:
+              profile:
+                phone: '+524424567890'
+              address:
+                neighborhood: Jurica
+              reason: La usuaria se mudó y cambió de número
+              consentConfirmed: true
+      responses:
+        '200':
+          description: External user data updated
+          content:
+            application/json:
+              schema:
+                $ref:  '#/components/schemas/ExternalProfileSuccessResponse'
+        '400':
+          description: Invalid userId, invalid body or no real changes. When the body is invalid, errors has the reason for each field.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExternalProfileErrorResponse'
+              examples:
+                invalidBody:
+                  summary: Invalid body fields
+                  value:
+                    success: false
+                    error: profile.name cannot be modified consentConfirmed must be true
+                    errors:
+                      profile.name: profile.name cannot be modified
+                      consentConfirmed: consentConfirmed must be true
+                noChanges:
+                  summary: Same values already Stored
+                  value:
+                    success: false
+                    error: The submitted data has no changes
+                    errors: null
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403':
+          description: The caller is not an admin
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExternalProfileErrorResponse'
+        '404':
+          description: The user does not exist or is not an external user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExternalProfileErrorResponse'
+              example:
+                success: false
+                error: External user not found
+                errors: null
+        '409':
+          description: The new email already belongs to another account
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExternalProfileErrorResponse'
+              example:
+                success: false
+                error: This email is already registered
+                errors: null
+        '500': { $ref: '#/components/responses/InternalServerError' } 
+
   /api/cases:
     get:
       tags: [Cases]
@@ -666,6 +776,66 @@ components:
       properties:
         success: { type: boolean, example: true }
         data: { $ref: '#/components/schemas/RegisterExternalUserData' }
+    
+    ExternalProfile:
+      type: object
+      nullable: true
+      properties:
+        name: { type: string }
+        last_name: { type: string }
+        email: { type: string, format: email }
+        birth_date: { type: string, format: date, nullable: true }
+        phone: { type: string, nullable: true }
+
+    ExternalProfileData:
+      type: object
+      required: [user_id, profile, address]
+      properties:
+        user_id: { type: string, format: uuid }
+        profile: { $ref: '#/components/schemas/ExternalProfile' }
+        address: { $ref: '#/components/schemas/Address' }
+    
+    ExternalProfileSuccessResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success: { type: boolean, example: true }
+        data: { $ref: '#/components/schemas/ExternalProfileData' }
+    
+    ExternalProfileUpdateRequest:
+      type: object
+      required: [reason, consentConfirmed]
+      description: At least one profile or address field is required. name, last_name and birth_date are rejected.
+      properties:
+        profile:
+          type: object
+          properties:
+            email: { type: string, format: email }
+            phone:
+              type: string
+              description: Country code followed by 10 digits, for example +524424567890.
+        address: { $ref: '#/components/schemas/AddressUpdate' }
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+          description: Why the data is being changed. Stored in the activity log.
+        consentConfirmed:
+          type: boolean
+          enum: [true]
+          description: The admin confirms the external user agreed to the change. Must be true.
+
+    ExternalProfileErrorResponse:
+      type: object
+      required: [success, error]
+      properties:
+        success: { type: boolean, example: false }
+        error: { type: string }
+        errors:
+          type: object
+          nullable: true
+          additionalProperties: { type: string }
+          description: Reason for each invalid body field
 
     CaseListItem:
       type: object
