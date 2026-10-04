@@ -1,31 +1,16 @@
-import GetReportCsv from '../../Domain/UseCases/getReportCsv.usecase';
+import GetReportCsv from '../../Domain/UseCases/getReportCsv.usecase.js';
 
 const getReportCsv = new GetReportCsv();
 
 class ReportsController {
   getReportCsv = async (req, res) => {
     try {
-      const response = await getReportCsv.execute();
-
       const startDate = req.query['start-date'];
       const endDate = req.query['end-date'];
 
-      if (!startDate || !endDate) {
-        return res.status(400).json({
-          success: false,
-          error: 'start-date and end-date parameters are required',
-        });
-      }
+      const response = await getReportCsv.execute(startDate, endDate);
 
-      if (endDate < startDate) {
-        return res.status(400).json({
-          success: false,
-          error: 'end-date cannot be before start-date',
-        });
-      }
-
-      console.log(response); //Only so that it allows me to commit
-
+      console.log(response); // just so it compiles
       //   const rows = Array.isArray(response) ? response : response?.cases;
 
       //   if (!Array.isArray(rows)) {

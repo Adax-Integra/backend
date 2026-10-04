@@ -1,6 +1,6 @@
 import express from 'express';
 import authMiddleware from '../Middlewares/auth.middleware.js';
-import adminInternalOnly from '../Middlewares/role.middleware.js';
+import { adminInternalOnly } from '../Middlewares/role.middleware.js';
 import reportsController from '../Controllers/reports.controller.js';
 
 const router = express.Router();
