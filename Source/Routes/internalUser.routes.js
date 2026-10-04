@@ -1,7 +1,10 @@
 import express from 'express';
 import internalUserController from '../Controllers/internalUser.controller.js';
 import authMiddleware from '../Middlewares/auth.middleware.js';
-import { adminInternalOnly } from '../Middlewares/role.middleware.js';
+import {
+  adminInternalOnly,
+  adminOnly,
+} from '../Middlewares/role.middleware.js';
 
 const router = express.Router();
 
@@ -19,6 +22,22 @@ router.post(
   authMiddleware,
   adminInternalOnly,
   internalUserController.registerExternalUser
+);
+
+// G-07 Get the personal data of an external user (admin only)
+router.get(
+  '/internal-users/external-users/:userId',
+  authMiddleware,
+  adminOnly,
+  internalUserController.getExternalProfile
+);
+
+// G-07 Update the text data of an external user (admin only)
+router.patch(
+  '/internal-users/external-users/:userId',
+  authMiddleware,
+  adminOnly,
+  internalUserController.updateExternalProfile
 );
 
 export default router;
