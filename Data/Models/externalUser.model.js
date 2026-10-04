@@ -18,6 +18,7 @@ class ExternalUserModel {
     hashedPassword,
     roleId,
   }) {
+    // sends the registration data to the supabase function
     const { data, error } = await supabase.rpc(
       'create_self_registered_account',
       {
@@ -30,6 +31,7 @@ class ExternalUserModel {
       }
     );
 
+    // pases the database error back to the use case if creation fails
     if (error) {
       throw new Error(error.message);
     }
@@ -67,13 +69,13 @@ class ExternalUserModel {
     return data;
   }
 
-  // Find external user by email
+  // checks weather a usaer already has an account with this email
   static async findByEmail(email) {
     const { data, error } = await supabase
       .from('user')
-      .select('user_id')
+      .select('user_id') // only needs the user ID to know that an account exists
       .eq('email', email)
-      .is('deleted_at', null)
+      .is('deleted_at', null) // ignores users marked as deleted
       .maybeSingle();
 
     if (error) {

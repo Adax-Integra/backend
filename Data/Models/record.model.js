@@ -10,6 +10,8 @@ const RECORD_LIST_COLUMNS = `
   record_id,
   user_id,
   name,
+  record_number,
+  status,
   active_cases_count,
   updated_at
 `;
@@ -42,10 +44,13 @@ class RecordModel {
     return data;
   }
 
-  //Retrieves a page of non-deleted records and their owners.
-  static async findAll({ page = 1, search = '', hasOpenCases = null } = {}) {
+    //Retrieves a page of non-deleted records and their owners.
+  static async findAll({ page = 1, search = '', hasOpenCases = null, status = null } = {}) {
     // V-05 displays 10 records per page
     const limit = 10;
+
+    // Allowed record lifecycle statuses (must match the DB CHECK constraint).
+    const ALLOWED_STATUSES = ['SIN_EMPEZAR', 'EN_REVISION', 'EN_SEGUIMIENTO', 'COMPLETADO'];
 
     if (!Number.isSafeInteger(page) || page < 1) {
       throw new Error('page must be a positive integer.');
@@ -58,6 +63,11 @@ class RecordModel {
     // null means no filter; false selects records without open cases.
     if (hasOpenCases !== null && typeof hasOpenCases !== 'boolean') {
       throw new Error('hasOpenCases must be a boolean or null.');
+    }
+
+    // null means no filter; otherwise it must be one of the four statuses.
+    if (status !== null && !ALLOWED_STATUSES.includes(status)) {
+      throw new Error('status must be a valid record status or null.');
     }
 
     const from = (page - 1) * limit;
@@ -78,7 +88,10 @@ class RecordModel {
       // Treat SQL wildcard characters as literal search text.
       const escapedSearch = searchText.replace(/[\\%_]/g, '\\$&');
 
-      query = query.ilike('name', `%${escapedSearch}%`);
+      // Match either the usuaria's name or the record folio.
+      query = query.or(
+        `name.ilike.%${escapedSearch}%,record_number.ilike.%${escapedSearch}%`
+      );
     }
 
     // Apply the filter in the database before counting and paginating.
@@ -86,6 +99,11 @@ class RecordModel {
       query = query.gt('active_cases_count', 0);
     } else if (hasOpenCases === false) {
       query = query.eq('active_cases_count', 0);
+    }
+
+    // Filter by lifecycle status when requested.
+    if (status !== null) {
+      query = query.eq('status', status);
     }
 
     const { data, error, count } = await query
@@ -108,5 +126,4 @@ class RecordModel {
     };
   }
 }
-
 export default RecordModel;

@@ -40,4 +40,12 @@ router.patch(
   internalUserController.updateExternalProfile
 );
 
+// G-03 Admin creates a new collaborator (internal user) account
+router.post(
+  '/internal-users',
+  authMiddleware,
+  adminOnly,
+  internalUserController.createCollaborator
+);
+
 export default router;

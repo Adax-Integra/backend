@@ -1,5 +1,7 @@
+// prepares the created account information to send back to the app
 class CreateAccountDTO {
   constructor(user) {
+    // takes the user data retured by the database
     this.userId = user.user_id;
     this.name = user.name;
     this.lastName = user.last_name;
@@ -7,7 +9,7 @@ class CreateAccountDTO {
     this.phone = user.phone;
   }
 
-  // return only the account information needed by the app
+  // returns only the account information needed by the app
   toJSON() {
     return {
       userId: this.userId,

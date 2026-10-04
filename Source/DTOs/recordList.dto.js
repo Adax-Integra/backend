@@ -5,6 +5,8 @@ class RecordListDTO {
       record_id: record.record_id,
       user_id: record.user_id,
       name: record.name,
+      record_number: record.record_number,
+      status: record.status,
       active_cases_count: record.active_cases_count,
       updated_at: record.updated_at,
     }));

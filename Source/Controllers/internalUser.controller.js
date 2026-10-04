@@ -5,11 +5,14 @@ import RegisterExternalUserDTO from '../DTOs/registerExternalUser.dto.js';
 import GetExternalProfileUseCase from '../../Domain/UseCases/getExternalProfile.usecase.js';
 import UpdateExternalProfileUseCase from '../../Domain/UseCases/updateExternalProfile.usecase.js';
 import ExternalProfileDTO from '../DTOs/externalProfile.dto.js';
+import CreateCollaboratorUseCase from '../../Domain/UseCases/createCollaborator.usecase.js';
+import CreateCollaboratorDTO from '../DTOs/createCollaborator.dto.js';
 
 const getAllCasesFromUser = new GetAllCasesFromUser();
 const registerExternalUserUseCase = new RegisterExternalUserUseCase();
 const getExternalProfileUseCase = new GetExternalProfileUseCase();
 const updateExternalProfileUseCase = new UpdateExternalProfileUseCase();
+const createCollaboratorUseCase = new CreateCollaboratorUseCase();
 
 class InternalUserController {
   getAllCasesFromUser = async (req, res) => {
@@ -112,6 +115,36 @@ class InternalUserController {
         return res.status(500).json({
           success: false,
           error: 'Unable to update the external profile',
+        });
+      }
+
+      return res.status(status).json({
+        success: false,
+        error: error.message,
+        errors: error.details ?? null,
+      });
+    }
+  };
+
+  // G-03: The admin creates a new collaborator account
+  createCollaborator = async (req, res) => {
+    try {
+      const created = await createCollaboratorUseCase.execute(req.body);
+      const payload = new CreateCollaboratorDTO(created).toJSON();
+
+      return res.status(201).json({
+        success: true,
+        data: payload,
+      });
+    } catch (error) {
+      const status = error.status ?? 500;
+
+      if (status >= 500) {
+        console.error('Failed to create collaborator: ', error);
+        
+        return res.status(500).json({
+          success: false,
+          error: 'Unable to create the collaborator',
         });
       }
 

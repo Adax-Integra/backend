@@ -16,6 +16,7 @@ tags:
   - name: Internal Users
   - name: Privacy Policy
   - name: Locations
+  - name: Records
 
 paths:
   /:
@@ -106,7 +107,7 @@ paths:
     get:
       tags: [External Users]
       summary: Get external user pre-submission data
-      description: Returns the user's profile (name, last name, birth date, phone), full address, and documents. Document URLs are signed links. Staff or the owner of this userId may call it.
+      description: Returns the user's profile (name, last name, birth date, phone), full address, and documents. Document URLs are signed links. Only the owner of this userId may call it.
       security:
         - BearerAuth: []
       responses:
@@ -122,12 +123,25 @@ paths:
     put:
       tags: [External Users]
       summary: Update external user pre-submission data
-      description: At least one field in profile, address, or documents is required. Document values are storage paths that start with the user ID, contain no empty, ".", or ".." segments, and must already exist in storage. Staff or the owner of this userId may call it.
+      description: |
+        At least one field in profile, address, or documents is required. Only the owner of this userId may call it.
+
+        Two request formats are accepted:
+        - **multipart/form-data**: upload the documents as files (PDF, JPEG or PNG, max 5 MB each). Files are stored under "{userId}/identity/" or "{userId}/address/" and replace any path sent for the same document. profile and address must be sent as JSON strings.
+        - **application/json**: document values are storage paths that start with the user ID, contain no empty, ".", or ".." segments, and must already exist in storage.
       security:
         - BearerAuth: []
       requestBody:
         required: true
         content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PreSubmissionMultipartRequest'
+            encoding:
+              profile: { contentType: application/json }
+              address: { contentType: application/json }
+              identity_document: { contentType: 'application/pdf, image/jpeg, image/png' }
+              proof_of_address: { contentType: 'application/pdf, image/jpeg, image/png' }
           application/json:
             schema:
               $ref: '#/components/schemas/PreSubmissionUpdateRequest'
@@ -138,6 +152,43 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PreSubmissionSuccessResponse'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /api/records:
+    get:
+      tags: [Records]
+      summary: List expedientes (records) for internal staff (V-05)
+      description: Returns a paginated list of 10 expedientes per page. Supports search by the usuaria's name or folio, and filters by whether the record has open cases and by lifecycle status. Admin and internal users only.
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, minimum: 1, default: 1 }
+          description: Page number (10 records per page).
+        - in: query
+          name: search
+          schema: { type: string }
+          description: Matches the usuaria's name or the record folio (record_number).
+        - in: query
+          name: hasOpenCases
+          schema: { type: boolean }
+          description: When true, only records with open cases; when false, only records without open cases.
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [SIN_EMPEZAR, EN_REVISION, EN_SEGUIMIENTO, COMPLETADO]
+          description: Filters by the record lifecycle status.
+      responses:
+        '200':
+          description: Records retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecordListSuccessResponse'
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
@@ -197,6 +248,42 @@ paths:
                 errors: null
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+
+  /api/internal-users:
+    post:
+      tags: [Internal Users]
+      summary: Create a collaborator account (G-03)
+      description: Admin only. Creates an internal user (collaborator). The email must not belong to any existing account. Validation errors include an "errors" object with one message per field.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCollaboratorRequest'
+      responses:
+        '201':
+          description: Collaborator created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateCollaboratorSuccessResponse'
+        '400':
+          description: Invalid or missing fields
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateCollaboratorErrorResponse'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409':
+          description: An account with this email already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateCollaboratorErrorResponse'
         '500': { $ref: '#/components/responses/InternalServerError' }
 
   /api/internal-users/{userId}/allCases:
@@ -567,7 +654,7 @@ components:
         application/json:
           schema: { $ref: '#/components/schemas/ErrorResponse' }
     Forbidden:
-      description: The token belongs to another user and the caller is not staff
+      description: The caller does not have permission to access this resource.
       content:
         application/json:
           schema: { $ref: '#/components/schemas/ErrorResponse' }
@@ -701,6 +788,27 @@ components:
         profile: { $ref: '#/components/schemas/ProfileUpdate' }
         address: { $ref: '#/components/schemas/AddressUpdate' }
         documents: { $ref: '#/components/schemas/DocumentsUpdate' }
+
+    PreSubmissionMultipartRequest:
+      type: object
+      minProperties: 1
+      properties:
+        profile:
+          type: string
+          description: JSON string of ProfileUpdate.
+          example: '{"name":"Ana","phone":"5512345678"}'
+        address:
+          type: string
+          description: JSON string of AddressUpdate.
+          example: '{"city":"Monterrey"}'
+        identity_document:
+          type: string
+          format: binary
+          description: PDF, JPEG or PNG, max 5 MB.
+        proof_of_address:
+          type: string
+          format: binary
+          description: PDF, JPEG or PNG, max 5 MB.
 
     CreateAccountRequest:
       type: object
@@ -836,6 +944,34 @@ components:
           nullable: true
           additionalProperties: { type: string }
           description: Reason for each invalid body field
+
+    RecordListItem:
+      type: object
+      properties:
+        record_id: { type: string, format: uuid }
+        user_id: { type: string, format: uuid }
+        name: { type: string, example: Daniela Alejandra Herrera Ocampo }
+        record_number: { type: string, nullable: true, example: EXP-2026-0001 }
+        status:
+          type: string
+          enum: [SIN_EMPEZAR, EN_REVISION, EN_SEGUIMIENTO, COMPLETADO]
+          example: SIN_EMPEZAR
+        active_cases_count: { type: integer, example: 2 }
+        updated_at: { type: string, format: date-time, nullable: true }
+
+    RecordListSuccessResponse:
+      type: object
+      properties:
+        success: { type: boolean, example: true }
+        data:
+          type: object
+          properties:
+            records:
+              type: array
+              items: { $ref: '#/components/schemas/RecordListItem' }
+            total: { type: integer, example: 42 }
+            page: { type: integer, example: 1 }
+            limit: { type: integer, example: 10 }
 
     CaseListItem:
       type: object
@@ -1013,19 +1149,19 @@ components:
     StateOption:
       type: object
       properties:
-        stateId: { type: string }
-        nameEn: { type: string }
-        nameEs: { type: string }
+        state_id: { type: string }
+        name_en: { type: string }
+        name_es: { type: string }
         code: { type: string, nullable: true }
 
     CountryWithStates:
       type: object
       properties:
-        countryId: { type: string }
+        country_id: { type: string }
         iso2: { type: string, example: MX }
-        nameEn: { type: string }
-        nameEs: { type: string }
-        phoneCode: { type: string, nullable: true }
+        name_en: { type: string }
+        name_es: { type: string }
+        phone_code: { type: string, nullable: true }
         states:
           type: array
           items: { $ref: '#/components/schemas/StateOption' }
@@ -1105,3 +1241,43 @@ components:
       properties:
         success: { type: boolean, example: true }
         data: { $ref: '#/components/schemas/ConsentData' }
+
+    CreateCollaboratorRequest:
+      type: object
+      required: [name, last_name, email, password, phone]
+      properties:
+          name: { type: string, maxLength: 50 }
+          last_name: { type: string, maxLength: 50 }
+          email: { type: string, format: email, maxLength: 128 }
+          password: { type: string, format: password, minLength: 8, maxLength: 128 }
+          phone: { type: string, example: '+524421513555', description: Country code with + followed by 10 digits }
+
+    CollaboratorData:
+      type: object
+      required: [user_id, name, last_name, email, phone, role]
+      properties:
+        user_id: { type: string, format: uuid }
+        name: { type: string }
+        last_name: { type: string }
+        email: { type: string, format: email }
+        phone: { type: string }
+        role: { type: string, example: internal }
+
+    CreateCollaboratorSuccessResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success: { type: boolean, example: true }
+        data: { $ref: '#/components/schemas/CollaboratorData' }
+
+    CreateCollaboratorErrorResponse:
+      type: object
+      required: [success, error]
+      properties:
+        success: { type: boolean, example: false }
+        error: { type: string }
+        errors:
+          type: object
+          nullable: true
+          additionalProperties: { type: string }
+          example: { email: An account with this email already exists. }

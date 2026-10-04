@@ -1,8 +1,20 @@
+// Used for generating random file names.
+import crypto from 'node:crypto';
 import { supabase } from '../Config/supabase.js';
 
 const USER_DOCUMENTS_BUCKET = 'user-documents';
 const SIGNED_URL_EXPIRES_IN_SECONDS = 60 * 15;
 const SIGNED_URL_FIELDS = ['identity_document', 'proof_of_address'];
+// Folder inside "{userId}/" where each document type is stored
+const DOCUMENT_FOLDERS = {
+  identity_document: 'identity',
+  proof_of_address: 'address',
+};
+const FILE_EXTENSIONS = {
+  'application/pdf': 'pdf',
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+};
 
 /*
 Data Model for external user access to the "user_documents" table.
@@ -89,6 +101,50 @@ class ExternalUserDocumentsModel {
         urlsByPath.get(documents.identity_document) ?? null,
       proof_of_address_url: urlsByPath.get(documents.proof_of_address) ?? null,
     };
+  }
+
+  /*
+  Uploads a file to the "user-documents" bucket under "{userId}/{folder}/"
+  and returns its path. The file name is generated here, the user's file name
+  will not be taken into consideration.
+  */
+  static async uploadFile(userId, key, file) {
+    const extension = FILE_EXTENSIONS[file.mimetype];
+    if (!extension) {
+      throw new Error(`${key}: unsupported file type.`);
+    }
+
+    const folder = DOCUMENT_FOLDERS[key];
+    if (!folder) {
+      throw new Error(`${key}: unsupported document type.`);
+    }
+
+    const path = `${userId}/${folder}/${crypto.randomUUID()}.${extension}`;
+
+    const { error } = await supabase.storage
+      .from(USER_DOCUMENTS_BUCKET)
+      .upload(path, file.buffer, { contentType: file.mimetype });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return path;
+  }
+
+  // Removes files from the bucket (just in case a step fails)
+  static async removeFiles(paths) {
+    if (paths.length === 0) {
+      return;
+    }
+
+    const { error } = await supabase.storage
+      .from(USER_DOCUMENTS_BUCKET)
+      .remove(paths);
+
+    if (error) {
+      throw new Error(error.message);
+    }
   }
 
   /* 
