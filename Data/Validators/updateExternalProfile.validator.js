@@ -1,7 +1,6 @@
 /* G-07: Only the admin can change the text data of an external user.
-Name, last name and birth date were used to create the account, so 
-the associate asked to keep them fixed. Documents are out of this
-user story.
+Name, last name and birth date were used to create the account, so the 
+associate asked to keep them fixed. Documents are out of this user story.
 */
 import EmailValidator from './email.validator.js';
 import PhoneValidator from './phone.validator.js';
@@ -17,7 +16,7 @@ const ADDRESS_KEYS = [
   'state',
   'city',
 ];
-// Enough for a short explanation without filling the log whit long texts
+// Enough for a short explanation without filling the log with long texts
 const MAX_REASON_LENGTH = 500;
 
 // Same shape as createCase.validator so the app can highlight each field
