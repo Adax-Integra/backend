@@ -1,7 +1,7 @@
 //tests for password recovery
 
 //tests for password recovery model
-//import PasswordRecoveryModel from '../data/models/passwordRecovery.model.js';
+import PasswordRecoveryModel from '../data/models/passwordRecovery.model.js';
 
 //const userId = 'f3c972df-d0ae-4099-b088-02e4180b949f';
 
@@ -49,6 +49,13 @@
 } catch (error) {
   console.error('Error updating recovery record:', error.message);
 }*/
+
+//mark the token as used
+const result = await PasswordRecoveryModel.markTokenAsUsed(
+  '95868e52-dc92-421c-a466-634d79a55ff2'
+);
+
+console.log(result);
 
 //test upon receiving raw token
 //import crypto from 'crypto';

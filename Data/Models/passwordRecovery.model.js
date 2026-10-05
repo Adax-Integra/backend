@@ -74,6 +74,23 @@ class PasswordRecoveryModel {
     }
     return data;
   }
+
+  //once token has been used, update table
+  static async markTokenAsUsed(recoveryId) {
+    const { data, error } = await supabase
+      .from('password_recovery')
+      .update({
+        used_at: new Date().toISOString(),
+      })
+      .eq('recovery_id', recoveryId)
+      .select(PASSWORD_RECOVERY_COLUMNS)
+      .single();
+
+    if (error) {
+      throw new Error(error.message);
+    }
+    return data;
+  }
 }
 
 export default PasswordRecoveryModel;
