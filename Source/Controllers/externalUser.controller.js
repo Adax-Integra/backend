@@ -45,6 +45,9 @@ class ExternalUserController {
         data: payload,
       });
     } catch (error) {
+      console.error('Failed to create account:', error);
+      console.error('Cause:', error.cause);
+
       return res.status(error.statusCode ?? 400).json({
         success: false,
         error: error.message,
