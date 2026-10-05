@@ -34,6 +34,27 @@ class MailerService {
         'Ingresa a la app con tu correo y esta contraseña, y cámbiala en tu primer inicio de sesión.',
     });
   }
+
+  //sends a password recovery email to the user with a recovery token
+  static async sendPasswordRecoveryEmail(email, recoveryToken) {
+    if (!transporter) {
+      console.warn(
+        '[mailer] SMTP not configured. Password recovery email for ${email} was not sent.'
+      );
+      return;
+    }
+
+    //send the email with the recovery token
+    await transporter.sendMail({
+      from: MAIL_FROM ?? MAIL_USER,
+      to: email,
+      subject: 'Recuperación de contraseña de Adax',
+      text:
+        'Se solicitó la recuperación de tu contraseña en Adax.\n\n' +
+        `Tu enlace de recuperación es: ${recoveryToken}\n\n` +
+        'Este código tiene una vigencia limitada. Si no solicitaste la recuperación de tu contraseña, ignora este correo.',
+    });
+  }
 }
 
 export default MailerService;
