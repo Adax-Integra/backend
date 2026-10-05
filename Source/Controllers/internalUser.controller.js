@@ -7,12 +7,15 @@ import UpdateExternalProfileUseCase from '../../Domain/UseCases/updateExternalPr
 import ExternalProfileDTO from '../DTOs/externalProfile.dto.js';
 import CreateCollaboratorUseCase from '../../Domain/UseCases/createCollaborator.usecase.js';
 import CreateCollaboratorDTO from '../DTOs/createCollaborator.dto.js';
+import ListActivityLogUseCase from '../../Domain/UseCases/listActivityLog.usecase.js';
+import ActivityLogDTO from '../DTOs/activityLog.dto.js';
 
 const getAllCasesFromUser = new GetAllCasesFromUser();
 const registerExternalUserUseCase = new RegisterExternalUserUseCase();
 const getExternalProfileUseCase = new GetExternalProfileUseCase();
 const updateExternalProfileUseCase = new UpdateExternalProfileUseCase();
 const createCollaboratorUseCase = new CreateCollaboratorUseCase();
+const listActivityLogUseCase = new ListActivityLogUseCase();
 
 class InternalUserController {
   getAllCasesFromUser = async (req, res) => {
@@ -141,10 +144,40 @@ class InternalUserController {
 
       if (status >= 500) {
         console.error('Failed to create collaborator: ', error);
-        
+
         return res.status(500).json({
           success: false,
           error: 'Unable to create the collaborator',
+        });
+      }
+
+      return res.status(status).json({
+        success: false,
+        error: error.message,
+        errors: error.details ?? null,
+      });
+    }
+  };
+
+  // V-06: The admin consults the activity log of the system
+  listActivityLog = async (req, res) => {
+    try {
+      const result = await listActivityLogUseCase.execute(req.query);
+      const payload = new ActivityLogDTO(result).toJSON();
+
+      return res.status(200).json({
+        success: true,
+        data: payload,
+      });
+    } catch (error) {
+      const status = error.status ?? 500;
+
+      if (status >= 500) {
+        console.error('Failed to list activity log: ', error);
+
+        return res.status(500).json({
+          success: false,
+          error: 'Unable to get the activity log',
         });
       }
 
