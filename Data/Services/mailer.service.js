@@ -48,7 +48,7 @@ class MailerService {
     await transporter.sendMail({
       from: MAIL_FROM ?? MAIL_USER,
       to: email,
-      subject: 'Recuperación de contraseña de Adax',
+      subject: 'Recuperación de contraseña de Adax Integra',
       text:
         'Se solicitó la recuperación de tu contraseña en Adax.\n\n' +
         `Tu enlace de recuperación es: ${recoveryToken}\n\n` +

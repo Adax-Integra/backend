@@ -50,13 +50,38 @@
   console.error('Error updating recovery record:', error.message);
 }*/
 
+//test upon receiving raw token
+//import crypto from 'crypto';
+
+const recoveryToken =
+  '4da24de720d2555872fdda6fa8a0872e3001e0057e82393cd7097d997fc5b08d';
+
+/*const tokenHash = crypto
+    .createHash('sha256')
+    .update(recoveryToken)
+    .digest('hex');*/
+
+/*try {
+    console.log('Searching for recovery token...');
+
+    const recovery = await PasswordRecoveryModel.findByToken(tokenHash);
+
+    console.log('Result:');
+    console.log(recovery);
+
+} catch (error) {
+    console.error('Token lookup failed:');
+    console.error(error);
+}*/
+
+//---------------------------------------------------------------------------
 //test use case for password recovery
 import PasswordRecoveryUseCase from '../domain/useCases/passwordRecovery.usecase.js';
 
 const useCase = new PasswordRecoveryUseCase();
 
 //replace w valid email
-const email = 'regina.solano@gmail.com';
+/*const email = 'gtrujillo1242@yahoo.com';
 
 //should create a hashed token and store it in the password recovery table, or update an existing record if one exists for the user
 try {
@@ -68,4 +93,16 @@ try {
 } catch (error) {
   console.error('PASSWORD RECOVERY FAILED');
   console.error(error);
+}*/
+
+try {
+  console.log('Validating recovery token...');
+
+  const result = await useCase.validateToken(recoveryToken);
+
+  console.log('TOKEN VALID');
+  console.log(result);
+} catch (error) {
+  console.error('TOKEN INVALID');
+  console.error(error.message);
 }

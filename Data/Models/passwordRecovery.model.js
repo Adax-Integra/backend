@@ -60,6 +60,20 @@ class PasswordRecoveryModel {
     }
     return data;
   }
+
+  //find record by taking raw token and hashing it to compare with stored hash
+  static async findByToken(tokenHash) {
+    const { data, error } = await supabase
+      .from('password_recovery')
+      .select(PASSWORD_RECOVERY_COLUMNS)
+      .eq('token_hash', tokenHash)
+      .maybeSingle();
+
+    if (error) {
+      throw new Error(error.message);
+    }
+    return data;
+  }
 }
 
 export default PasswordRecoveryModel;
