@@ -2,11 +2,16 @@ import GetAllCasesFromUser from '../../Domain/UseCases/getAllCasesFromUser.useca
 import getAllCasesDTO from '../DTOs/getAllCases.dto.js';
 import RegisterExternalUserUseCase from '../../Domain/UseCases/registerExternalUser.usecase.js';
 import RegisterExternalUserDTO from '../DTOs/registerExternalUser.dto.js';
+import GetExternalProfileUseCase from '../../Domain/UseCases/getExternalProfile.usecase.js';
+import UpdateExternalProfileUseCase from '../../Domain/UseCases/updateExternalProfile.usecase.js';
+import ExternalProfileDTO from '../DTOs/externalProfile.dto.js';
 import CreateCollaboratorUseCase from '../../Domain/UseCases/createCollaborator.usecase.js';
 import CreateCollaboratorDTO from '../DTOs/createCollaborator.dto.js';
 
 const getAllCasesFromUser = new GetAllCasesFromUser();
 const registerExternalUserUseCase = new RegisterExternalUserUseCase();
+const getExternalProfileUseCase = new GetExternalProfileUseCase();
+const updateExternalProfileUseCase = new UpdateExternalProfileUseCase();
 const createCollaboratorUseCase = new CreateCollaboratorUseCase();
 
 class InternalUserController {
@@ -58,6 +63,69 @@ class InternalUserController {
     }
   };
 
+  // G-07 Shows the data of an external user before the admin edits it
+  getExternalProfile = async (req, res) => {
+    try {
+      const data = await getExternalProfileUseCase.execute(req.params.userId);
+      const payload = new ExternalProfileDTO(data).toJSON();
+
+      return res.status(200).json({
+        success: true,
+        data: payload,
+      });
+    } catch (error) {
+      const status = error.status ?? 500;
+
+      if (status >= 500) {
+        console.error('Failed to get external profile: ', error);
+
+        return res.status(500).json({
+          success: false,
+          error: 'Unable to get the external profile',
+        });
+      }
+
+      return res.status(status).json({
+        success: false,
+        error: error.message,
+      });
+    }
+  };
+
+  // G-07: Updates the text data of an external user
+  updateExternalProfile = async (req, res) => {
+    try {
+      const updated = await updateExternalProfileUseCase.execute(
+        req.user.user_id,
+        req.params.userId,
+        req.body
+      );
+      const payload = new ExternalProfileDTO(updated).toJSON();
+
+      return res.status(200).json({
+        success: true,
+        data: payload,
+      });
+    } catch (error) {
+      const status = error.status ?? 500;
+
+      if (status >= 500) {
+        console.error('Failed to update external profile: ', error);
+
+        return res.status(500).json({
+          success: false,
+          error: 'Unable to update the external profile',
+        });
+      }
+
+      return res.status(status).json({
+        success: false,
+        error: error.message,
+        errors: error.details ?? null,
+      });
+    }
+  };
+
   // G-03: The admin creates a new collaborator account
   createCollaborator = async (req, res) => {
     try {
@@ -73,7 +141,7 @@ class InternalUserController {
 
       if (status >= 500) {
         console.error('Failed to create collaborator: ', error);
-
+        
         return res.status(500).json({
           success: false,
           error: 'Unable to create the collaborator',
