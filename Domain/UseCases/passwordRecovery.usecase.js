@@ -1,8 +1,11 @@
 import UserModel from '../../Data/Models/user.model.js';
 import PasswordRecoveryModel from '../../Data/Models/passwordRecovery.model.js';
 import MailerService from '../../data/Services/mailer.service.js';
+import PasswordValidator from '../../data/validators/password.validator.js';
 
 import crypto from 'crypto';
+import bcrypt from 'bcrypt';
+const BCRYPT_SALT_ROUNDS = 10;
 
 class PasswordRecoveryUseCase {
   async forgotPassword(email) {
@@ -119,6 +122,27 @@ class PasswordRecoveryUseCase {
     return {
       valid: true,
       userId: recoveryRecord.user_id,
+      recoveryId: recoveryRecord.recovery_id,
+    };
+  }
+
+  //password reset function, takes token and new password, validates token, hashes new password, updates user record, marks token as used
+  async resetPassword(token, newPassword) {
+    //validate recovery token
+    const { userId, recoveryId } = await this.validateToken(token);
+
+    const password = PasswordValidator.validatePassword(newPassword);
+
+    //hash the new password
+    const hashedPassword = await bcrypt.hash(password, BCRYPT_SALT_ROUNDS);
+
+    await UserModel.updatePassword(userId, hashedPassword);
+
+    //mark token as used
+    await PasswordRecoveryModel.markTokenAsUsed(recoveryId);
+
+    return {
+      message: 'Contraseña actualizada exitosamente.',
     };
   }
 }
