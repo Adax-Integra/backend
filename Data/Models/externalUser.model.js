@@ -19,17 +19,14 @@ class ExternalUserModel {
     roleId,
   }) {
     // sends the registration data to the supabase function
-    const { data, error } = await supabase.rpc(
-      'create_self_registered_account',
-      {
-        p_name: name,
-        p_last_name: lastName,
-        p_email: email,
-        p_password: hashedPassword,
-        p_phone: phone,
-        p_role_id: roleId,
-      }
-    );
+    const { data, error } = await supabase.rpc('create_external_account', {
+      p_name: name,
+      p_last_name: lastName,
+      p_email: email,
+      p_password: hashedPassword,
+      p_phone: phone,
+      p_role_id: roleId,
+    });
 
     // pases the database error back to the use case if creation fails
     if (error) {
@@ -79,7 +76,8 @@ class ExternalUserModel {
       .maybeSingle();
 
     if (error) {
-      throw new Error(error.message);
+      console.error('Supabase findByEmail error:', error);
+      throw new Error(error.message, { cause: error });
     }
 
     return data ?? null;
@@ -115,6 +113,62 @@ class ExternalUserModel {
       .single();
 
     if (error) {
+      throw new Error(error.message);
+    }
+
+    return data;
+  }
+
+  // G-07: profile columns the admin can see, without the password hash
+  static async findEditableProfileById(userId) {
+    const { data, error } = await supabase
+      .from('user')
+      .select('user_id, name, last_name, email, birth_date, phone')
+      .eq('user_id', userId)
+      .is('deleted_at', null)
+      .maybeSingle();
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return data ?? null;
+  }
+
+  /*
+  G-07: updates the user and address rows and writes the activity log
+  inside the same supabase rpc, so a change is never saved without its log.
+  */
+  static async updateProfileWithLog({
+    userId,
+    actorId,
+    profile,
+    address,
+    changes,
+    reason,
+  }) {
+    const { data, error } = await supabase.rpc(
+      'update_external_profile_with_log',
+      {
+        p_user_id: userId,
+        p_actor_id: actorId,
+        p_profile: profile,
+        p_address: address,
+        p_changes: changes,
+        p_reason: reason,
+        p_consent_confirmed: true,
+      }
+    );
+
+    if (error) {
+      // 23505 is the unique violation code. The email can still belong to a
+      // deleted account, which findByEmail does not return
+      if (error.code === '23505') {
+        const conflict = new Error('This email is already registered');
+        conflict.status = 409;
+        throw conflict;
+      }
+
       throw new Error(error.message);
     }
 

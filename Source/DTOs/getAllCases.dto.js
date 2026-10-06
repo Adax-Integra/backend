@@ -1,3 +1,12 @@
+function toUtcIso(value) {
+  if (!value) {
+    return null;
+  }
+  const text = String(value);
+  const hasZone = /(Z|[+-]\d{2}:?\d{2})$/.test(text);
+  return new Date(hasZone ? text : `${text}Z`).toISOString();
+}
+
 class CaseSummaryDTO {
   constructor({
     case_id,
@@ -15,8 +24,9 @@ class CaseSummaryDTO {
     this.writtenHelpsWanted = written_helps_wanted ?? null;
     this.hasLawyer = Boolean(has_lawyer);
     this.state = state ?? null;
-    this.createdAt = created_at ? new Date(created_at).toISOString() : null;
-    this.updatedAt = updated_at ? new Date(updated_at).toISOString() : null;
+    // Dates are always returned in UTC (ending in Z) so the app can show the local time
+    this.createdAt = toUtcIso(created_at);
+    this.updatedAt = toUtcIso(updated_at);
 
     // Filter out softly deleted records and extract the description text
     const validHelps = case_help
