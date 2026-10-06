@@ -1,5 +1,6 @@
 import DateRangeValidator from '../../Data/Validators/dateRangeValidator.validator.js';
 import ReportModel from '../../Data/Models/report.model.js';
+import ReportDataToCsvConverter from '../../Data/Services/reportDataToCsv.converter.js';
 
 class GetReportCsv {
   async execute(startDate, endDate) {
@@ -10,9 +11,7 @@ class GetReportCsv {
       ReportModel.getInformationForReport(validStartDate, validEndDate),
     ]);
 
-    console.log(data);
-    // TODO convert the data from whatever format into a CSV
-    // then return the csv
+    return ReportDataToCsvConverter.convert(data);
   }
 }
 
