@@ -75,6 +75,45 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '500': { $ref: '#/components/responses/InternalServerError' }
 
+  /api/auth/change-password:
+    post:
+      tags: [Authentication]
+      summary: Change the authenticated user's password
+      description: Verifies the current password and stores a new password hash for the authenticated user.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+            example:
+              current_password: currentPassword123
+              new_password: newPassword123
+              confirm_password: newPassword123
+      responses:
+        '200':
+          description: Password changed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChangePasswordSuccessResponse'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401':
+          description: Missing or invalid token, or current password is incorrect
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Authenticated user was not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500': { $ref: '#/components/responses/InternalServerError' }
+
   /api/external-user/register:
     post:
       tags: [External Users]
@@ -587,6 +626,25 @@ components:
       properties:
         success: { type: boolean, example: true }
         data: { $ref: '#/components/schemas/LoginData' }
+
+    ChangePasswordRequest:
+      type: object
+      required: [current_password, new_password, confirm_password]
+      properties:
+        current_password: { type: string, format: password }
+        new_password: { type: string, format: password, minLength: 8 }
+        confirm_password: { type: string, format: password, minLength: 8 }
+
+    ChangePasswordSuccessResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success: { type: boolean, example: true }
+        data:
+          type: object
+          required: [message]
+          properties:
+            message: { type: string, example: Password updated successfully. }
 
     Profile:
       type: object
