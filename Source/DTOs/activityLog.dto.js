@@ -42,7 +42,9 @@ class ActivityLogDTO {
         target,
         description: `${actorName} ${action.verb} ${target}`,
         reason: reason || NO_REASON,
-        created_at: log.created_at,
+        created_at: log.created_at
+          ? new Date(log.created_at).toISOString()
+          : null,
       };
     });
 
