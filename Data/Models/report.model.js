@@ -10,7 +10,15 @@ class ReportsModel {
     /**
      * Fetches the following information from the database
      * Expects a start_date and end_date in format YYYY-MM-DD
-     * Returns an object array
+     * Returns a json in the following format:
+     * {Promise<{
+     *   cases: { total: number, new: number, follow_up: number },
+     *   cases_by_age: Record<'0-11'|'12-17'|'18-29'|'30-59'|'60+'|'unknown', number>,
+     *   cases_by_region: Record<string, number>,
+     *   cases_by_violence: Record<string, number>,
+     *   cases_by_help: Record<string, number>,
+     *   cases_by_severity: { severity_7_or_above: number, severity_6_or_below: number, no_violence_type: number }
+     * }>}
      */
     const { data, error } = await supabase.rpc('get_information_for_report', {
       start_date: `${startDate}T00:00:00.000Z`,
