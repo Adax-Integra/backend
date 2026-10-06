@@ -136,7 +136,7 @@ class PasswordRecoveryUseCase {
     //hash the new password
     const hashedPassword = await bcrypt.hash(password, BCRYPT_SALT_ROUNDS);
 
-    await UserModel.updatePassword(userId, hashedPassword);
+    await UserModel.recoverPassword(userId, hashedPassword);
 
     //mark token as used
     await PasswordRecoveryModel.markTokenAsUsed(recoveryId);

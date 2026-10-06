@@ -41,7 +41,13 @@ class UserModel {
       .is('deleted_at', null)
       .select(UserModel.AUTH_COLUMNS)
       .single();
-    
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return data;
+  }
+
   static async findById(userId) {
     const { data, error } = await supabase
       .from(UserModel.TABLE)
