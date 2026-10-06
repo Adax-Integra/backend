@@ -17,6 +17,7 @@ import privacyPolicyRoutes from '../Source/Routes/privacyPolicy.routes.js';
 import recordRoutes from '../Source/Routes/record.routes.js';
 import profileRoutes from '../Source/Routes/profile.routes.js';
 import locationRoutes from '../Source/Routes/location.routes.js';
+import passwordRecoveryRoutes from '../Source/Routes/passwordRecovery.routes.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const swaggerDocument = parseYaml(
@@ -51,6 +52,7 @@ app.use('/api', privacyPolicyRoutes);
 app.use('/api', recordRoutes);
 app.use('/api', profileRoutes);
 app.use('/api', locationRoutes);
+app.use('/api/password-recovery', passwordRecoveryRoutes);
 
 // 404s
 app.use((_req, res) => res.status(404).send('Not found.'));
