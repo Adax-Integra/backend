@@ -1379,12 +1379,16 @@ components:
 
     ActivityLogItem:
       type: object
-      required: [log_id, actor_name, action, action_label, reason, created_at]
+      required: [log_id, actor_name, action, action_label, target, description, reason, created_at]
       properties:
         log_id: { type: string, format: uuid }
         actor_name: { type: string, example: Mariana Robles Ortega }
         action: { type: string, example: update_external_profile }
-        action_label: { type: string, example: Editó los datos de una usuaria }
+        action_label: { type: string, example: Edición de datos de usuaria }
+        entity: { type: string, nullable: true, example: user }
+        entity_id: { type: string, format: uuid, nullable: true }
+        target: { type: string, example: Valeria Prueba Hora }
+        description: { type: string, example: Mariana Robles Ortega editó los datos de Valeria Prueba Hora }
         reason: { type: string, example: Corrección del teléfono }
         created_at: { type: string, format: date-time }
 
