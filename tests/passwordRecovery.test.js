@@ -3,7 +3,9 @@
 //tests for password recovery model
 import PasswordRecoveryModel from '../data/models/passwordRecovery.model.js';
 
-//const userId = 'f3c972df-d0ae-4099-b088-02e4180b949f';
+//user functions within the model
+
+//const userId = 'test-user-id';
 
 //check if a recovery record exists for the user
 /*try {
@@ -39,7 +41,7 @@ import PasswordRecoveryModel from '../data/models/passwordRecovery.model.js';
 //update the existing record using record id
 /*try {
   const recovery = await PasswordRecoveryModel.updateRecoveryRecord(
-    '95868e52-dc92-421c-a466-634d79a55ff2',
+    'test-recovery-id',
     'new-test-hash',
     new Date(Date.now() + 60 * 60 * 1000).toISOString()
   );
@@ -50,18 +52,18 @@ import PasswordRecoveryModel from '../data/models/passwordRecovery.model.js';
   console.error('Error updating recovery record:', error.message);
 }*/
 
+//--------------------------------------------------------------------------
+
 //mark the token as used
-const result = await PasswordRecoveryModel.markTokenAsUsed(
-  '95868e52-dc92-421c-a466-634d79a55ff2'
-);
+//this should be done after the user successfully resets their password
+const result = await PasswordRecoveryModel.markTokenAsUsed('test-recovery-id');
 
 console.log(result);
 
 //test upon receiving raw token
 //import crypto from 'crypto';
 
-const recoveryToken =
-  '4da24de720d2555872fdda6fa8a0872e3001e0057e82393cd7097d997fc5b08d';
+const recoveryToken = 'test-token';
 
 /*const tokenHash = crypto
     .createHash('sha256')
@@ -88,7 +90,7 @@ import PasswordRecoveryUseCase from '../domain/useCases/passwordRecovery.usecase
 const useCase = new PasswordRecoveryUseCase();
 
 //replace w valid email
-/*const email = 'gtrujillo1242@yahoo.com';
+/*const email = 'test-email';
 
 //should create a hashed token and store it in the password recovery table, or update an existing record if one exists for the user
 try {
