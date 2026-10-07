@@ -1,7 +1,7 @@
 //tests for password recovery
 
 //tests for password recovery model
-import PasswordRecoveryModel from '../data/models/passwordRecovery.model.js';
+import PasswordRecoveryModel from '../Data/Models/passwordRecovery.model.js';
 
 //user functions within the model
 
@@ -85,7 +85,7 @@ const recoveryToken = 'test-token';
 
 //---------------------------------------------------------------------------
 //test use case for password recovery
-import PasswordRecoveryUseCase from '../domain/useCases/passwordRecovery.usecase.js';
+import PasswordRecoveryUseCase from '../Domain/UseCases/passwordRecovery.usecase.js';
 
 const useCase = new PasswordRecoveryUseCase();
 

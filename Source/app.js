@@ -18,7 +18,7 @@ import recordRoutes from '../Source/Routes/record.routes.js';
 import profileRoutes from '../Source/Routes/profile.routes.js';
 import locationRoutes from '../Source/Routes/location.routes.js';
 import passwordRecoveryRoutes from '../Source/Routes/passwordRecovery.routes.js';
-import assetLinks from '../data/config/assetlinks.js';
+import assetLinks from '../Data/Config/assetlinks.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const swaggerDocument = parseYaml(
