@@ -18,6 +18,7 @@ import privacyPolicyRoutes from '../Source/Routes/privacyPolicy.routes.js';
 import recordRoutes from '../Source/Routes/record.routes.js';
 import profileRoutes from '../Source/Routes/profile.routes.js';
 import locationRoutes from '../Source/Routes/location.routes.js';
+import reportRoutes from '../Source/Routes/report.routes.js';
 import passwordRecoveryRoutes from '../Source/Routes/passwordRecovery.routes.js';
 import assetLinks from '../Data/Config/assetlinks.js';
 
@@ -59,6 +60,7 @@ app.use('/api', privacyPolicyRoutes);
 app.use('/api', recordRoutes);
 app.use('/api', profileRoutes);
 app.use('/api', locationRoutes);
+app.use('/api', reportRoutes);
 app.use('/api/password-recovery', passwordRecoveryRoutes);
 app.use('/api', commentRoutes);
 // 404s
