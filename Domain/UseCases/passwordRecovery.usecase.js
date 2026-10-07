@@ -1,7 +1,7 @@
 import UserModel from '../../Data/Models/user.model.js';
 import PasswordRecoveryModel from '../../Data/Models/passwordRecovery.model.js';
-import MailerService from '../../data/Services/mailer.service.js';
-import PasswordValidator from '../../data/validators/password.validator.js';
+import MailerService from '../../Data/Services/mailer.service.js';
+import PasswordValidator from '../../Data/Validators/password.validator.js';
 
 import crypto from 'crypto';
 import bcrypt from 'bcrypt';

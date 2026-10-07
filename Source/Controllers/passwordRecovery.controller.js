@@ -1,4 +1,4 @@
-import PasswordRecoveryUsecase from '../../domain/useCases/passwordRecovery.usecase.js';
+import PasswordRecoveryUsecase from '../../Domain/UseCases/passwordRecovery.usecase.js';
 
 const passwordRecoveryUsecase = new PasswordRecoveryUsecase();
 
