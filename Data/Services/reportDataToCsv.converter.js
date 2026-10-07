@@ -1,8 +1,9 @@
+import formatDate from './dateFormatter.helper.js';
+
 class ReportDataToCsvConverter {
   convert(data, startDate, endDate) {
-    // TODO change the format of the dates to a human-friendly dates
-    const prettyStartDate = startDate;
-    const prettyEndDate = endDate;
+    const prettyStartDate = formatDate(startDate);
+    const prettyEndDate = formatDate(endDate);
 
     // This part checks for all of the end of line strings and replaces them
     // with the end of line of the CSV
