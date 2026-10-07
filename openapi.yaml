@@ -325,6 +325,43 @@ paths:
                 $ref: '#/components/schemas/CreateCollaboratorErrorResponse'
         '500': { $ref: '#/components/responses/InternalServerError' }
 
+  /api/internal-users/activity-log:
+    get:
+      tags: [Internal Users]
+      summary: List the activity log (V-06)
+      description: Admin only. Returns 10 entries per page, newest first. Can be filtered by a date and time range. Each entry has who did the action, the action and when it happened. Validation errors include an "errors" object with one message per parameter.
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, minimum: 1, default: 1 }
+          description: Page number (10 entries per page).
+        - in: query
+          name: from
+          schema: { type: string, format: date-time, example: '2026-10-04T00:00:00Z' }
+          description: Only entries created at or after this date and time (ISO format with time zone).
+        - in: query
+          name: to
+          schema: { type: string, format: date-time, example: '2026-10-04T23:59:59Z' }
+          description: Only entries created at or before this date and time. Must be later than from.
+      responses:
+        '200':
+          description: Activity log retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActivityLogSuccessResponse'
+        '400':
+          description: Invalid query parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActivityLogErrorResponse'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+
   /api/internal-users/{userId}/allCases:
     parameters:
       - $ref: '#/components/parameters/UserId'
@@ -1339,3 +1376,45 @@ components:
           nullable: true
           additionalProperties: { type: string }
           example: { email: An account with this email already exists. }
+
+    ActivityLogItem:
+      type: object
+      required: [log_id, actor_name, action, action_label, target, description, reason, created_at]
+      properties:
+        log_id: { type: string, format: uuid }
+        actor_name: { type: string, example: Mariana Robles Ortega }
+        action: { type: string, example: update_external_profile }
+        action_label: { type: string, example: Edición de datos de usuaria }
+        entity: { type: string, nullable: true, example: user }
+        entity_id: { type: string, format: uuid, nullable: true }
+        target: { type: string, example: Valeria Prueba Hora }
+        description: { type: string, example: Mariana Robles Ortega editó los datos de Valeria Prueba Hora }
+        reason: { type: string, example: Corrección del teléfono }
+        created_at: { type: string, format: date-time }
+
+    ActivityLogSuccessResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success: { type: boolean, example: true }
+        data:
+          type: object
+          properties:
+            logs:
+              type: array
+              items: { $ref: '#/components/schemas/ActivityLogItem' }
+            total: { type: integer, example: 2 }
+            page: { type: integer, example: 1 }
+            limit: { type: integer, example: 10 }
+
+    ActivityLogErrorResponse:
+      type: object
+      required: [success, error]
+      properties:
+        success: { type: boolean, example: false }
+        error: { type: string }
+        errors:
+          type: object
+          nullable: true
+          additionalProperties: { type: string }
+          example: { to: to must be later than from. }

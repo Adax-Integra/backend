@@ -48,4 +48,12 @@ router.post(
   internalUserController.createCollaborator
 );
 
+// V-06 Admin consults the activity log of the system
+router.get(
+  '/internal-users/activity-log',
+  authMiddleware,
+  adminOnly,
+  internalUserController.listActivityLog
+);
+
 export default router;
