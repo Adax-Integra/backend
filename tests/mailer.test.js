@@ -1,6 +1,6 @@
 //testing email service for password recovery
 
-import MailerService from '../data/Services/mailer.service.js';
+import MailerService from '../Data/Services/mailer.service.js';
 
 //enter email to be sent to, and test sending email
 const email = 'email-example';
