@@ -195,6 +195,68 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
 
+  /api/external-users/{userId}/documents:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+    patch:
+      tags: [External Users]
+      summary: Upload or replace external user documents (R-06)
+      description: |
+        Allows an authenticated external user to upload or replace
+        their own identity document or proof of address.
+
+        At least one document must be provided.
+        Documents not included in the request remain unchanged.
+
+        Accepted formats: PDF, JPEG and PNG.
+        Maximum file size: 5 MB per document.
+
+        Replaced documents are removed from storage after
+        the database update succeeds.
+
+        Returned document URLs are signed and expire after 15 minutes.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              minProperties: 1
+              properties:
+                identity_document:
+                  type: string
+                  format: binary
+                  description: Identity document. PDF, JPEG or PNG, max 5 MB.
+                proof_of_address:
+                  type: string
+                  format: binary
+                  description: Proof of address. PDF, JPEG or PNG, max 5 MB.
+      responses:
+        '200':
+          description: Documents uploaded or replaced successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [success, data]
+                properties:
+                  success: { type: boolean, example: true }
+                  data:
+                    $ref: '#/components/schemas/Documents'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404':
+          description: User documents not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500': { $ref: '#/components/responses/InternalServerError' }
+
+
   /api/records:
     get:
       tags: [Records]
