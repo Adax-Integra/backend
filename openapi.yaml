@@ -12,6 +12,7 @@ tags:
   - name: Health
   - name: Authentication
   - name: Cases
+  - name: Comments   
   - name: External Users
   - name: Internal Users
   - name: Privacy Policy
@@ -588,6 +589,109 @@ paths:
                 error: Case with ID 3fa85f64-5717-4562-b3fc-2c963f66afa6 is already closed or does not exist.
         '500': { $ref: '#/components/responses/InternalServerError' }
 
+  /api/cases/{caseId}/comments:
+    parameters:
+      - $ref: '#/components/parameters/CaseId'
+    post:
+      tags: [Comments]
+      summary: Add a comment to a case (B-02)
+      description: The author is taken from the token. Admin and internal users only. The content is trimmed and must have 1 to 5000 characters.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCommentRequest'
+            example:
+              content: Se realizó la segunda sesión de acompañamiento psicológico.
+      responses:
+        '201':
+          description: Comment created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommentSuccessResponse'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404':
+          description: The case does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                error: Case with ID 3fa85f64-5717-4562-b3fc-2c963f66afa6 not found.
+        '500': { $ref: '#/components/responses/InternalServerError' }
+    get:
+      tags: [Comments]
+      summary: List the comments of a case, newest first (B-02)
+      description: Admin and internal users only. Returns an empty array when the case has no comments.
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: query
+          name: limit
+          description: Maximum number of comments to return.
+          schema: { type: integer, minimum: 1, maximum: 100, default: 50 }
+      responses:
+        '200':
+          description: Comments retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommentListSuccessResponse'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404':
+          description: The case does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                error: Case with ID 3fa85f64-5717-4562-b3fc-2c963f66afa6 not found.
+        '500': { $ref: '#/components/responses/InternalServerError' }
+
+  /api/comments/{commentId}:
+    parameters:
+      - $ref: '#/components/parameters/CommentId'
+    delete:
+      tags: [Comments]
+      summary: Undo a comment (B-02)
+      description: Soft deletes the comment. Only its author can do it. Used by the undo toast after saving.
+      security:
+        - BearerAuth: []
+      responses:
+        '204':
+          description: Comment deleted. No body.
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403':
+          description: The comment belongs to another user, or the caller is not admin or internal
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                error: You do not have permission
+        '404':
+          description: The comment does not exist or was already deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                error: Comment with ID 3fa85f64-5717-4562-b3fc-2c963f66afa6 not found.
+        '500': { $ref: '#/components/responses/InternalServerError' }
+
   /api/users/{userId}/cases:
     parameters:
       - $ref: '#/components/parameters/UserId'
@@ -672,6 +776,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/CountriesWithStatesSuccessResponse'
         '500': { $ref: '#/components/responses/InternalServerError' }
+    
 
 components:
   parameters:
@@ -686,6 +791,12 @@ components:
       in: path
       required: true
       description: Case UUID
+      schema: { type: string, format: uuid }
+    CommentId:                          
+      name: commentId
+      in: path
+      required: true
+      description: Comment UUID
       schema: { type: string, format: uuid }
     Page:
       name: page
@@ -1188,6 +1299,48 @@ components:
       properties:
         success: { type: boolean, example: true }
         data: { $ref: '#/components/schemas/CloseCaseData' }
+
+    CreateCommentRequest:
+      type: object
+      required: [content]
+      properties:
+        content:
+          type: string
+          minLength: 1
+          maxLength: 5000
+          description: Text of the comment. It is trimmed, so it cannot be blank.
+
+    CommentAuthor:
+      type: object
+      properties:
+        userId: { type: string, format: uuid }
+        name: { type: string }
+        lastName: { type: string }
+
+    Comment:
+      type: object
+      properties:
+        commentId: { type: string, format: uuid }
+        caseId: { type: string, format: uuid }
+        content: { type: string }
+        timeSent: { type: string, format: date-time }
+        author: { $ref: '#/components/schemas/CommentAuthor' }
+
+    CommentSuccessResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success: { type: boolean, example: true }
+        data: { $ref: '#/components/schemas/Comment' }
+
+    CommentListSuccessResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success: { type: boolean, example: true }
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/Comment' }
 
     CaseDetail:
       type: object

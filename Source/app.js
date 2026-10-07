@@ -7,6 +7,7 @@ import { parse as parseYaml } from 'yaml';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import commentRoutes from '../Source/Routes/comment.routes.js';
 
 // Import route modules
 import externalUserRoutes from '../Source/Routes/externalUser.routes.js';
@@ -53,7 +54,7 @@ app.use('/api', recordRoutes);
 app.use('/api', profileRoutes);
 app.use('/api', locationRoutes);
 app.use('/api/password-recovery', passwordRecoveryRoutes);
-
+app.use('/api', commentRoutes);
 // 404s
 app.use((_req, res) => res.status(404).send('Not found.'));
 
