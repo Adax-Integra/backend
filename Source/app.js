@@ -19,6 +19,9 @@ import profileRoutes from '../Source/Routes/profile.routes.js';
 import locationRoutes from '../Source/Routes/location.routes.js';
 import passwordRecoveryRoutes from '../Source/Routes/passwordRecovery.routes.js';
 
+// R-06: Document upload and replacement routes
+import uploadDocumentsRoutes from '../Source/Routes/uploadDocuments.routes.js';
+
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const swaggerDocument = parseYaml(
   readFileSync(join(__dirname, '..', 'openapi.yaml'), 'utf8')
@@ -53,6 +56,9 @@ app.use('/api', recordRoutes);
 app.use('/api', profileRoutes);
 app.use('/api', locationRoutes);
 app.use('/api/password-recovery', passwordRecoveryRoutes);
+
+// R-06: Register document upload and replacement endpoints
+app.use('/api', uploadDocumentsRoutes);
 
 // 404s
 app.use((_req, res) => res.status(404).send('Not found.'));
