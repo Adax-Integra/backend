@@ -40,7 +40,7 @@ class ReportDataToCsvConverter {
     // we should implement a section of cases by gender
 
     // Section of cases divided by age
-    const age = data.cases || {};
+    const age = data.cases_by_age || {};
     addRow('Grupo de edad', 'Niñas (0-11 años)', age['0-11'] ?? 0);
     addRow('', 'Adolescentes (12-17 años)', age['12-17'] ?? 0);
     addRow('', 'Jóvenes (18-29 años)', age['18-29'] ?? 0);
@@ -125,7 +125,7 @@ class ReportDataToCsvConverter {
       riskCases
     );
 
-    return rows;
+    return rows.map((r) => r.join(',')).join('\n');
   }
 }
 
