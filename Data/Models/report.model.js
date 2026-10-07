@@ -46,7 +46,7 @@ STORED PROCEDURE
   -- Gets every case that hasnt been deleted
   valid_cases as (
     select c.case_id, c.region_id, c.state, c.created_at, c.updated_at,
-           r.user_id, u.birth_date
+           c.is_risk_situation, r.user_id, u.birth_date
     from public."case" c
     join public.record r  on r.record_id = c.record_id and r.deleted_at is null
     join public."user" u  on u.user_id   = r.user_id   and u.deleted_at is null
@@ -67,16 +67,6 @@ STORED PROCEDURE
     where vc.created_at between p.d_from and p.d_to
        or (vc.created_at < p.d_from
            and (lower(btrim(vc.state)) <> 'closed' or vc.updated_at >= p.d_from))
-  ),
-
-  -- Gets the cases highest violence severity.
-  -- to be able to group them by high-severity
-  case_severity as (
-    select s.case_id, max(vt.severity) as max_severity
-    from scoped s
-    left join public.case_violence cv  on cv.case_id = s.case_id and cv.deleted_at is null
-    left join public.violence_types vt on vt.violence_id = cv.violence_id and vt.deleted_at is null
-    group by s.case_id
   )
 
 
@@ -109,8 +99,7 @@ select jsonb_build_object(
       from (
         select rg.description::text as region, count(s.case_id) as cases
         from public.regions rg
-        left join scoped s on s.region_id = rg.region_id
-        where rg.deleted_at is null or s.case_id is not null
+        join scoped s on s.region_id = rg.region_id
         group by rg.region_id, rg.description
         union all
         select 'No region', count(*)
@@ -134,6 +123,7 @@ select jsonb_build_object(
         group by btrim(vt.description, E' \t\r\n')
       ) x
     ),
+
  
     -- Cases per help type
     -- If a case has multiple helps, then it will increase multiple rows
@@ -150,14 +140,9 @@ select jsonb_build_object(
       ) x
     ),
  
-    -- A case is "7 or above" if ANY of its violence types has severity >= 7
-    'cases_by_severity', (
-      select jsonb_build_object(
-        'severity_7_or_above', count(*) filter (where max_severity >= 7),
-        'severity_6_or_below', count(*) filter (where max_severity <= 6),
-        'no_violence_type',    count(*) filter (where max_severity is null)
-      )
-      from case_severity
+    -- Cases flagged as a risk situation (null counts as not at risk)
+    'cases_in_risk_situation', (
+      select count(*) from scoped where is_risk_situation
     )
   );
 

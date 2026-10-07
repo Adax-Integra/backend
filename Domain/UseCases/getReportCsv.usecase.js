@@ -11,7 +11,7 @@ class GetReportCsv {
       ReportModel.getInformationForReport(validStartDate, validEndDate),
     ]);
 
-    return ReportDataToCsvConverter.convert(data);
+    return ReportDataToCsvConverter.convert(data, validStartDate, validEndDate);
   }
 }
 
