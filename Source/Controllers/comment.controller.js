@@ -77,7 +77,7 @@ class CommentController {
   }
 
   // DELETE method for deleting a comment of a case for US B-02
-  async deleteCaseComments(req, res) {
+  async deleteComment(req, res) {
     try {
       const { commentId } = req.params;
 
