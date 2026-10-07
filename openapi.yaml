@@ -78,6 +78,45 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '500': { $ref: '#/components/responses/InternalServerError' }
 
+  /api/auth/change-password:
+    post:
+      tags: [Authentication]
+      summary: Change the authenticated user's password
+      description: Verifies the current password and stores a new password hash for the authenticated user.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+            example:
+              current_password: currentPassword123
+              new_password: newPassword123
+              confirm_password: newPassword123
+      responses:
+        '200':
+          description: Password changed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChangePasswordSuccessResponse'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401':
+          description: Missing or invalid token, or current password is incorrect
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Authenticated user was not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500': { $ref: '#/components/responses/InternalServerError' }
+
   /api/external-user/register:
     post:
       tags: [External Users]
@@ -110,7 +149,7 @@ paths:
     get:
       tags: [External Users]
       summary: Get external user pre-submission data
-      description: Returns the user's profile (name, last name, birth date, phone), full address, and documents. Document URLs are signed links. Staff or the owner of this userId may call it.
+      description: Returns the user's profile (name, last name, birth date, phone), full address, and documents. Document URLs are signed links. Only the owner of this userId may call it.
       security:
         - BearerAuth: []
       responses:
@@ -127,7 +166,7 @@ paths:
       tags: [External Users]
       summary: Update external user pre-submission data
       description: |
-        At least one field in profile, address, or documents is required. Staff or the owner of this userId may call it.
+        At least one field in profile, address, or documents is required. Only the owner of this userId may call it.
 
         Two request formats are accepted:
         - **multipart/form-data**: upload the documents as files (PDF, JPEG or PNG, max 5 MB each). Files are stored under "{userId}/identity/" or "{userId}/address/" and replace any path sent for the same document. profile and address must be sent as JSON strings.
@@ -289,6 +328,43 @@ paths:
                 $ref: '#/components/schemas/CreateCollaboratorErrorResponse'
         '500': { $ref: '#/components/responses/InternalServerError' }
 
+  /api/internal-users/activity-log:
+    get:
+      tags: [Internal Users]
+      summary: List the activity log (V-06)
+      description: Admin only. Returns 10 entries per page, newest first. Can be filtered by a date and time range. Each entry has who did the action, the action and when it happened. Validation errors include an "errors" object with one message per parameter.
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, minimum: 1, default: 1 }
+          description: Page number (10 entries per page).
+        - in: query
+          name: from
+          schema: { type: string, format: date-time, example: '2026-10-04T00:00:00Z' }
+          description: Only entries created at or after this date and time (ISO format with time zone).
+        - in: query
+          name: to
+          schema: { type: string, format: date-time, example: '2026-10-04T23:59:59Z' }
+          description: Only entries created at or before this date and time. Must be later than from.
+      responses:
+        '200':
+          description: Activity log retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActivityLogSuccessResponse'
+        '400':
+          description: Invalid query parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActivityLogErrorResponse'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+
   /api/internal-users/{userId}/allCases:
     parameters:
       - $ref: '#/components/parameters/UserId'
@@ -332,6 +408,116 @@ paths:
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
+
+  /api/internal-users/external-users/{userId}:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+    get:
+      tags: [Internal Users]
+      summary: Get the personal data of an external user (G-07)
+      description: Returns the profile and address the admin reviews before editing them. Admin only. Accounts that are not external users return 404.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: External user data retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExternalProfileSuccessResponse'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403':
+          description: The caller is not an admin
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: The user does not exist or is not an external user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                error: External user not found
+        '500': { $ref: '#/components/responses/InternalServerError' }
+    patch:
+      tags: [Internal Users]
+      summary: Update the text data of an external user (G-07)        
+      description: Admin only. Only email, phone and address can change. name, last name and birth date are rejected. The change and its activity_log entry are saved in one transaction. The external user is notified by email, to the old and the new address when the email changes.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExternalProfileUpdateRequest'
+            example:
+              profile:
+                phone: '+524424567890'
+              address:
+                neighborhood: Jurica
+              reason: La usuaria se mudó y cambió de número
+              consentConfirmed: true
+      responses:
+        '200':
+          description: External user data updated
+          content:
+            application/json:
+              schema:
+                $ref:  '#/components/schemas/ExternalProfileSuccessResponse'
+        '400':
+          description: Invalid userId, invalid body or no real changes. When the body is invalid, errors has the reason for each field.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExternalProfileErrorResponse'
+              examples:
+                invalidBody:
+                  summary: Invalid body fields
+                  value:
+                    success: false
+                    error: profile.name cannot be modified consentConfirmed must be true
+                    errors:
+                      profile.name: profile.name cannot be modified
+                      consentConfirmed: consentConfirmed must be true
+                noChanges:
+                  summary: Same values already Stored
+                  value:
+                    success: false
+                    error: The submitted data has no changes
+                    errors: null
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403':
+          description: The caller is not an admin
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExternalProfileErrorResponse'
+        '404':
+          description: The user does not exist or is not an external user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExternalProfileErrorResponse'
+              example:
+                success: false
+                error: External user not found
+                errors: null
+        '409':
+          description: The new email already belongs to another account
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExternalProfileErrorResponse'
+              example:
+                success: false
+                error: This email is already registered
+                errors: null
+        '500': { $ref: '#/components/responses/InternalServerError' } 
 
   /api/cases:
     get:
@@ -589,7 +775,7 @@ components:
         application/json:
           schema: { $ref: '#/components/schemas/ErrorResponse' }
     Forbidden:
-      description: The token belongs to another user and the caller is not staff
+      description: The caller does not have permission to access this resource.
       content:
         application/json:
           schema: { $ref: '#/components/schemas/ErrorResponse' }
@@ -632,6 +818,25 @@ components:
       properties:
         success: { type: boolean, example: true }
         data: { $ref: '#/components/schemas/LoginData' }
+
+    ChangePasswordRequest:
+      type: object
+      required: [current_password, new_password, confirm_password]
+      properties:
+        current_password: { type: string, format: password }
+        new_password: { type: string, format: password, minLength: 8 }
+        confirm_password: { type: string, format: password, minLength: 8 }
+
+    ChangePasswordSuccessResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success: { type: boolean, example: true }
+        data:
+          type: object
+          required: [message]
+          properties:
+            message: { type: string, example: Password updated successfully. }
 
     Profile:
       type: object
@@ -819,6 +1024,67 @@ components:
       properties:
         success: { type: boolean, example: true }
         data: { $ref: '#/components/schemas/RegisterExternalUserData' }
+    
+    ExternalProfile:
+      type: object
+      nullable: true
+      properties:
+        name: { type: string }
+        last_name: { type: string }
+        email: { type: string, format: email }
+        birth_date: { type: string, format: date, nullable: true }
+        phone: { type: string, nullable: true }
+
+    ExternalProfileData:
+      type: object
+      required: [user_id, profile, address]
+      properties:
+        user_id: { type: string, format: uuid }
+        profile: { $ref: '#/components/schemas/ExternalProfile' }
+        address: { $ref: '#/components/schemas/Address' }
+    
+    ExternalProfileSuccessResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success: { type: boolean, example: true }
+        data: { $ref: '#/components/schemas/ExternalProfileData' }
+    
+    ExternalProfileUpdateRequest:
+      type: object
+      required: [reason, consentConfirmed]
+      description: At least one profile or address field is required. name, last_name and birth_date are rejected.
+      properties:
+        profile:
+          type: object
+          properties:
+            email: { type: string, format: email }
+            phone:
+              type: string
+              description: Country code followed by 10 digits, for example +524424567890.
+        address: { $ref: '#/components/schemas/AddressUpdate' }
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+          description: Why the data is being changed. Stored in the activity log.
+        consentConfirmed:
+          type: boolean
+          enum: [true]
+          description: The admin confirms the external user agreed to the change. Must be true.
+
+    ExternalProfileErrorResponse:
+      type: object
+      required: [success, error]
+      properties:
+        success: { type: boolean, example: false }
+        error: { type: string }
+        errors:
+          type: object
+          nullable: true
+          additionalProperties: { type: string }
+          description: Reason for each invalid body field
+
     RecordListItem:
       type: object
       properties:
@@ -1155,3 +1421,45 @@ components:
           nullable: true
           additionalProperties: { type: string }
           example: { email: An account with this email already exists. }
+
+    ActivityLogItem:
+      type: object
+      required: [log_id, actor_name, action, action_label, target, description, reason, created_at]
+      properties:
+        log_id: { type: string, format: uuid }
+        actor_name: { type: string, example: Mariana Robles Ortega }
+        action: { type: string, example: update_external_profile }
+        action_label: { type: string, example: Edición de datos de usuaria }
+        entity: { type: string, nullable: true, example: user }
+        entity_id: { type: string, format: uuid, nullable: true }
+        target: { type: string, example: Valeria Prueba Hora }
+        description: { type: string, example: Mariana Robles Ortega editó los datos de Valeria Prueba Hora }
+        reason: { type: string, example: Corrección del teléfono }
+        created_at: { type: string, format: date-time }
+
+    ActivityLogSuccessResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success: { type: boolean, example: true }
+        data:
+          type: object
+          properties:
+            logs:
+              type: array
+              items: { $ref: '#/components/schemas/ActivityLogItem' }
+            total: { type: integer, example: 2 }
+            page: { type: integer, example: 1 }
+            limit: { type: integer, example: 10 }
+
+    ActivityLogErrorResponse:
+      type: object
+      required: [success, error]
+      properties:
+        success: { type: boolean, example: false }
+        error: { type: string }
+        errors:
+          type: object
+          nullable: true
+          additionalProperties: { type: string }
+          example: { to: to must be later than from. }

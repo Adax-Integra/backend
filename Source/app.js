@@ -18,6 +18,8 @@ import recordRoutes from '../Source/Routes/record.routes.js';
 import profileRoutes from '../Source/Routes/profile.routes.js';
 import locationRoutes from '../Source/Routes/location.routes.js';
 import reportRoutes from '../Source/Routes/report.routes.js';
+import passwordRecoveryRoutes from '../Source/Routes/passwordRecovery.routes.js';
+import assetLinks from '../Data/Config/assetlinks.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const swaggerDocument = parseYaml(
@@ -40,6 +42,11 @@ app.get('/', (_req, res) => res.status(200).json({ status: 'server running' }));
 // Health check endpoint for mobile connectivity testing & load balancers
 app.get('/health', (_req, res) => res.status(200).json({ status: 'ok' }));
 
+//android app links verification
+app.get('/.well-known/assetlinks.json', (_req, res) => {
+  res.json(assetLinks);
+});
+
 // OpenAPI docs (single source in root folder: openapi.yaml)
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
@@ -53,6 +60,7 @@ app.use('/api', recordRoutes);
 app.use('/api', profileRoutes);
 app.use('/api', locationRoutes);
 app.use('/api', reportRoutes);
+app.use('/api/password-recovery', passwordRecoveryRoutes);
 
 // 404s
 app.use((_req, res) => res.status(404).send('Not found.'));

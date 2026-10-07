@@ -28,6 +28,56 @@ class UserModel {
 
     return data;
   }
+
+  //update the password in the user table
+  //must hash before storing it
+  static async recoverPassword(userId, hashedPassword) {
+    const { data, error } = await supabase
+      .from(UserModel.TABLE)
+      .update({
+        password: hashedPassword,
+      })
+      .eq('user_id', userId)
+      .is('deleted_at', null)
+      .select(UserModel.AUTH_COLUMNS)
+      .single();
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return data;
+  }
+
+  static async findById(userId) {
+    const { data, error } = await supabase
+      .from(UserModel.TABLE)
+      .select(UserModel.AUTH_COLUMNS)
+      .eq('user_id', userId)
+      .is('deleted_at', null)
+      .maybeSingle();
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return data;
+  }
+
+  static async updatePassword(userId, passwordHash) {
+    const { data, error } = await supabase
+      .from(UserModel.TABLE)
+      .update({ password: passwordHash })
+      .eq('user_id', userId)
+      .is('deleted_at', null)
+      .select('user_id')
+      .maybeSingle();
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return data;
+  }
 }
 
 export default UserModel;
