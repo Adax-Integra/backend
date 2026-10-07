@@ -18,24 +18,33 @@ class ReportDataToCsvConverter {
 
     const rows = [];
 
-    // The section will be the first column, then metric and then value
+    // This function recieves 3 parameters and appends it to form the CSV
     const addRow = (section, metric, value) => {
       rows.push([escapeCsv(section), escapeCsv(metric), escapeCsv(value)]);
     };
 
-    // Row of the range of date
+    // Function to add empty rows for formatting
+    const addEmptyRow = () => {
+      addRow('', '', '');
+    };
+
+    // Row of the range of the report data
     addRow(
-      'Periodo',
-      'Rango de fecha',
-      `De ${prettyStartDate} a ${prettyEndDate}`
+      'Periodo del reporte',
+      `Del ${prettyStartDate} al ${prettyEndDate}`,
+      ''
     );
+    addEmptyRow();
+
+    // Row names
+    addRow('Indicador', 'Categoría', 'Cantidad');
 
     // Section of total cases attended
     const cases = data.cases || {};
     addRow('Casos atendidos', 'Total de casos atendidos', cases.total ?? 0);
     addRow('', 'Primera atención', cases.new ?? 0);
     addRow('', 'Casos en seguimiento', cases.follow_up ?? 0);
-
+    addEmptyRow();
     // TODO once there is data on the user to see the gender of the user
     // we should implement a section of cases by gender
 
@@ -49,6 +58,7 @@ class ReportDataToCsvConverter {
     if (age['unknown'] !== undefined) {
       addRow('', 'Edad no especificada', age['unknown']);
     }
+    addEmptyRow();
 
     // Section of cases by region
     const regions = Object.entries(data.cases_by_region || {});
@@ -59,6 +69,7 @@ class ReportDataToCsvConverter {
     } else {
       addRow('Ubicación', 'Sin registros', 0);
     }
+    addEmptyRow();
 
     // Section of cases by violence
     const violence = data.cases_by_violence || {};
@@ -71,6 +82,7 @@ class ReportDataToCsvConverter {
     addRow('', 'Digital', violence['Digital'] ?? 0);
     addRow('', 'Institucional', violence['Institucional'] ?? 0);
     addRow('', 'Otra', violence['Otra'] ?? 0);
+    addEmptyRow();
 
     // Section of cases by help type
     const help = data.cases_by_help || {};
@@ -115,6 +127,7 @@ class ReportDataToCsvConverter {
       'Seguimiento de casos',
       help['Seguimiento de casos, en caso de que aplique'] ?? 0
     );
+    addEmptyRow();
 
     // Section of urgent cases
     // TODO, when we update the database to contain a field for is_risk_situation, then we will need to change this section
@@ -125,7 +138,7 @@ class ReportDataToCsvConverter {
       riskCases
     );
 
-    return rows.map((r) => r.join(',')).join('\n');
+    return `\uFEFF${rows.map((r) => r.join(',')).join('\n')}`;
   }
 }
 

@@ -8,9 +8,17 @@ class ReportsController {
       const startDate = req.query['start-date'];
       const endDate = req.query['end-date'];
 
-      const response = await getReportCsv.execute(startDate, endDate);
+      if (!startDate || !endDate) {
+        return res.status(400).json({
+          success: false,
+          error: 'start-date and end-date are required',
+        });
+      }
 
-      console.log(response); // just so it compiles
+      const csv = await getReportCsv.execute(startDate, endDate);
+      const filename = `report-${startDate}-${endDate}.csv`;
+
+      return res.status(200).type('text/csv').attachment(filename).send(csv);
     } catch (error) {
       return res.status(400).json({
         success: false,
