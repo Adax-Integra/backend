@@ -7,6 +7,8 @@ info:
 servers:
   - url: http://localhost:3001
     description: Local development
+  - url: https://adax-integra.duckdns.org
+    description: Server for testing
 
 tags:
   - name: Health
@@ -17,6 +19,7 @@ tags:
   - name: Privacy Policy
   - name: Locations
   - name: Records
+  - name: Reports
 
 paths:
   /:
@@ -734,6 +737,48 @@ paths:
               schema:
                 $ref: '#/components/schemas/CountriesWithStatesSuccessResponse'
         '500': { $ref: '#/components/responses/InternalServerError' }
+
+  /api/reports/export:
+    get:
+      tags: [Reports]
+      summary: Export a report as CSV
+      description: Returns a CSV report for the requested date range. This endpoint is restricted to authenticated administrators.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: start-date
+          in: query
+          required: true
+          description: Inclusive start date of the report range.
+          schema:
+            type: string
+            format: date
+            example: '2026-01-01'
+        - name: end-date
+          in: query
+          required: true
+          description: Inclusive end date of the report range. The range cannot exceed one year and cannot precede start-date.
+          schema:
+            type: string
+            format: date
+            example: '2026-05-01'
+      responses:
+        '200':
+          description: CSV report generated successfully.
+          headers:
+            Content-Disposition:
+              description: Download filename for the generated CSV.
+              schema:
+                type: string
+                example: attachment; filename="report-2026-01-01-2026-05-01.csv"
+          content:
+            text/csv:
+              schema:
+                type: string
+                format: binary
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
 
 components:
   parameters:
