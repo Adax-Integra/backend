@@ -59,7 +59,8 @@ class InternalUserModel {
         created_at,
         deleted_at,
         user_role!inner (
-          role!inner (description)) 
+          role!inner (description)
+       )
       `
       )
 
