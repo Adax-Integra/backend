@@ -8,7 +8,7 @@ class CollaboratorListDTO {
     // Gets the user's first role
     this.role = user.user_role[0].role.description;
 
-    // // Checks if the account is active
+    // The account is active if it has not been deleted
     this.is_active = user.deleted_at === null;
   }
 
@@ -17,6 +17,7 @@ class CollaboratorListDTO {
     return {
       user_id: this.user_id,
       name: this.name,
+      last_name: this.last_name,
       role: this.role,
       is_active: this.is_active,
     };
