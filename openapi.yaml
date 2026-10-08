@@ -358,7 +358,7 @@ paths:
     get:
       tags: [Internal Users]
       summary: List internal accounts (G-06)
-      description: Admin only. Returns all users with the internal role, ordered by creation date (oldest first). An account is active when it has not been deleted.
+      description: Admin only. Returns all users with the internal role, ordered by creation date (newest first). An account is active when it has not been deleted.
       security:
         - BearerAuth: []
       responses:
