@@ -45,6 +45,38 @@ class InternalUserModel {
 
     return user;
   }
+
+  // G-06: Gets all internal accounts
+  static async findAll() {
+    const { data, error } = await supabase
+      .from('user')
+      // Joins tables to get user roles
+      .select(
+        `
+        user_id,
+        name,
+        last_name,
+        created_at,
+        deleted_at,
+        user_role!inner (
+          role!inner (description)
+       )
+      `
+      )
+
+      // Only gets users with the internal role
+      .in('user_role.role.description', ['internal'])
+      // Ignores roles that were removed from the user
+      .is('user_role.deleted_at', null)
+      // Sorts by creation date (newest to oldest)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return data;
+  }
 }
 
 export default InternalUserModel;

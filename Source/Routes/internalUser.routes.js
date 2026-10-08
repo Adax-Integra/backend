@@ -56,4 +56,12 @@ router.get(
   internalUserController.listActivityLog
 );
 
+// G-06 Admin consults the list of collaborators (internal users)
+router.get(
+  '/internal-users',
+  authMiddleware,
+  adminOnly,
+  internalUserController.listCollaborators
+);
+
 export default router;

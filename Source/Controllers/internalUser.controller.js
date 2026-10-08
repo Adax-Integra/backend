@@ -9,7 +9,10 @@ import CreateCollaboratorUseCase from '../../Domain/UseCases/createCollaborator.
 import CreateCollaboratorDTO from '../DTOs/createCollaborator.dto.js';
 import ListActivityLogUseCase from '../../Domain/UseCases/listActivityLog.usecase.js';
 import ActivityLogDTO from '../DTOs/activityLog.dto.js';
+import ListCollaboratorsUseCase from '../../Domain/UseCases/listCollaborators.usecase.js';
+import CollaboratorListDTO from '../DTOs/collaboratorList.dto.js';
 
+const listCollaboratorsUseCase = new ListCollaboratorsUseCase();
 const getAllCasesFromUser = new GetAllCasesFromUser();
 const registerExternalUserUseCase = new RegisterExternalUserUseCase();
 const getExternalProfileUseCase = new GetExternalProfileUseCase();
@@ -185,6 +188,32 @@ class InternalUserController {
         success: false,
         error: error.message,
         errors: error.details ?? null,
+      });
+    }
+  };
+
+  // G-06: Admin gets the list of internal accounts
+  listCollaborators = async (req, res) => {
+    try {
+      // Gets all collaborators
+      const collaborators = await listCollaboratorsUseCase.execute();
+
+      // Prepares the data for the app
+      const payload = collaborators.map((user) =>
+        new CollaboratorListDTO(user).toJSON()
+      );
+      // Returns the collaborators list
+      return res.status(200).json({
+        success: true,
+        data: payload,
+      });
+    } catch (error) {
+      // Logs the error if something fails
+      console.error('Failed to list collaborators: ', error);
+
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to list collaborators',
       });
     }
   };
