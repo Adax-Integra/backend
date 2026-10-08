@@ -209,11 +209,11 @@ class InternalUserController {
       });
     } catch (error) {
       // Logs the error if something fails
-      console.error('Error al obtener la lista de colaboradoras:', error);
+      console.error('Failed to list collaborators: ', error);
 
       return res.status(500).json({
         success: false,
-        error: 'No se pudo obtener la lista de colaboradoras',
+        error: 'Failed to list collaborators',
       });
     }
   };
