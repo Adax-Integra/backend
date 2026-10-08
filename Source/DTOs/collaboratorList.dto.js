@@ -2,9 +2,8 @@
 class CollaboratorListDTO {
   constructor(user) {
     this.user_id = user.user_id;
-
-    // Joins first and last name
-    this.name = `${user.name ?? ''} ${user.last_name ?? ''}`.trim();
+    this.name = user.name;
+    this.last_name = user.last_name;
 
     // Gets the user's first role
     this.role = user.user_role[0].role.description;
