@@ -7,27 +7,27 @@ function toUtcIso(value) {
   return new Date(hasZone ? text : `${text}Z`).toISOString();
 }
 
+// Fields follow the order in which the case card shows them
 class CaseSummaryDTO {
   constructor({
     case_id,
     case_number,
     state,
-    updated_at,
     record = null,
     case_violence = [],
     case_assignment = [],
+    updated_at,
   }) {
     this.caseId = case_id ?? null;
     // Folio shown to the user, e.g. C-26-9999
     this.caseNumber = case_number ?? null;
+    this.state = state ?? null;
+
     // Owner of the case, it comes from the record the case belongs to
     const owner = record?.user;
     this.userName = owner
       ? `${owner.name ?? ''} ${owner.last_name ?? ''}`.trim()
       : null;
-    this.state = state ?? null;
-    // Dates are always returned in UTC (ending in Z) so the app can show the local time
-    this.updatedAt = toUtcIso(updated_at);
 
     // Filter out softly deleted records and extract the description text
     const validViolences = case_violence
@@ -46,6 +46,9 @@ class CaseSummaryDTO {
         userId: ca.user.user_id,
         name: `${ca.user.name ?? ''} ${ca.user.last_name ?? ''}`.trim(),
       }));
+
+    // Dates are always returned in UTC (ending in Z) so the app can show the local time
+    this.updatedAt = toUtcIso(updated_at);
   }
 
   /**
@@ -55,11 +58,11 @@ class CaseSummaryDTO {
     return {
       caseId: this.caseId,
       caseNumber: this.caseNumber,
-      userName: this.userName,
       state: this.state,
-      updatedAt: this.updatedAt,
+      userName: this.userName,
       violenceTypes: this.violenceTypes,
       assignedUsers: this.assignedUsers,
+      updatedAt: this.updatedAt,
     };
   }
 
