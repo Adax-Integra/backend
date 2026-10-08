@@ -67,8 +67,8 @@ class InternalUserModel {
       .in('user_role.role.description', ['internal'])
       // Ignores roles that were removed from the user
       .is('user_role.deleted_at', null)
-      // Sorts by creation date (oldest to newest)
-      .order('created_at', { ascending: true });
+      // Sorts by creation date (newest to oldest)
+      .order('created_at', { ascending: false });
 
     if (error) {
       throw new Error(error.message);
