@@ -50,6 +50,7 @@ class InternalUserModel {
   static async findAll() {
     const { data, error } = await supabase
       .from('user')
+      // Joins tables to get user roles
       .select(
         `
         user_id,
@@ -61,9 +62,8 @@ class InternalUserModel {
           role!inner (description)) 
       `
       )
-      // Joins tables to get user roles !
 
-      // Only gets users with admin or internal roles
+      // Only gets users with the internal role
       .in('user_role.role.description', ['internal'])
       // Ignores roles that were removed from the user
       .is('user_role.deleted_at', null)

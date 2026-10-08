@@ -192,7 +192,7 @@ class InternalUserController {
     }
   };
 
-  // // G-06: Admin gets the list of internal accounts
+  // G-06: Admin gets the list of internal accounts
   listCollaborators = async (req, res) => {
     try {
       // Gets all collaborators
