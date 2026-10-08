@@ -64,7 +64,7 @@ class InternalUserModel {
       // Joins tables to get user roles !
 
       // Only gets users with admin or internal roles
-      .in('user_role.role.description', ['admin'])
+      .in('user_role.role.description', ['internal'])
       // Sorts by creation date (oldest to newest)
       .order('created_at', { ascending: true });
 
