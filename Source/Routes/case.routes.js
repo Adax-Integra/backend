@@ -1,26 +1,17 @@
 import express from 'express';
 import caseController from '../Controllers/case.controller.js';
 import authMiddleware from '../Middlewares/auth.middleware.js';
-import { adminInternalOnly } from '../Middlewares/role.middleware.js';
+import {
+  adminInternalOnly,
+  ownDataOnly,
+} from '../Middlewares/role.middleware.js';
 
 const router = express.Router();
 
-// Gets a specific case by its ID
-// Only admin and internal users can access it
+//Every case route requires a token; Listing and closing cases are staff-only
+// users read their own cases through /users/:userId/cases, guarded by ownDataOnly
 
-router.get('/cases/:caseId', caseController.getCaseById);
-router.get('/cases', caseController.listCases);
-router.get('/users/:userId/cases', caseController.getCasesByUser);
-router.get(
-  '/cases/:caseId',
-  authMiddleware,
-  adminInternalOnly,
-  caseController.getCaseById
-);
-
-// Gets the list of cases
-// Only admin and internal users can access it
-
+//List all cases — internal/admin only
 router.get(
   '/cases',
   authMiddleware,
@@ -28,6 +19,25 @@ router.get(
   caseController.listCases
 );
 
-// Updates the state of a case to "Closed" if it is not already closed for V-11 close button
-router.patch('/cases/:caseId/close', caseController.closeCase);
+//Case details: any authenticated user (the owner sees it in V-07,
+// staff can see any case). A per-case ownership check is a recommended
+// follow-up, for now, a valid token is enough
+router.get('/cases/:caseId', authMiddleware, caseController.getCaseById);
+
+//Cases for a specific user, only the owner of that userId
+router.get(
+  '/users/:userId/cases',
+  authMiddleware,
+  ownDataOnly,
+  caseController.getCasesByUser
+);
+
+//Close a case (V-11) — internal/admin only (see "ANTES DE EMPEZAR", item 2)
+router.patch(
+  '/cases/:caseId/close',
+  authMiddleware,
+  adminInternalOnly,
+  caseController.closeCase
+);
+
 export default router;
