@@ -14,11 +14,31 @@ import caseRoutes from '../Source/Routes/case.routes.js';
 import internalUserRoutes from '../Source/Routes/internalUser.routes.js';
 import authRoutes from '../Source/Routes/auth.routes.js';
 import privacyPolicyRoutes from '../Source/Routes/privacyPolicy.routes.js';
+import recordRoutes from '../Source/Routes/record.routes.js';
+import profileRoutes from '../Source/Routes/profile.routes.js';
+import locationRoutes from '../Source/Routes/location.routes.js';
+import reportRoutes from '../Source/Routes/report.routes.js';
+import passwordRecoveryRoutes from '../Source/Routes/passwordRecovery.routes.js';
+import assetLinks from '../Data/Config/assetlinks.js';
+
+// R-06: Document upload and replacement routes
+import uploadDocumentsRoutes from '../Source/Routes/uploadDocuments.routes.js';
+
+import { apiLimiter } from '../Source/Middlewares/rateLimit.middleware.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const swaggerDocument = parseYaml(
   readFileSync(join(__dirname, '..', 'openapi.yaml'), 'utf8')
 );
+
+const JWT_SECRET = process.env.JWT_SECRET;
+if (
+  !JWT_SECRET ||
+  JWT_SECRET.length < 32 ||
+  JWT_SECRET === 'change_me_to_a_long_random_text'
+) {
+  throw new Error('JWT_SECRET must be a strong random value (>= 32 chars)');
+}
 
 const app = express();
 
@@ -29,12 +49,18 @@ app.use(cors());
 // Built-in body parsing
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+app.use('/api', apiLimiter);
 
 // Default server running page
 app.get('/', (_req, res) => res.status(200).json({ status: 'server running' }));
 
 // Health check endpoint for mobile connectivity testing & load balancers
 app.get('/health', (_req, res) => res.status(200).json({ status: 'ok' }));
+
+//android app links verification
+app.get('/.well-known/assetlinks.json', (_req, res) => {
+  res.json(assetLinks);
+});
 
 // OpenAPI docs (single source in root folder: openapi.yaml)
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
@@ -45,6 +71,14 @@ app.use('/api', internalUserRoutes);
 app.use('/api', caseRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api', privacyPolicyRoutes);
+app.use('/api', recordRoutes);
+app.use('/api', profileRoutes);
+app.use('/api', locationRoutes);
+app.use('/api', reportRoutes);
+app.use('/api/password-recovery', passwordRecoveryRoutes);
+
+// R-06: Register document upload and replacement endpoints
+app.use('/api', uploadDocumentsRoutes);
 
 // 404s
 app.use((_req, res) => res.status(404).send('Not found.'));

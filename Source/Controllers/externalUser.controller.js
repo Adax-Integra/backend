@@ -11,17 +11,43 @@ const editPreSubmissionDataUseCase = new EditPreSubmissionDataUseCase();
 const createCaseUseCase = new CreateCaseUseCase();
 const createAccountUseCase = new CreateAccountUseCase();
 
+// In multer requests, nested objects arrive as JSON strings
+const JSON_FIELDS = ['profile', 'address'];
+
+function parseJsonFields(body = {}) {
+  const parsed = { ...body };
+
+  for (const field of JSON_FIELDS) {
+    if (typeof parsed[field] !== 'string') continue;
+
+    try {
+      parsed[field] = JSON.parse(parsed[field]);
+    } catch {
+      throw new Error(`${field} must be valid JSON.`);
+    }
+  }
+
+  return parsed;
+}
+
 class ExternalUserController {
+  // receives the registration request and sends the result to the app
   async createAccount(req, res) {
     try {
+      // passes the form data to the use case to create the account
       const created = await createAccountUseCase.execute(req.body);
+      // prepares the account information that will be sent to the app
       const payload = new CreateAccountDTO(created).toJSON();
 
+      // indicates that the account was created
       return res.status(201).json({
         success: true,
         data: payload,
       });
     } catch (error) {
+      console.error('Failed to create account:', error);
+      console.error('Cause:', error.cause);
+
       return res.status(error.statusCode ?? 400).json({
         success: false,
         error: error.message,
@@ -52,7 +78,8 @@ class ExternalUserController {
       const { userId } = req.params;
       const updatedData = await editPreSubmissionDataUseCase.execute(
         userId,
-        req.body
+        parseJsonFields(req.body),
+        req.files
       );
       const payload = new PreSubmissionDTO(updatedData).toJSON();
 

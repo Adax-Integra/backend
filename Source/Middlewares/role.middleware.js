@@ -15,19 +15,30 @@ export function adminInternalOnly(req, res, next) {
   });
 }
 
-// Allows staff or the owner of the data to continue
+// Only allows the owner of the data to continue
 export function ownDataOnly(req, res, next) {
-  const roles = req.user.roles || [];
-  const isStaff = roles.includes('admin') || roles.includes('internal');
-
   // Checks if the requested user is the same user from the token
   const isOwner = req.user.user_id === req.params.userId;
 
-  // Staff or the owner of the data can continue
-  if (isStaff || isOwner) {
+  if (isOwner) {
     return next();
   }
 
+  return res.status(403).json({
+    success: false,
+    error: 'You do not have permission',
+  });
+}
+
+// G-03: Only admins can continue
+export function adminOnly(req, res, next) {
+  const roles = req.user.roles || [];
+
+  if (roles.includes('admin')) {
+    return next();
+  }
+
+  // The user is authenticated but is not an admin
   return res.status(403).json({
     success: false,
     error: 'You do not have permission',

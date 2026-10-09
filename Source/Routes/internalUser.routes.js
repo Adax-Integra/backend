@@ -1,7 +1,10 @@
 import express from 'express';
 import internalUserController from '../Controllers/internalUser.controller.js';
 import authMiddleware from '../Middlewares/auth.middleware.js';
-import { adminInternalOnly } from '../Middlewares/role.middleware.js';
+import {
+  adminInternalOnly,
+  adminOnly,
+} from '../Middlewares/role.middleware.js';
 
 const router = express.Router();
 
@@ -19,6 +22,46 @@ router.post(
   authMiddleware,
   adminInternalOnly,
   internalUserController.registerExternalUser
+);
+
+// G-07 Get the personal data of an external user (admin only)
+router.get(
+  '/internal-users/external-users/:userId',
+  authMiddleware,
+  adminOnly,
+  internalUserController.getExternalProfile
+);
+
+// G-07 Update the text data of an external user (admin only)
+router.patch(
+  '/internal-users/external-users/:userId',
+  authMiddleware,
+  adminOnly,
+  internalUserController.updateExternalProfile
+);
+
+// G-03 Admin creates a new collaborator (internal user) account
+router.post(
+  '/internal-users',
+  authMiddleware,
+  adminOnly,
+  internalUserController.createCollaborator
+);
+
+// V-06 Admin consults the activity log of the system
+router.get(
+  '/internal-users/activity-log',
+  authMiddleware,
+  adminOnly,
+  internalUserController.listActivityLog
+);
+
+// G-06 Admin consults the list of collaborators (internal users)
+router.get(
+  '/internal-users',
+  authMiddleware,
+  adminOnly,
+  internalUserController.listCollaborators
 );
 
 export default router;
