@@ -50,13 +50,9 @@ class ExternalUserModel {
       p_role_id: roleId,
       p_birth_date: profile.birth_date ?? null,
       p_phone: profile.phone ?? null,
-      p_address_line_1: address.address_line_1,
-      p_address_line_2: address.address_line_2 ?? null,
-      p_neighborhood: address.neighborhood,
-      p_zip_code: address.zip_code,
       p_country: address.country,
       p_state: address.state,
-      p_city: address.city,
+      p_municipality: address.municipality,
     });
 
     if (error) {
