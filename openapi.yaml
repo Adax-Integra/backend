@@ -13,6 +13,8 @@ servers:
 tags:
   - name: Health
   - name: Authentication
+  - name: Password Recovery
+  - name: Profile
   - name: Cases
   - name: External Users
   - name: Internal Users
@@ -48,6 +50,20 @@ paths:
               schema:
                 $ref: '#/components/schemas/ServerStatusResponse'
               example: { status: ok }
+
+  /.well-known/assetlinks.json:
+    get:
+      tags: [Health]
+      summary: Android App Links verification
+      description: Digital Asset Links file that lets Android open app links in the Adax Integra app instead of the browser.
+      responses:
+        '200':
+          description: Asset links statement list
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/AssetLink' }
 
   /api/auth/login:
     post:
@@ -116,6 +132,106 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '500': { $ref: '#/components/responses/InternalServerError' }
+
+  /api/password-recovery/forgot-password:
+    post:
+      tags: [Password Recovery]
+      summary: Request a password recovery email
+      description: If the email belongs to an account, a one-time recovery token valid for 1 hour is emailed to it. The response is the same whether the email exists or not.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ForgotPasswordRequest'
+            example:
+              email: maria.gomez@gmail.com
+      responses:
+        '200':
+          description: Request processed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageSuccessResponse'
+              example:
+                success: true
+                data:
+                  message: Si el correo existe, se envió un enlace
+        '400':
+          description: Email is missing or has an invalid format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                error: Favor de ingresar un correo válido.
+        '500': { $ref: '#/components/responses/InternalServerError' }
+
+  /api/password-recovery/reset-password:
+    post:
+      tags: [Password Recovery]
+      summary: Reset the password with a recovery token
+      description: Validates that the token exists, has not been used and has not expired, stores the new password hash and marks the token as used.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetPasswordRequest'
+            example:
+              token: 9f2c1b7e4a...
+              newPassword: newPassword123
+      responses:
+        '200':
+          description: Password updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageSuccessResponse'
+              example:
+                success: true
+                data:
+                  message: Contraseña actualizada exitosamente.
+        '400':
+          description: Token is missing, not found, already used or expired
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                error: Token ha expirado.
+        '500':
+          description: Internal server error. Also returned when newPassword has fewer than 8 characters.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/profile/{userId}:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+    get:
+      tags: [Profile]
+      summary: Get the authenticated user's profile (G-13)
+      description: Returns the profile of the user in the token. The userId path parameter is currently ignored.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Profile retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileSuccessResponse'
+        '400':
+          description: The user was not found or the query failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401': { $ref: '#/components/responses/Unauthorized' }
 
   /api/external-user/register:
     post:
@@ -462,7 +578,7 @@ paths:
     get:
       tags: [Internal Users]
       summary: Get all cases for a user (V-10)
-      description: Admin and internal users only.
+      description: Admin and internal users only. Returns the case cards of every case in the user's records.
       security:
         - BearerAuth: []
       responses:
@@ -929,6 +1045,63 @@ components:
           properties:
             message: { type: string, example: Password updated successfully. }
 
+    AssetLink:
+      type: object
+      properties:
+        relation:
+          type: array
+          items: { type: string, example: delegate_permission/common.handle_all_urls }
+        target:
+          type: object
+          properties:
+            namespace: { type: string, example: android_app }
+            package_name: { type: string, example: com.example.adaxintegra }
+            sha256_cert_fingerprints:
+              type: array
+              items: { type: string }
+
+    MessageSuccessResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success: { type: boolean, example: true }
+        data:
+          type: object
+          required: [message]
+          properties:
+            message: { type: string }
+
+    ForgotPasswordRequest:
+      type: object
+      required: [email]
+      properties:
+        email: { type: string, format: email }
+
+    ResetPasswordRequest:
+      type: object
+      required: [token, newPassword]
+      properties:
+        token: { type: string, description: Recovery token received by email. }
+        newPassword: { type: string, format: password, minLength: 8 }
+
+    UserProfile:
+      type: object
+      properties:
+        user_id: { type: string, format: uuid }
+        name: { type: string }
+        last_name: { type: string }
+        email: { type: string, format: email }
+        birth_date: { type: string, format: date, nullable: true }
+        phone: { type: string, nullable: true }
+        created_at: { type: string, format: date-time }
+
+    UserProfileSuccessResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success: { type: boolean, example: true }
+        data: { $ref: '#/components/schemas/UserProfile' }
+
     Profile:
       type: object
       nullable: true
@@ -1237,16 +1410,33 @@ components:
 
     CaseSummary:
       type: object
+      required: [caseId, caseNumber, state, userName, violenceTypes, assignedUsers, updatedAt]
       properties:
         caseId: { type: string, format: uuid, nullable: true }
-        writtenDescription: { type: string, nullable: true }
-        writtenHelpsWanted: { type: string, nullable: true }
-        hasLawyer: { type: boolean }
-        state: { type: string, nullable: true }
-        createdAt: { type: string, format: date-time, nullable: true }
-        updatedAt: { type: string, format: date-time, nullable: true }
-        helps: { type: array, items: { type: string } }
-        violenceTypes: { type: array, items: { type: string } }
+        caseNumber: { type: string, nullable: true, example: C-26-9999 }
+        state: { type: string, nullable: true, example: Open }
+        userName:
+          type: string
+          nullable: true
+          example: Maria Gomez
+          description: Full name of the case owner.
+        violenceTypes:
+          type: array
+          items: { type: string }
+          description: Unique, non-deleted violence types.
+        assignedUsers:
+          type: array
+          description: Internal users assigned to the case.
+          items:
+            type: object
+            properties:
+              userId: { type: string, format: uuid }
+              name: { type: string, example: Mariana Robles Ortega }
+        updatedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: UTC timestamp.
 
     CaseSummaryListResponse:
       type: object
@@ -1279,7 +1469,7 @@ components:
       type: object
       properties:
         caseId: {type: string, format: uuid}
-        state: {type: string, example: NUEVO}
+        state: {type: string, example: Open}
         createdAt: {type: string, format: date-time}
         writtenDescription: {type: string}
         writtenHelpsWanted: {type: string}
@@ -1289,7 +1479,7 @@ components:
         helps:
           type: array
           items: {type: string}
-          description: Always empty. Kept so the shape matches CaseSummary.
+          description: Always empty.
 
     CreateCaseSuccessResponse:
       type: object
