@@ -9,6 +9,7 @@ const CASE_COLUMNS = `
   updated_at,
   record!inner (
     record_id,
+    record_number,
     user!inner (
       user_id,
       name,
@@ -41,6 +42,7 @@ const CASE_DETAIL_COLUMNS = `
   updated_at,
   record!inner (
     record_id,
+    record_number,
     user!inner (
       user_id,
       name,
