@@ -28,23 +28,28 @@ class CasesModel {
       .select(
         `
         case_id,
-        written_description,
-        written_helps_wanted,
-        has_lawyer,
+        case_number,
         state,
-        created_at,
         updated_at,
-        case_help (
-          deleted_at,
-          help_types (
-            description,
-            deleted_at
+        record (
+          user (
+            name,
+            last_name
           )
         ),
         case_violence (
           deleted_at,
           violence_types (
             description,
+            deleted_at
+          )
+        ),
+        case_assignment (
+          deleted_at,
+          user (
+            user_id,
+            name,
+            last_name,
             deleted_at
           )
         )

@@ -1,11 +1,4 @@
-const REQUIRED_ADDRESS_KEYS = [
-  'address_line_1',
-  'neighborhood',
-  'zip_code',
-  'country',
-  'state',
-  'city',
-];
+const REQUIRED_ADDRESS_KEYS = ['country', 'state', 'municipality'];
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
@@ -85,14 +78,6 @@ class RegisterExternalUserValidator {
           );
         } else {
           address[key] = value.trim();
-        }
-      }
-
-      if (addr.address_line_2 !== undefined && addr.address_line_2 !== null) {
-        if (typeof addr.address_line_2 !== 'string') {
-          errors.push('address.address_line_2 must be a string.');
-        } else {
-          address.address_line_2 = addr.address_line_2.trim();
         }
       }
     }

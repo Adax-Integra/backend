@@ -10,11 +10,11 @@ const testToken = jwt.sign(
   process.env.JWT_SECRET
 );
 
-// User A has 2 cases and is tested in the successful response test
-const userA = 'f5e392c4-2c3d-4c50-9e9f-3d4ac269f2c5';
+// User A has 1 case and is tested in the successful response test
+const userA = 'f776c596-e385-4e11-8e1e-554fac5da3f0';
 
 // User B has no cases and is tested in the empty response test
-const userB = 'cae4ccf1-4a45-406e-bcfc-6a475ad63fa4';
+const userB = 'ad91b33a-7de4-493b-8af9-dbaffe0b8d1f';
 
 // User C does not exist and is tested in the nonexistent user test
 const userC = '11111111-1111-4111-8111-111111111111';
@@ -98,36 +98,13 @@ describe('Unit tests for V-10', () => {
           success: true,
           data: [
             {
-              caseId: '0c773060-06f9-4506-a2e0-230e99f40550',
-              writtenDescription:
-                'Abuso de confianza, control financiero absoluto por parte del cónyuge y violencia verbal.',
-              writtenHelpsWanted:
-                'Acompañamiento en la presentación de denuncia formal y juicio de divorcio.',
-              hasLawyer: true,
-              state: 'Closed',
-              createdAt: '2026-09-30T06:45:51.087Z',
-              updatedAt: '2026-09-30T06:45:51.087Z',
-              helps: [
-                'Acompañamiento jurídico.\n',
-                'Acompañamiento ante instituciones.\n',
-              ],
-              violenceTypes: ['Económica', 'Psicológica'],
-            },
-            {
-              caseId: '2b8882aa-1247-4cc7-abaa-f52488131726',
-              writtenDescription:
-                'Manifiesta haber sufrido agresiones físicas recientes y coacción en su domicilio familiar.',
-              writtenHelpsWanted:
-                'Requiere atención inmediata a víctimas de violencia y orientación jurídica sobre orden de alejamiento.',
-              hasLawyer: true,
-              state: 'Open',
-              createdAt: '2026-09-30T06:45:51.087Z',
-              updatedAt: '2026-09-30T09:13:35.038Z',
-              helps: [
-                'Atención a mujeres en situación de violencia.\n',
-                'Acompañamiento jurídico.\n',
-              ],
-              violenceTypes: ['Física', 'Psicológica'],
+              caseId: '8c097b2f-5418-45ba-ab5f-9fc866fbe778',
+              caseNumber: null,
+              state: 'Abierto',
+              userName: 'Carmen Solis',
+              violenceTypes: [],
+              assignedUsers: [],
+              updatedAt: '2026-10-08T04:59:49.671Z',
             },
           ],
         });

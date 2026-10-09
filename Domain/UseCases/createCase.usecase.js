@@ -3,10 +3,13 @@ import CreateCaseValidator from '../../Data/Validators/createCase.validator.js';
 import RecordModel from '../../Data/Models/record.model.js';
 import CaseModel from '../../Data/Models/case.model.js';
 
-//"case".state and "case_steps".status are NOT NULL and have no CHECK
-// constraint or default in the schema, so the application picks the literals
-//Pending confirmation of the catalogue used by the internal collaborators
-const INITIAL_CASE_STATE = 'NUEVO';
+/*
+"case".state and "case_steps".status are NOT NULL and have no CHECK
+constraint or default in the schema, so the application picks the literals
+A case is either 'Open' or 'Closed'. 
+The frontend translates these for display.
+*/
+const INITIAL_CASE_STATE = 'Open';
 const INITIAL_STEP_STATUS = 'PENDIENTE';
 const MAX_ACTIVE_CASES = 3;
 
