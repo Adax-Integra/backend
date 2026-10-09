@@ -5,22 +5,8 @@ import { adminInternalOnly } from '../Middlewares/role.middleware.js';
 
 const router = express.Router();
 
-// Gets a specific case by its ID
-// Only admin and internal users can access it
-
-router.get('/cases/:caseId', caseController.getCaseById);
-router.get('/cases', caseController.listCases);
-router.get('/users/:userId/cases', caseController.getCasesByUser);
-router.get(
-  '/cases/:caseId',
-  authMiddleware,
-  adminInternalOnly,
-  caseController.getCaseById
-);
-
 // Gets the list of cases
 // Only admin and internal users can access it
-
 router.get(
   '/cases',
   authMiddleware,
@@ -28,6 +14,25 @@ router.get(
   caseController.listCases
 );
 
-// Updates the state of a case to "Closed" if it is not already closed for V-11 close button
-router.patch('/cases/:caseId/close', caseController.closeCase);
+// Gets a specific case by its ID
+// Only admin and internal users can access it
+router.get(
+  '/cases/:caseId',
+  authMiddleware,
+  adminInternalOnly,
+  caseController.getCaseById
+);
+
+// Updates the state of a case to "Closed" if it is not already closed (V-11)
+// Only admin and internal users can access it
+router.patch(
+  '/cases/:caseId/close',
+  authMiddleware,
+  adminInternalOnly,
+  caseController.closeCase
+);
+
+// Gets the cases of a user (used by the external user's own case list)
+router.get('/users/:userId/cases', caseController.getCasesByUser);
+
 export default router;
