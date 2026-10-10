@@ -494,6 +494,7 @@ paths:
                         user_id: { type: string, format: uuid }
                         name: { type: string, example: Ana }
                         last_name: { type: string, example: López }
+                        email: { type: string, format: email, example: ana.lopez@example.com }
                         role: { type: string, example: internal }
                         is_active: { type: boolean, example: true }
         '401': { $ref: '#/components/responses/Unauthorized' }
