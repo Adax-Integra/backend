@@ -30,6 +30,17 @@ class ExternalUserModel {
 
     // pases the database error back to the use case if creation fails
     if (error) {
+      // 23505 = unique violation: the email belongs to another account,
+      // including deleted ones that findByEmail does not return
+      if (error.code === '23505') {
+        const conflict = new Error(
+          'An account with this email already exists.'
+        );
+        conflict.status = 409;
+        conflict.code = 'EMAIL_TAKEN';
+        throw conflict;
+      }
+
       throw new Error(error.message);
     }
 

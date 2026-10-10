@@ -58,6 +58,32 @@ class MailerService {
     });
   }
 
+  // G-09 / G-05: sends a 6-digit code for email verification or password recovery
+  static async sendEmailCode(email, code, purpose) {
+    if (!transporter) {
+      console.warn(
+        `[mailer] SMTP not configured. Code for ${email} was not sent.`
+      );
+      return;
+    }
+
+    const isReset = purpose === 'reset_password';
+
+    await transporter.sendMail({
+      from: MAIL_FROM ?? MAIL_USER,
+      to: email,
+      subject: isReset
+        ? 'Tu código para recuperar tu contraseña de Adax'
+        : 'Tu código de verificación de Adax',
+      text:
+        (isReset
+          ? 'Se solicitó la recuperación de tu contraseña en Adax.\n\n'
+          : 'Gracias por registrarte en Adax.\n\n') +
+        `Tu código es: ${code}\n\n` +
+        'El código vence en 15 minutos. Si no fuiste tú, ignora este correo.',
+    });
+  }
+
   // G-07: tells the external user her data changed without listing the new
   // values, in case someone else has access to her inbox
   static async sendProfileUpdatedNotice(email) {

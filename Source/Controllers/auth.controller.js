@@ -1,5 +1,10 @@
 import UserUseCase from '../../Domain/UseCases/user.usecase.js';
 import ChangePasswordUseCase from '../../Domain/UseCases/changePassword.usecase.js';
+import VerifyEmailUseCase from '../../Domain/UseCases/verifyEmail.usecase.js';
+import ResendVerificationUseCase from '../../Domain/UseCases/resendVerification.usecase.js';
+
+const verifyEmailUseCase = new VerifyEmailUseCase();
+const resendVerificationUseCase = new ResendVerificationUseCase();
 
 // Creates a UserUseCase instance so we can use the login() method in this controller
 const userUseCase = new UserUseCase();
@@ -60,6 +65,55 @@ class AuthController {
       return res.status(500).json({
         success: false,
         error: 'Unable to change password.',
+      });
+    }
+  }
+
+  // POST /api/auth/verify-email (G-09)
+  async verifyEmail(req, res) {
+    try {
+      const data = await verifyEmailUseCase.execute(req.body);
+
+      return res.status(200).json({ success: true, data });
+    } catch (error) {
+      // expected errors (validation, wrong code, limits)
+      if (!error.status || error.status < 500) {
+        return res.status(error.status ?? 400).json({
+          success: false,
+          code: error.code ?? 'VALIDATION_ERROR',
+          error: error.message,
+        });
+      }
+
+      console.error('Email verification failed: ', error);
+      return res.status(500).json({
+        success: false,
+        code: 'SERVER_ERROR',
+        error: 'Unable to verify email.',
+      });
+    }
+  }
+
+  // POST /api/auth/resend-verification (G-09)
+  async resendVerification(req, res) {
+    try {
+      const data = await resendVerificationUseCase.execute(req.body);
+
+      return res.status(200).json({ success: true, data });
+    } catch (error) {
+      if (!error.status || error.status < 500) {
+        return res.status(error.status ?? 400).json({
+          success: false,
+          code: error.code ?? 'VALIDATION_ERROR',
+          error: error.message,
+        });
+      }
+
+      console.error('Resend verification failed: ', error);
+      return res.status(500).json({
+        success: false,
+        code: 'SERVER_ERROR',
+        error: 'Unable to send verification code.',
       });
     }
   }

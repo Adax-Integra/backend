@@ -4,6 +4,10 @@ import CreateAccountValidator from '../../Data/Validators/createAccount.validato
 import ExternalUserModel from '../../Data/Models/externalUser.model.js';
 import RoleModel from '../../Data/Models/role.model.js';
 
+import EmailCodeService, {
+  EMAIL_CODE_PURPOSE,
+} from '../Services/emailCode.service.js';
+
 const EXTERNAL_ROLE = 'external';
 // number of rounds used by bcrypt to hash the password
 const BCRYPT_SALT_ROUNDS = 10;
@@ -19,7 +23,8 @@ class CreateAccountUseCase {
 
     if (existingAccount) {
       const error = new Error('An account with this email already exists.');
-      error.statusCode = 409;
+      error.status = 409;
+      error.code = 'EMAIL_TAKEN';
       throw error;
     }
 
@@ -32,8 +37,8 @@ class CreateAccountUseCase {
       BCRYPT_SALT_ROUNDS
     );
 
-    // pases the account data, password hash, and rode ID to the model
-    return ExternalUserModel.createAccount({
+    // the RPC Returns { user, record_id, address_id, document_id }
+    const created = await ExternalUserModel.createAccount({
       name: account.name,
       lastName: account.lastName,
       email: account.email,
@@ -41,6 +46,24 @@ class CreateAccountUseCase {
       hashedPassword,
       roleId,
     });
+
+    // G-09: email the 6 digit code. If sending fails the account still exists
+    // and the user can ask for a new code from the verification screen
+
+    try {
+      await EmailCodeService.issueCode({
+        userId: created.user.user_id,
+        email: account.email,
+        purpose: EMAIL_CODE_PURPOSE.VERIFY_EMAIL,
+      });
+    } catch (error) {
+      console.error(
+        '[create-account] Failed to send verification code: ',
+        error
+      );
+    }
+
+    return created.user;
   }
 }
 
