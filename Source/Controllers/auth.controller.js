@@ -26,10 +26,13 @@ class AuthController {
         data: data,
       });
     } catch (error) {
-      // Expected errors (400 or 401): we explain the problem to the user
+      // Expected errors (400, 401 or 403): we explain the problem to the user
       if (error.status) {
         return res.status(error.status).json({
           success: false,
+          code:
+            error.code ??
+            (error.status === 401 ? 'INVALID_CREDENTIALS' : 'VALIDATION_ERROR'),
           error: error.message,
         });
         // If UserUseCase threw an error that contains an HTTP status code in "error.status", we use that same code to respond
