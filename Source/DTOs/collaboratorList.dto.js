@@ -4,6 +4,7 @@ class CollaboratorListDTO {
     this.user_id = user.user_id;
     this.name = user.name;
     this.last_name = user.last_name;
+    this.email = user.email;
 
     // Gets the user's first role
     this.role = user.user_role[0].role.description;
@@ -18,6 +19,7 @@ class CollaboratorListDTO {
       user_id: this.user_id,
       name: this.name,
       last_name: this.last_name,
+      email: this.email,
       role: this.role,
       is_active: this.is_active,
     };
