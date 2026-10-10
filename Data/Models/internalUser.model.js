@@ -56,11 +56,12 @@ class InternalUserModel {
         user_id,
         name,
         last_name,
+        email,
         created_at,
         deleted_at,
         user_role!inner (
           role!inner (description)
-       )
+        )
       `
       )
 

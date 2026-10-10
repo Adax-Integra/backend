@@ -8,6 +8,10 @@ import RoleModel from '../../Data/Models/role.model.js';
 // Imports the model used to retrieve the user's roles from the database
 import LoginCredentialsValidator from '../../Data/Validators/loginCredentials.validator.js';
 
+//Precomputed hash compared against when the email is unknown, so the login
+// takes the same time whether or not the account exists, no timing oracle
+const DUMMY_HASH = bcrypt.hashSync('invalid-placeholder-password', 10);
+
 // Login logic
 class UserUseCase {
   async login(email, password) {
@@ -23,12 +27,14 @@ class UserUseCase {
     // Searches for the user in Supabase by email
     const user = await UserModel.findByEmail(cleanEmail);
 
+    //Always run bcrypt.compare against the real hash when the user exists,
+    // against DUMMY_HASH when it does not so the response time doesn't reveal
+    // whether the email is registered (removes the timing-based enumeration oracle)
+    const hashToCompare = user ? user.password : DUMMY_HASH;
+    const passwordIsCorrect = await bcrypt.compare(password, hashToCompare);
+
     // If the user does not exist, a generic error message is sent to avoid giving clues to an attacker
     LoginCredentialsValidator.assertUserExists(user);
-
-    // Compares the entered password with the stored hash
-    const passwordIsCorrect = await bcrypt.compare(password, user.password);
-    // bcrypt.compare() returns true if the password matches the hash, false otherwise
 
     LoginCredentialsValidator.assertPasswordIsCorrect(passwordIsCorrect);
 
@@ -40,7 +46,7 @@ class UserUseCase {
       { user_id: user.user_id, roles },
       process.env.JWT_SECRET,
       {
-        expiresIn: '120h',
+        expiresIn: '8h',
       }
     );
 

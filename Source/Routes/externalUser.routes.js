@@ -3,11 +3,19 @@ import externalUserController from '../Controllers/externalUser.controller.js';
 import authMiddleware from '../Middlewares/auth.middleware.js';
 import { ownDataOnly } from '../Middlewares/role.middleware.js';
 import preSubmissionUpload from '../Middlewares/upload.middleware.js';
+import {
+  registerLimiter,
+  createCaseLimiter,
+} from '../Middlewares/rateLimit.middleware.js';
 
 const router = express.Router();
 
 // G-01 sends registration requests to the account creation controller
-router.post('/external-user/register', externalUserController.createAccount);
+router.post(
+  '/external-user/register',
+  registerLimiter,
+  externalUserController.createAccount
+);
 
 // Gets the pre-submission data from an external user
 router.get(
@@ -26,11 +34,12 @@ router.put(
   externalUserController.editPreSubmissionData
 );
 
-//R-02 Create a case once the user confirmed her data in R-01
+//R-02 Create a case
 router.post(
   '/external-users/:userId/cases',
   authMiddleware,
   ownDataOnly,
+  createCaseLimiter,
   externalUserController.createCase
 );
 

@@ -13,16 +13,16 @@ const authHeader = () => ['Bearer', testToken].join(' ');
 // in this test we want to use a case that is open and can be closed it will be left in "Closed" state so if we want
 // to try again we must  reset it to "Open" in Supabase or change the ID to one that is still open.
 
-const OPEN_CASE_TO_CLOSE = '9c6b5dca-db09-43dd-bb4e-1a7d1b0f81fc';
+const OPEN_CASE_TO_CLOSE = '27862242-06d2-4ecb-a2b0-b73feb0991b0';
 
 // in this case we use a case that was already clsed and want to make sure the "already closed" (409) check works good
-const ALREADY_CLOSED_CASE = '597b73b9-e4d2-4b7c-9094-6ed222d96aa4';
+const ALREADY_CLOSED_CASE = '8c097b2f-5418-45ba-ab5f-9fc866fbe778';
 
 // In case one of the previous cases is already closed I place this "Spare case" ids
 // OPEN_CASE_TO_CLOSE / ALREADY_CLOSED_CASE are not in the right state.
-// d819031c-01a8-4b0c-b74c-132417baa4f6 --> Open
-// 0dbbf20a-271d-4135-a2de-833237b230c9 --> Open
-// 2b8882aa-1247-4cc7-abaa-f52488131726 --> Closed
+// 83a32685-a9d4-4acb-8e2d-e2d723df1ce0 --> Open
+// ca8b3f81-4045-4a04-a82f-5452814ee307 --> Open
+// 8c097b2f-5418-45ba-ab5f-9fc866fbe778 --> Closed
 
 const NONEXISTENT_CASE_ID = '11111111-1111-4111-8111-111111111111';
 
