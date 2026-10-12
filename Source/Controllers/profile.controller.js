@@ -1,4 +1,4 @@
-import ProfileUseCase from '../../domain/useCases/profile.usecase.js';
+import ProfileUseCase from '../../Domain/UseCases/profile.usecase.js';
 
 const profileUseCase = new ProfileUseCase();
 

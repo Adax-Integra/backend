@@ -11,6 +11,7 @@ The frontend translates these for display.
 */
 const INITIAL_CASE_STATE = 'Open';
 const INITIAL_STEP_STATUS = 'PENDIENTE';
+const MAX_ACTIVE_CASES = 3;
 
 //Reached only after the user confirms her data in R-01, which means the
 // expediente ("record") is expected to exist by the time this runs
@@ -21,6 +22,17 @@ class CreateCaseUseCase {
       CreateCaseValidator.validateCreateBody(body);
 
     const record = await RecordModel.findActiveByUserId(validUserId);
+
+    //Up to MAX_ACTIVE_CASES open cases per record. Rejecting past the cap
+    // stops a user or an automated script from flooding the table with cases
+    const activeCases = await CaseModel.countActiveByRecordId(record.record_id);
+    if (activeCases >= MAX_ACTIVE_CASES) {
+      const error = new Error(
+        `This record already has ${MAX_ACTIVE_CASES} active cases.`
+      );
+      error.status = 409;
+      throw error;
+    }
 
     const created = await CaseModel.create({
       recordId: record.record_id,

@@ -9,6 +9,7 @@ const CASE_COLUMNS = `
   updated_at,
   record!inner (
     record_id,
+    record_number,
     user!inner (
       user_id,
       name,
@@ -41,6 +42,7 @@ const CASE_DETAIL_COLUMNS = `
   updated_at,
   record!inner (
     record_id,
+    record_number,
     user!inner (
       user_id,
       name,
@@ -197,6 +199,23 @@ class CaseModel {
     }
 
     return data;
+  }
+
+  //Counts the non-deleted, non-closed cases of a record this used
+  // to stop a user or a script from stacking many open cases
+  static async countActiveByRecordId(recordId) {
+    const { count, error } = await supabase
+      .from('case')
+      .select('case_id', { count: 'exact', head: true })
+      .eq('record_id', recordId)
+      .is('deleted_at', null)
+      .neq('state', 'Closed');
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return count ?? 0;
   }
 }
 

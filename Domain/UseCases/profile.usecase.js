@@ -1,4 +1,4 @@
-import ProfileModel from '../../data/models/profile.model.js';
+import ProfileModel from '../../Data/Models/profile.model.js';
 
 //handles profile retrieval operation from controller (g-13)
 class ProfileUseCase {

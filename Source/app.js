@@ -24,10 +24,21 @@ import assetLinks from '../Data/Config/assetlinks.js';
 // R-06: Document upload and replacement routes
 import uploadDocumentsRoutes from '../Source/Routes/uploadDocuments.routes.js';
 
+import { apiLimiter } from '../Source/Middlewares/rateLimit.middleware.js';
+
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const swaggerDocument = parseYaml(
   readFileSync(join(__dirname, '..', 'openapi.yaml'), 'utf8')
 );
+
+const JWT_SECRET = process.env.JWT_SECRET;
+if (
+  !JWT_SECRET ||
+  JWT_SECRET.length < 32 ||
+  JWT_SECRET === 'change_me_to_a_long_random_text'
+) {
+  throw new Error('JWT_SECRET must be a strong random value (>= 32 chars)');
+}
 
 const app = express();
 
@@ -38,6 +49,7 @@ app.use(cors());
 // Built-in body parsing
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+app.use('/api', apiLimiter);
 
 // Default server running page
 app.get('/', (_req, res) => res.status(200).json({ status: 'server running' }));

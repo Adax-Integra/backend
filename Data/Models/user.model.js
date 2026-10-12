@@ -4,7 +4,7 @@ import { supabase } from '../Config/supabase.js';
 class UserModel {
   static TABLE = 'user';
 
-  static AUTH_COLUMNS = 'user_id, email, password';
+  static AUTH_COLUMNS = 'user_id, email, password, email_verified_at';
 
   /**
    * Return back the data if the email is found in the database, otherwise returns null.
@@ -77,6 +77,18 @@ class UserModel {
     }
 
     return data;
+  }
+  // G-09: marks the email as verified once the user enters the correct code
+  static async markEmailVerified(userId) {
+    const { error } = await supabase
+      .from(UserModel.TABLE)
+      .update({ email_verified_at: new Date().toISOString() })
+      .eq('user_id', userId)
+      .is('deleted_at', null);
+
+    if (error) {
+      throw new Error(error.message);
+    }
   }
 }
 
