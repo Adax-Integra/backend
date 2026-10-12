@@ -46,10 +46,13 @@ class ExternalUserController {
       });
     } catch (error) {
       console.error('Failed to create account:', error);
-      console.error('Cause:', error.cause);
 
-      return res.status(error.statusCode ?? 400).json({
+      // validator errors have no status; so they default to 400
+      const status = error.status ?? 400;
+
+      return res.status(status).json({
         success: false,
+        code: error.code ?? 'VALIDATION_ERROR',
         error: error.message,
       });
     }
