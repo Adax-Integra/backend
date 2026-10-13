@@ -104,6 +104,7 @@ describe('Unit tests for V-10', () => {
               userName: 'Carmen Solis',
               violenceTypes: [],
               assignedUsers: [],
+              urgency: 'Sin evaluar',
               updatedAt: '2026-10-08T04:59:49.671Z',
             },
           ],
