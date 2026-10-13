@@ -31,6 +31,22 @@ class ProfileModel {
     }
     return data;
   }
+
+  static async updateProfileById(userId, payload) {
+    const { data, error } = await supabase
+      .from('user')
+      .update(payload)
+      .eq('user_id', userId)
+      .is('deleted_at', null)
+      .select('*')
+      .maybeSingle();
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return data;
+  }
 }
 
 export default ProfileModel;
