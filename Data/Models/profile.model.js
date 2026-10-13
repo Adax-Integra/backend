@@ -32,13 +32,17 @@ class ProfileModel {
     return data;
   }
 
+  /* 
+  R-04: Admin and internal users only edit their user row, 
+  they have no address unlike external users
+  */
   static async updateProfileById(userId, payload) {
     const { data, error } = await supabase
       .from('user')
       .update(payload)
       .eq('user_id', userId)
       .is('deleted_at', null)
-      .select('*')
+      .select('user_id')
       .maybeSingle();
 
     if (error) {
