@@ -35,29 +35,6 @@ class MailerService {
     });
   }
 
-  //sends a password recovery email to the user with a recovery token
-  static async sendPasswordRecoveryEmail(email, recoveryToken) {
-    if (!transporter) {
-      console.warn(
-        `[mailer] SMTP not configured. Password recovery email for ${email} was not sent.`
-      );
-      return;
-    }
-
-    const resetLink = `https://adax-integra.duckdns.org/reset-password?token=${recoveryToken}`;
-
-    //send the email with the recovery token
-    await transporter.sendMail({
-      from: MAIL_FROM ?? MAIL_USER,
-      to: email,
-      subject: 'Recuperación de contraseña de Adax Integra',
-      text:
-        'Se solicitó la recuperación de tu contraseña en Adax.\n\n' +
-        `Tu enlace de recuperación es: \n${resetLink}\n\n` +
-        'Este código tiene una vigencia limitada. Si no solicitaste la recuperación de tu contraseña, ignora este correo.',
-    });
-  }
-
   // G-09 / G-05: sends a 6-digit code for email verification or password recovery
   static async sendEmailCode(email, code, purpose) {
     if (!transporter) {
