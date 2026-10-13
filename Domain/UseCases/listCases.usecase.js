@@ -1,4 +1,5 @@
 import CaseModel from '../../Data/Models/case.model.js';
+import { calculateCaseUrgency } from '../../Data/Services/caseUrgency.helper.js';
 
 // Match names without requiring accents, capitalization, or exact spacing.
 function normalizeSearch(value) {
@@ -20,7 +21,9 @@ class ListCasesUseCase {
     const query = normalizeSearch(search);
     const urgencyFilter = urgency.trim();
     if (
-      !['', 'Todas', 'Alta', 'Media', 'Baja', 'Sin evaluar'].includes(urgencyFilter)
+      !['', 'Todas', 'Alta', 'Media', 'Baja', 'Sin evaluar'].includes(
+        urgencyFilter
+      )
     ) {
       throw new Error(
         'urgency must be Alta, Media, Baja, Sin evaluar, or Todas.'
@@ -62,30 +65,10 @@ class ListCasesUseCase {
     } while (allCases.length < total);
 
     // Calculate the urgency level for each case
-    const casesWithUrgency = allCases.map((caseData) => {
-      let severity = null;
-
-      // A case takes the highest severity among its active violence types.
-      for (const link of caseData.case_violence ?? []) {
-        const value = link.violence_types?.severity;
-
-        if (Number.isInteger(value) && value >= 1 && value <= 10) {
-          severity = severity === null ? value : Math.max(severity, value);
-        }
-      }
-
-      let urgency = 'Sin evaluar';
-
-      if (severity >= 8) {
-        urgency = 'Alta';
-      } else if (severity >= 4) {
-        urgency = 'Media';
-      } else if (severity >= 1) {
-        urgency = 'Baja';
-      }
-
-      return { ...caseData, severity, urgency };
-    });
+    const casesWithUrgency = allCases.map((caseData) => ({
+      ...caseData,
+      ...calculateCaseUrgency(caseData.case_violence),
+    }));
 
     // Search and filter the complete list before counting and paginating it.
     const matchingCases = casesWithUrgency.filter((caseData) => {

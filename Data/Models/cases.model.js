@@ -41,6 +41,7 @@ class CasesModel {
           deleted_at,
           violence_types (
             description,
+            severity,
             deleted_at
           )
         ),

@@ -579,7 +579,12 @@ paths:
     get:
       tags: [Internal Users]
       summary: Get all cases for a user (V-10)
-      description: Admin and internal users only. Returns the case cards of every case in the user's records.
+      description: >
+        Admin and internal users only. Returns the case cards of every case in
+        the user's records. Each case includes urgency calculated from the
+        highest severity among its active violence types: severity 8-10 is
+        Alta, 4-7 is Media, 1-3 is Baja, and cases without a valid severity
+        are Sin evaluar.
       security:
         - BearerAuth: []
       responses:
@@ -1388,7 +1393,13 @@ components:
           items: { type: string }
         state: { type: string, nullable: true }
         severity: { type: integer, nullable: true, minimum: 1, maximum: 10 }
-        urgency: { type: string, enum: [Alta, Media, Baja, Sin evaluar] }
+        urgency:
+          type: string
+          enum: [Alta, Media, Baja, Sin evaluar]
+          description: >
+            Calculated from the highest active violence severity: 8-10 is
+            Alta, 4-7 is Media, 1-3 is Baja, and no valid severity is
+            Sin evaluar.
         updated_at: { type: string, format: date-time, nullable: true }
 
     CaseListData:
@@ -1411,7 +1422,7 @@ components:
 
     CaseSummary:
       type: object
-      required: [caseId, caseNumber, state, userName, violenceTypes, assignedUsers, updatedAt]
+      required: [caseId, caseNumber, state, userName, violenceTypes, assignedUsers, urgency, updatedAt]
       properties:
         caseId: { type: string, format: uuid, nullable: true }
         caseNumber: { type: string, nullable: true, example: C-26-9999 }
@@ -1433,6 +1444,13 @@ components:
             properties:
               userId: { type: string, format: uuid }
               name: { type: string, example: Mariana Robles Ortega }
+        urgency:
+          type: string
+          enum: [Alta, Media, Baja, Sin evaluar]
+          description: >
+            Calculated from the highest active violence severity: 8-10 is
+            Alta, 4-7 is Media, 1-3 is Baja, and no valid severity is
+            Sin evaluar.
         updatedAt:
           type: string
           format: date-time
