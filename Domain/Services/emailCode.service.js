@@ -87,8 +87,8 @@ class EmailCodeService {
     return { sendCount, maxSends: MAX_SENDS };
   }
 
-  // Validates the code; deletes it on success so it can only be used once
-  static async consumeCode({ userId, purpose, code }) {
+  // Validates the code and counts wrong attempts
+  static async validateCode({ userId, purpose, code }) {
     const record = await EmailCodeModel.find(userId, purpose);
 
     if (!record) {
@@ -115,8 +115,16 @@ class EmailCodeService {
       await EmailCodeModel.setAttempts(userId, purpose, record.attempts + 1);
       throw createError('Código incorrecto.', 400, 'CODE_INVALID');
     }
+  }
 
+  //deletes code after validation, so it cannot be reused
+  static async removeCode(userId, purpose) {
     await EmailCodeModel.remove(userId, purpose);
+  }
+
+  static async consumeCode({ userId, purpose, code }) {
+    await EmailCodeService.validateCode({ userId, purpose, code });
+    await EmailCodeService.removeCode(userId, purpose);
   }
 }
 

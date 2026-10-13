@@ -5,19 +5,19 @@ const passwordRecoveryUsecase = new PasswordRecoveryUsecase();
 class PasswordRecoveryController {
   async forgotPassword(req, res) {
     try {
-      const body = req.body || {};
-
-      const data = await passwordRecoveryUsecase.forgotPassword(body.email);
+      const { email } = req.body || {};
+      const data = await passwordRecoveryUsecase.forgotPassword(email);
 
       return res.status(200).json({
         success: true,
-        data: data,
+        data,
       });
     } catch (error) {
-      if (error.status) {
+      if (error.status < 500) {
         return res.status(error.status).json({
           success: false,
           error: error.message,
+          code: error.code,
         });
       }
 
@@ -28,25 +28,26 @@ class PasswordRecoveryController {
     }
   }
 
-  //reset password while validating the token and new password
   async resetPassword(req, res) {
     try {
-      const { token, newPassword } = req.body;
+      const { email, code, newPassword } = req.body || {};
 
-      const result = await passwordRecoveryUsecase.resetPassword(
-        token,
+      const data = await passwordRecoveryUsecase.resetPassword(
+        email,
+        code,
         newPassword
       );
 
       return res.status(200).json({
         success: true,
-        data: result,
+        data,
       });
     } catch (error) {
-      if (error.status) {
+      if (error.status < 500) {
         return res.status(error.status).json({
           success: false,
           error: error.message,
+          code: error.code,
         });
       }
 
