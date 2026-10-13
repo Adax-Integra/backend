@@ -11,6 +11,8 @@ import ListActivityLogUseCase from '../../Domain/UseCases/listActivityLog.usecas
 import ActivityLogDTO from '../DTOs/activityLog.dto.js';
 import ListCollaboratorsUseCase from '../../Domain/UseCases/listCollaborators.usecase.js';
 import CollaboratorListDTO from '../DTOs/collaboratorList.dto.js';
+import GetCollaboratorByIdUseCase from '../../Domain/UseCases/getCollaboratorById.usecase.js';
+import CollaboratorDetailDTO from '../DTOs/collaboratorDetail.dto.js';
 
 const listCollaboratorsUseCase = new ListCollaboratorsUseCase();
 const getAllCasesFromUser = new GetAllCasesFromUser();
@@ -19,6 +21,7 @@ const getExternalProfileUseCase = new GetExternalProfileUseCase();
 const updateExternalProfileUseCase = new UpdateExternalProfileUseCase();
 const createCollaboratorUseCase = new CreateCollaboratorUseCase();
 const listActivityLogUseCase = new ListActivityLogUseCase();
+const getCollaboratorByIdUseCase = new GetCollaboratorByIdUseCase();
 
 class InternalUserController {
   getAllCasesFromUser = async (req, res) => {
@@ -214,6 +217,39 @@ class InternalUserController {
       return res.status(500).json({
         success: false,
         error: 'Failed to list collaborators',
+      });
+    }
+  };
+
+  // New method for US G-10 where the Admin gets the detail of a specific intenral user
+  getCollaboratorDetail = async (req, res) => {
+    try {
+      // The use case validates the id and throws 400 or 404 when needed
+      const collaborator = await getCollaboratorByIdUseCase.execute(
+        req.params.userId
+      );
+
+      const payload = new CollaboratorDetailDTO(collaborator).toJSON();
+
+      return res.status(200).json({
+        success: true,
+        data: payload,
+      });
+    } catch (error) {
+      const status = error.status ?? 500;
+
+      // Unexpected failures are logged and hidden behind a generic message
+      if (status >= 500) {
+        console.error('Failed to get collaborator detail: ', error);
+
+        return res.status(500).json({
+          success: false,
+          error: 'Unable to get the collaborator detail',
+        });
+      }
+      return res.status(status).json({
+        success: false,
+        error: error.message,
       });
     }
   };

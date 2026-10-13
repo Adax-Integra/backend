@@ -63,5 +63,12 @@ router.get(
   adminOnly,
   internalUserController.listCollaborators
 );
+// G-10 Admin and ONLY ADMIN  consults the detail of a internal user
+router.get(
+  '/internal-users/:userId',
+  authMiddleware,
+  adminOnly,
+  internalUserController.getCollaboratorDetail
+);
 
 export default router;
