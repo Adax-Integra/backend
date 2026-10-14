@@ -109,21 +109,47 @@ class ExternalUserModel {
     return data;
   }
 
-  // Update external user columns
-  static async updateProfile(userId, payload) {
-    const { data, error } = await supabase
-      .from('user')
-      .update(payload)
-      .eq('user_id', userId)
-      .is('deleted_at', null)
-      .select('*')
-      .single();
+  /*
+  R-04: the external user edits their own user row and address.
+  Each table is only updated when it has changes. Returns false if a row
+  to update does not exist.
+  */
+  static async updateProfile(userId, profile, address) {
+    if (Object.keys(profile).length > 0) {
+      const { data, error } = await supabase
+        .from('user')
+        .update(profile)
+        .eq('user_id', userId)
+        .is('deleted_at', null)
+        .select('user_id')
+        .maybeSingle();
 
-    if (error) {
-      throw new Error(error.message);
+      if (error) {
+        throw new Error(error.message);
+      }
+      if (!data) {
+        return false;
+      }
     }
 
-    return data;
+    if (Object.keys(address).length > 0) {
+      const { data, error } = await supabase
+        .from('address')
+        .update(address)
+        .eq('user_id', userId)
+        .is('deleted_at', null)
+        .select('user_id')
+        .maybeSingle();
+
+      if (error) {
+        throw new Error(error.message);
+      }
+      if (!data) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   // G-07: profile columns the admin can see, without the password hash
