@@ -93,7 +93,45 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '500': { $ref: '#/components/responses/InternalServerError' }
-
+  /api/auth/logout:
+    post:
+      tags: [Authentication]
+      summary: Log out the current session
+      description: |
+        Revokes the token sent in the Authorization header.
+        Sessions on other devices remain active.
+        No request body is required.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Current session logged out successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageSuccessResponse'
+              example:
+                success: true
+                data:
+                  message: Logged out successfully.
+        '401':
+          description: Token is missing, invalid, expired, or already revoked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Unable to revoke the token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: Unable to check whether the session is active
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /api/auth/change-password:
     post:
       tags: [Authentication]
@@ -1045,7 +1083,10 @@ components:
       type: http
       scheme: bearer 
       bearerFormat: JWT
-      description: Token returned by /api/auth/login. It expires after 120 hours
+      description: |
+        Token returned after authentication. Access requires a valid,
+        unexpired JWT whose hash remains registered in the database.
+        Logging out revokes only the token used for that request.
 
   responses:
     BadRequest:
