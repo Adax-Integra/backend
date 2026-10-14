@@ -22,7 +22,7 @@ describe('forgotPassword', () => {
       .mockResolvedValue();
 
     //real method
-    const result = await useCase.forgotPassword('usuaria@example.com');
+    const result = await useCase.forgotPassword('user@example.com');
 
     //results
     expect(issueCode).toHaveBeenCalledTimes(1);
