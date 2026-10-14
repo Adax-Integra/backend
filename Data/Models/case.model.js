@@ -1,8 +1,9 @@
 import { supabase } from '../Config/supabase.js';
 
-// keeps cases that do not have any active violence types yet.
+// Retrieves card information while keeping cases without assignments.
 const CASE_COLUMNS = `
   case_id,
+  case_number,
   record_id,
   state,
   created_at,
@@ -22,6 +23,15 @@ const CASE_COLUMNS = `
       violence_id,
       description,
       severity
+    )
+  ),
+  case_assignment (
+    deleted_at,
+    user (
+      user_id,
+      name,
+      last_name,
+      deleted_at
     )
   )
 `;

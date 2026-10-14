@@ -70,13 +70,48 @@ class ListCasesUseCase {
       ...calculateCaseUrgency(caseData.case_violence),
     }));
 
-    // Search and filter the complete list before counting and paginating it.
+    // Search and filter before counting and paginating.
     const matchingCases = casesWithUrgency.filter((caseData) => {
+      const state = normalizeSearch(caseData.state ?? '');
+
+      // Closed cases do not belong to the collaborator's priority listing.
+      if (state === 'closed' || state === 'cerrado') {
+        return false;
+      }
+
       const user = caseData.record?.user;
       const fullName = [user?.name, user?.last_name].filter(Boolean).join(' ');
-      const matchesSearch =
-        normalizeSearch(fullName).includes(query) ||
-        normalizeSearch(caseData.case_id ?? '').includes(query);
+
+      const violenceTypes = (caseData.case_violence ?? [])
+        .map((link) => link.violence_types?.description)
+        .filter(Boolean);
+
+      // Ignore deleted assignments and deleted collaborators.
+      const assignedNames = (caseData.case_assignment ?? [])
+        .filter(
+          (assignment) =>
+            assignment.deleted_at === null &&
+            assignment.user != null &&
+            assignment.user.deleted_at === null
+        )
+        .map((assignment) =>
+          [assignment.user.name, assignment.user.last_name]
+            .filter(Boolean)
+            .join(' ')
+        );
+
+      const searchableValues = [
+        fullName,
+        caseData.case_id ?? '',
+        caseData.case_number ?? '',
+        ...violenceTypes,
+        ...assignedNames,
+      ];
+
+      const matchesSearch = searchableValues.some((value) =>
+        normalizeSearch(value).includes(query)
+      );
+
       const matchesUrgency =
         urgencyFilter === '' ||
         urgencyFilter === 'Todas' ||
