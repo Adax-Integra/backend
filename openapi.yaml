@@ -22,6 +22,7 @@ tags:
   - name: Locations
   - name: Records
   - name: Reports
+  - name: Events
 
 paths:
   /:
@@ -931,6 +932,53 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
 
+  /api/events:
+    post:
+      tags: [Events]
+      summary: Register an event (E-04)
+      description: Only internal users and admins can register events. The server sets the eventId and the control dates, and any other field in the body is ignored. Dates must include the time zone offset and are returned in UTC. Each IP can register up to 20 events per hour.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEventRequest'
+            example:
+              title: Reunión de equipo
+              startsAt: '2026-11-03T10:00:00-06:00'
+              endsAt: '2026-11-03T11:30:00-06:00'
+              modality: Presencial
+              location: Oficinas ADAX
+              description: Revisión semanal de avance de casos activos
+      responses:
+        '201':
+          description: Event registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateEventSuccessResponse'
+        '400':
+          description: Invalid request body. errors has the reason for each field.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateEventErrorResponse'
+              example:
+                success: false
+                error: location is required when modality is Presencial
+                errors:
+                  location: location is required when modality is Presencial
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '429':
+          description: More than 20 events registered from the same IP in one hour.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+
 components:
   parameters:
     UserId:
@@ -1763,3 +1811,71 @@ components:
           nullable: true
           additionalProperties: { type: string }
           example: { to: to must be later than from. }
+
+    CreateEventRequest:
+      type: object
+      required: [title, startsAt, endsAt, modality, description]
+      properties:
+        title: { type: string, minLength: 1, maxLength: 150 }
+        startsAt:
+          type: string
+          format: date-time
+          description: Must include the time zone offset.
+          example: '2026-11-03T10:00:00-06:00'
+        endsAt:
+          type: string
+          format: date-time
+          description: Must be after startsAt and include the time zone offset.
+          example: '2026-11-03T11:30:00-06:00'
+        modality: { type: string, enum: [Presencial, Virtual, Mixto] }
+        location:
+          type: string
+          maxLength: 200
+          nullable: true
+          description: Required when modality is Presencial.
+        link:
+          type: string
+          maxLength: 500
+          nullable: true
+          description: Must start with http:// or https://.
+        phone:
+          type: string
+          nullable: true
+          description: Country code followed by 10 digits.
+          example: '+525512345678'
+        description: { type: string, minLength: 1, maxLength: 2000 }
+        notes: { type: string, maxLength: 1000, nullable: true }
+
+    CreateEventData:
+      type: object
+      required: [eventId, title, startsAt, endsAt, modality, location, link, phone, description, notes]
+      properties:
+        eventId: { type: string, format: uuid }
+        title: { type: string }
+        startsAt: { type: string, format: date-time, description: UTC. }
+        endsAt: { type: string, format: date-time, description: UTC. }
+        modality: { type: string, enum: [Presencial, Virtual, Mixto] }
+        location: { type: string, nullable: true }
+        link: { type: string, nullable: true }
+        phone: { type: string, nullable: true }
+        description: { type: string }
+        notes: { type: string, nullable: true }
+
+    CreateEventSuccessResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success: { type: boolean, example: true }
+        data: { $ref: '#/components/schemas/CreateEventData' }
+
+    CreateEventErrorResponse:
+      type: object
+      required: [success, error]
+      properties:
+        success: { type: boolean, example: false }
+        error: { type: string }
+        errors:
+          type: object
+          nullable: true
+          additionalProperties: { type: string }
+          description: Reason for each invalid body field
