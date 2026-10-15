@@ -1,5 +1,6 @@
 import ProfileUseCase from '../../Domain/UseCases/profile.usecase.js';
 import UpdateProfileUseCase from '../../Domain/UseCases/updateProfile.usecase.js';
+import ProfileDTO from '../DTOs/profile.dto.js';
 
 const profileUseCase = new ProfileUseCase();
 const updateProfileUseCase = new UpdateProfileUseCase();
@@ -10,13 +11,13 @@ class ProfileController {
     const userId = req.user.user_id;
 
     try {
-      const profileData = await profileUseCase.execute(userId);
+      const profileData = await profileUseCase.execute(userId, req.user.roles);
       return res.status(200).json({
         success: true,
-        data: profileData,
+        data: new ProfileDTO(profileData).toJSON(),
       });
     } catch (error) {
-      return res.status(400).json({
+      return res.status(error.status ?? 400).json({
         success: false,
         error: error.message,
       });
