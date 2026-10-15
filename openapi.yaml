@@ -1271,6 +1271,71 @@ paths:
                 error: The event is already disabled or does not exist.
         '500': { $ref: '#/components/responses/InternalServerError' }
 
+  /api/events/{eventId}:
+    parameters:
+      - $ref: '#/components/parameters/EventId'
+    put:
+      tags: [Events]
+      summary: Update an event (E-02)
+      description: Only internal users and admins can update events. The whole event is sent and follows the same rules as registering it, so a field left out is cleared. Any other field in the body is ignored. Dates must include the time zone offset and are returned in UTC. A missing event and a disabled event both return 404.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEventRequest'
+            example:
+              title: Reunión de equipo
+              startsAt: '2026-11-03T10:00:00-06:00'
+              endsAt: '2026-11-03T12:00:00-06:00'
+              modality: Virtual
+              link: https://meet.google.com/abc
+              description: Revisión semanal de avance de casos activos
+      responses:
+        '200':
+          description: Event updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateEventSuccessResponse'
+              example:
+                success: true
+                data:
+                  eventId: 9bd51c3f-bb56-49ec-8911-3f8209a3b5ce
+                  title: Reunión de equipo
+                  startsAt: '2026-11-03T16:00:00+00:00'
+                  endsAt: '2026-11-03T18:00:00+00:00'
+                  modality: Virtual
+                  location: null
+                  link: https://meet.google.com/abc
+                  phone: null
+                  description: Revisión semanal de avance de casos activos
+                  notes: null
+        '400':
+          description: eventId is not a UUID or the body is invalid. errors has the reason for each field.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateEventErrorResponse'
+              example:
+                success: false
+                error: endsAt must be after startsAt
+                errors:
+                  endsAt: endsAt must be after startsAt
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404':
+          description: The event does not exist or is disabled
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+              example:
+                success: false
+                error: The event does not exist or is disabled.
+        '500': { $ref: '#/components/responses/InternalServerError' }
+
   /api/events/{eventId}/image:
     parameters:
       - $ref: '#/components/parameters/EventId'
