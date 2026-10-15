@@ -12,6 +12,9 @@ router.post(
   passwordRecoveryController.forgotPassword
 );
 
+//POST api to validate code
+router.post('/validate-code', passwordRecoveryController.validateCode);
+
 //POST /api/password-recovery/reset-password
 router.post(
   '/reset-password',
