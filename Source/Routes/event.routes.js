@@ -3,6 +3,7 @@ import eventController from '../Controllers/event.controller.js';
 import authMiddleware from '../Middlewares/auth.middleware.js';
 import { adminInternalOnly } from '../Middlewares/role.middleware.js';
 import { createEventLimiter } from '../Middlewares/rateLimit.middleware.js';
+import { eventImageUploadMiddleware } from '../Middlewares/upload.middleware.js';
 
 const router = express.Router();
 
@@ -20,6 +21,15 @@ router.patch(
   authMiddleware,
   adminInternalOnly,
   eventController.disableEvent
+);
+
+// Upload or replace the event image, internal/admin only
+router.patch(
+  '/events/:eventId/image',
+  authMiddleware,
+  adminInternalOnly,
+  eventImageUploadMiddleware,
+  eventController.uploadEventImage
 );
 
 export default router;
