@@ -22,4 +22,11 @@ router.patch(
   eventController.disableEvent
 );
 
+router.put(
+  '/events/:eventId',
+  authMiddleware,
+  adminInternalOnly,
+  eventController.updateEvent
+);
+
 export default router;
