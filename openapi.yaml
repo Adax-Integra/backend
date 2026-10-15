@@ -322,6 +322,56 @@ paths:
                 error: user not found
                 errors: null
 
+  /api/profile/{userId}/deactivate:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+    patch:
+      tags: [Profile]
+      summary: Deactivate the authenticated user's account (G-08)
+      description: |
+        An external or internal user deactivates her own account. The userId path parameter must match the token.
+        The account is hidden with deleted_at instead of being deleted, so it can no longer log in and its records, cases and log entries are kept.
+        Admin accounts cannot be deactivated. The action is saved in the activity log as deactivate_account.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Account deactivated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data:
+                    type: object
+                    properties:
+                      userId: { type: string, format: uuid }
+                      deactivatedAt: { type: string, example: '2026-10-15T18:30:00.000' }
+              example:
+                success: true
+                data:
+                  userId: 0b7a1c1e-6f0a-4b55-9a4e-2f1d7f5c9a10
+                  deactivatedAt: '2026-10-15T18:30:00.000'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403':
+          description: The userId does not match the token, the account is an admin, or the user has no external or internal role
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+              example:
+                success: false
+                error: An admin account cannot be deactivated
+        '409':
+          description: The account is already deactivated or does not exist
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+              example:
+                success: false
+                error: The account is already deactivated or does not exist.
+        '500': { $ref: '#/components/responses/InternalServerError' }
+
   /api/external-user/register:
     post:
       tags: [External Users]
