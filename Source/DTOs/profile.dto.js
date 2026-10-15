@@ -1,14 +1,12 @@
 /* 
-R-04: keeps only the profile fields the app shows after an update,
-so columns like the password hash never leave the server
+G-13 / R-04: profile returned by GET /profile/:userId, with the same fields
+PATCH can edit, so columns like the password hash never leave the server
 */
-class UpdateProfileDTO {
+class ProfileDTO {
   constructor({ profile, address }) {
     this.user_id = profile.user_id;
     this.name = profile.name;
     this.last_name = profile.last_name;
-    this.email = profile.email;
-    this.birth_date = profile.birth_date;
     this.phone = profile.phone;
     // Only external users have an address
     if (address !== undefined) {
@@ -27,8 +25,6 @@ class UpdateProfileDTO {
       user_id: this.user_id,
       name: this.name,
       last_name: this.last_name,
-      email: this.email,
-      birth_date: this.birth_date,
       phone: this.phone,
     };
     if (this.address !== undefined) {
@@ -38,4 +34,4 @@ class UpdateProfileDTO {
   }
 }
 
-export default UpdateProfileDTO;
+export default ProfileDTO;
