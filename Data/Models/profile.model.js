@@ -5,13 +5,10 @@ const PROFILE_COLUMNS = `
     user_id,
     name,
     last_name,
-    email,
-    birth_date,
-    phone,
-    created_at
+    phone
 `;
 
-//model to be able to display needed information to users in profile tab (g-13)
+// Model to be able to display needed information to users in profile tab (g-13)
 class ProfileModel {
   static async getProfileByUserId(userId) {
     const { data, error } = await supabase
@@ -25,9 +22,11 @@ class ProfileModel {
       throw new Error(error.message);
     }
 
-    //missing userId situation
+    // Missing userId situation
     if (!data) {
-      throw new Error(`User with ID ${userId} not found.`);
+      const notFound = new Error(`User with ID ${userId} not found.`);
+      notFound.status = 404;
+      throw notFound;
     }
     return data;
   }
