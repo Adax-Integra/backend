@@ -14,5 +14,12 @@ router.post(
   createEventLimiter,
   eventController.createEvent
 );
+// Disable an event, internal/admin only
+router.patch(
+  '/events/:eventId/disable',
+  authMiddleware,
+  adminInternalOnly,
+  eventController.disableEvent
+);
 
 export default router;

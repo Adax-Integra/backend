@@ -40,6 +40,23 @@ class EventModel {
 
     return data;
   }
+
+  // Only an active event is updated, so disabling it twice finds nothing
+  static async disable(eventId) {
+    const { data, error } = await supabase
+      .from('event')
+      .update({ deleted_at: new Date().toISOString() })
+      .eq('event_id', eventId)
+      .is('deleted_at', null)
+      .select('*')
+      .maybeSingle();
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return data;
+  }
 }
 
 export default EventModel;
