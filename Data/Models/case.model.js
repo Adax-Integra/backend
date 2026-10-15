@@ -79,6 +79,33 @@ const CASE_DETAIL_COLUMNS = `
   )
 `;
 
+//  Maximum number of assigned cases returned for a internal user only for US G-10
+const ASSIGNED_CASE_COLUMNS = `
+  case_id,
+  case_number,
+  state,
+  updated_at,
+  record!inner (
+    record_id,
+    user!inner (
+      user_id,
+      name,
+      last_name
+    )
+  ),
+  case_violence (
+    violence_types!inner (
+      description
+    )
+  ),
+  case_assignment!inner (
+    user_id
+  )
+`;
+
+//  Maximum number of assigned cases returned for a internal user only for US G-10
+const MAX_ASSIGNED_CASES = 100;
+
 // Data access for case listings. Urgency calculation and ordering are pending.
 class CaseModel {
   // Extract page and limit from the input object; their defaults are 1 and 20.
@@ -134,6 +161,35 @@ class CaseModel {
     };
   }
 
+  // G-10: Gets the cases assigned to one internal user
+  static async findAllByAssignedUser(userId) {
+    const { data, error } = await supabase
+      .from('case')
+      .select(ASSIGNED_CASE_COLUMNS)
+      // Only the cases assigned to this collaborator
+      .eq('case_assignment.user_id', userId)
+      // Ignores assignments that were removed
+      .is('case_assignment.deleted_at', null)
+      .is('deleted_at', null)
+      .is('record.deleted_at', null)
+      .is('record.user.deleted_at', null)
+      .is('case_violence.deleted_at', null)
+      .is('case_violence.violence_types.deleted_at', null)
+      .order('updated_at', { ascending: false, nullsFirst: false })
+      .order('case_id', { ascending: true })
+      .limit(MAX_ASSIGNED_CASES);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    const cases = data ?? [];
+
+    return {
+      cases,
+      total: cases.length,
+    };
+  }
   //case will be retrieved by caseId to display correct information of progress to external user (V-07)
   static async findById(caseId) {
     const { data, error } = await supabase

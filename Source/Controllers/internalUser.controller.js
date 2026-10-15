@@ -13,6 +13,8 @@ import ListCollaboratorsUseCase from '../../Domain/UseCases/listCollaborators.us
 import CollaboratorListDTO from '../DTOs/collaboratorList.dto.js';
 import GetCollaboratorByIdUseCase from '../../Domain/UseCases/getCollaboratorById.usecase.js';
 import CollaboratorDetailDTO from '../DTOs/collaboratorDetail.dto.js';
+import ListCollaboratorCasesUseCase from '../../Domain/UseCases/listCollaboratorCases.usecase.js';
+import CollaboratorCasesDTO from '../DTOs/collaboratorCases.dto.js';
 
 const listCollaboratorsUseCase = new ListCollaboratorsUseCase();
 const getAllCasesFromUser = new GetAllCasesFromUser();
@@ -22,6 +24,7 @@ const updateExternalProfileUseCase = new UpdateExternalProfileUseCase();
 const createCollaboratorUseCase = new CreateCollaboratorUseCase();
 const listActivityLogUseCase = new ListActivityLogUseCase();
 const getCollaboratorByIdUseCase = new GetCollaboratorByIdUseCase();
+const listCollaboratorCasesUseCase = new ListCollaboratorCasesUseCase();
 
 class InternalUserController {
   getAllCasesFromUser = async (req, res) => {
@@ -238,7 +241,6 @@ class InternalUserController {
     } catch (error) {
       const status = error.status ?? 500;
 
-      // Unexpected failures are logged and hidden behind a generic message
       if (status >= 500) {
         console.error('Failed to get collaborator detail: ', error);
 
@@ -247,6 +249,39 @@ class InternalUserController {
           error: 'Unable to get the collaborator detail',
         });
       }
+      return res.status(status).json({
+        success: false,
+        error: error.message,
+      });
+    }
+  };
+
+  // G-10: Admin gets the cases assigned to one collaborator
+  getCollaboratorCases = async (req, res) => {
+    try {
+      // The use case validates the id and throws 400 or 404
+      const result = await listCollaboratorCasesUseCase.execute(
+        req.params.userId
+      );
+
+      const payload = new CollaboratorCasesDTO(result).toJSON();
+
+      return res.status(200).json({
+        success: true,
+        data: payload,
+      });
+    } catch (error) {
+      const status = error.status ?? 500;
+
+      if (status >= 500) {
+        console.error('Failed to get collaborator cases: ', error);
+
+        return res.status(500).json({
+          success: false,
+          error: 'Unable to get the collaborator cases',
+        });
+      }
+
       return res.status(status).json({
         success: false,
         error: error.message,
