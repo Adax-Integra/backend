@@ -11,6 +11,13 @@ import ListActivityLogUseCase from '../../Domain/UseCases/listActivityLog.usecas
 import ActivityLogDTO from '../DTOs/activityLog.dto.js';
 import ListCollaboratorsUseCase from '../../Domain/UseCases/listCollaborators.usecase.js';
 import CollaboratorListDTO from '../DTOs/collaboratorList.dto.js';
+import GetCollaboratorByIdUseCase from '../../Domain/UseCases/getCollaboratorById.usecase.js';
+import CollaboratorDetailDTO from '../DTOs/collaboratorDetail.dto.js';
+import ListCollaboratorCasesUseCase from '../../Domain/UseCases/listCollaboratorCases.usecase.js';
+import CollaboratorCasesDTO from '../DTOs/collaboratorCases.dto.js';
+import LogActivityUseCase from '../../Domain/UseCases/logActivity.usecase.js';
+import CreateCaseUseCase from '../../Domain/UseCases/createCase.usecase.js';
+import CreateCaseDTO from '../DTOs/createCase.dto.js';
 
 const listCollaboratorsUseCase = new ListCollaboratorsUseCase();
 const getAllCasesFromUser = new GetAllCasesFromUser();
@@ -19,6 +26,10 @@ const getExternalProfileUseCase = new GetExternalProfileUseCase();
 const updateExternalProfileUseCase = new UpdateExternalProfileUseCase();
 const createCollaboratorUseCase = new CreateCollaboratorUseCase();
 const listActivityLogUseCase = new ListActivityLogUseCase();
+const getCollaboratorByIdUseCase = new GetCollaboratorByIdUseCase();
+const listCollaboratorCasesUseCase = new ListCollaboratorCasesUseCase();
+const logActivityUseCase = new LogActivityUseCase();
+const createCaseUseCase = new CreateCaseUseCase();
 
 class InternalUserController {
   getAllCasesFromUser = async (req, res) => {
@@ -57,6 +68,14 @@ class InternalUserController {
       const created = await registerExternalUserUseCase.execute(req.body);
       const payload = new RegisterExternalUserDTO(created).toJSON();
 
+      // V-06: the collaborator who registered the record appears in the activity log
+      await logActivityUseCase.execute({
+        actorId: req.user.user_id,
+        action: 'register_external_user',
+        entity: 'user',
+        entityId: payload.user_id,
+      });
+
       return res.status(201).json({
         success: true,
         data: payload,
@@ -65,6 +84,47 @@ class InternalUserController {
       return res.status(400).json({
         success: false,
         error: error.message,
+      });
+    }
+  };
+
+  // R-11: An internal user registers a case for an external user
+  createCaseForExternalUser = async (req, res) => {
+    try {
+      const created = await createCaseUseCase.execute(
+        req.params.userId,
+        req.body
+      );
+      const payload = new CreateCaseDTO(created).toJSON();
+
+      // V-06: the internal user who created the case appears in the activity log
+      await logActivityUseCase.execute({
+        actorId: req.user.user_id,
+        action: 'internal_create_case',
+        entity: 'case',
+        entityId: payload.caseId,
+      });
+
+      return res.status(201).json({
+        success: true,
+        data: payload,
+      });
+    } catch (error) {
+      const status = error.status ?? 500;
+
+      if (status >= 500) {
+        console.error('Failed to create case for external user: ', error);
+
+        return res.status(500).json({
+          success: false,
+          error: 'Unable to create the case',
+        });
+      }
+
+      return res.status(status).json({
+        success: false,
+        error: error.message,
+        errors: error.details ?? null,
       });
     }
   };
@@ -137,6 +197,14 @@ class InternalUserController {
     try {
       const created = await createCollaboratorUseCase.execute(req.body);
       const payload = new CreateCollaboratorDTO(created).toJSON();
+
+      // V-06: the admin who created the account appears in the activity log
+      await logActivityUseCase.execute({
+        actorId: req.user.user_id,
+        action: 'create_collaborator',
+        entity: 'user',
+        entityId: payload.user_id,
+      });
 
       return res.status(201).json({
         success: true,
@@ -214,6 +282,71 @@ class InternalUserController {
       return res.status(500).json({
         success: false,
         error: 'Failed to list collaborators',
+      });
+    }
+  };
+
+  // New method for US G-10 where the Admin gets the detail of a specific intenral user
+  getCollaboratorDetail = async (req, res) => {
+    try {
+      // The use case validates the id and throws 400 or 404 when needed
+      const collaborator = await getCollaboratorByIdUseCase.execute(
+        req.params.userId
+      );
+
+      const payload = new CollaboratorDetailDTO(collaborator).toJSON();
+
+      return res.status(200).json({
+        success: true,
+        data: payload,
+      });
+    } catch (error) {
+      const status = error.status ?? 500;
+
+      if (status >= 500) {
+        console.error('Failed to get collaborator detail: ', error);
+
+        return res.status(500).json({
+          success: false,
+          error: 'Unable to get the collaborator detail',
+        });
+      }
+      return res.status(status).json({
+        success: false,
+        error: error.message,
+      });
+    }
+  };
+
+  // G-10: Admin gets the cases assigned to one collaborator
+  getCollaboratorCases = async (req, res) => {
+    try {
+      // The use case validates the id and throws 400 or 404
+      const result = await listCollaboratorCasesUseCase.execute(
+        req.params.userId
+      );
+
+      const payload = new CollaboratorCasesDTO(result).toJSON();
+
+      return res.status(200).json({
+        success: true,
+        data: payload,
+      });
+    } catch (error) {
+      const status = error.status ?? 500;
+
+      if (status >= 500) {
+        console.error('Failed to get collaborator cases: ', error);
+
+        return res.status(500).json({
+          success: false,
+          error: 'Unable to get the collaborator cases',
+        });
+      }
+
+      return res.status(status).json({
+        success: false,
+        error: error.message,
       });
     }
   };

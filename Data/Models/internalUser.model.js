@@ -78,6 +78,40 @@ class InternalUserModel {
 
     return data;
   }
+  // G-10: Gets the full detail info of an internal account by its user id
+  static async findById(userId) {
+    const { data, error } = await supabase
+      .from('user')
+      .select(
+        `
+        user_id,
+        name,
+        last_name,
+        email,
+        phone,
+        created_at,
+        deleted_at,
+        office:offices (location),
+        user_role!inner (
+          role!inner (description)
+        )
+      `
+      )
+      .eq('user_id', userId)
+      // Only internal accounts can be consulted
+      .in('user_role.role.description', ['internal'])
+      // Ignores roles that were removed from the user
+      .is('user_role.deleted_at', null)
+      // We dont filter user.deleted_at, so inactive internal users must  be visible
+      // and their status is updated  in the DTO
+      .maybeSingle();
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return data;
+  }
 }
 
 export default InternalUserModel;

@@ -1,9 +1,30 @@
 // Title and sentence for each action saved in activity_log.
 // New actions only need a new line here when other features start logging them
 const ACTIONS = {
+  // G-07: the admin edits the data of an external user
   update_external_profile: {
     title: 'Edición de datos de usuaria',
     verb: 'editó los datos de',
+  },
+  // G-03: the admin creates a collaborator account
+  create_collaborator: {
+    title: 'Alta de colaboradora',
+    verb: 'dio de alta a',
+  },
+  // R-03: a collaborator registers the record of an external user
+  register_external_user: {
+    title: 'Registro de expediente',
+    verb: 'registró el expediente de',
+  },
+  // V-11: a case is closed
+  close_case: {
+    title: 'Cierre de caso',
+    verb: 'cerró el caso',
+  },
+  // R-11: an internal user creates a case for an external user
+  internal_create_case: {
+    title: 'Registro de caso',
+    verb: 'registró el caso',
   },
 };
 

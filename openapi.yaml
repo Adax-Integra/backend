@@ -669,6 +669,82 @@ paths:
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
+  
+    /api/internal-users/{userId}:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+    get:
+      tags: [Internal Users]
+      summary: Get the detail of a collaborator (G-10)
+      description: Admin only. Returns the information of one internal account. Accounts that are not internal (admins and external users) return 404. An account is inactive when it has been deleted, and inactive collaborators can still be consulted. The role is the one stored in the database and the office is null when none was assigned.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Collaborator detail retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CollaboratorDetailSuccessResponse'
+        '400':
+          description: userId is not a valid UUID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                error: userId must be a valid UUID
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404':
+          description: The user does not exist or is not an internal account
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                error: Collaborator not found
+        '500': { $ref: '#/components/responses/InternalServerError' }
+
+  /api/internal-users/{userId}/assigned-cases:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+    get:
+      tags: [Internal Users]
+      summary: List the cases assigned to a collaborator (G-10)
+      description: Admin only. Returns the case cards of the cases assigned to the collaborator, most recently updated first. Removed assignments are ignored. Cases of an inactive collaborator are still returned because they stay assigned until they are reassigned. The list has no pagination and returns at most 100 cases, and total is the number of cases returned. Accounts that are not internal return 404 instead of an empty list.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Assigned cases retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CollaboratorCasesSuccessResponse'
+        '400':
+          description: userId is not a valid UUID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                error: userId must be a valid UUID
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404':
+          description: The user does not exist or is not an internal account
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                error: Collaborator not found
+        '500': { $ref: '#/components/responses/InternalServerError' }
 
   /api/internal-users/external-users:
     post:
@@ -693,6 +769,53 @@ paths:
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
+
+  /api/internal-users/external-users/{userId}/cases:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+    post:
+      tags: [Internal Users]
+      summary: Create a case for an external user (R-11)
+      description: >
+        Admin and internal users only. Creates a case in the external user's
+        active record. The request body uses the same fields as the external
+        user's case creation flow.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCaseRequest'
+      responses:
+        '201':
+          description: Case created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateCaseSuccessResponse'
+        '400':
+          description: Invalid userId or request body.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateCaseErrorResponse'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404':
+          description: The user has no active record
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateCaseErrorResponse'
+        '409':
+          description: The user's record already has the maximum number of active cases
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateCaseErrorResponse'
+        '500': { $ref: '#/components/responses/InternalServerError' }
 
   /api/internal-users/external-users/{userId}:
     parameters:
@@ -1154,6 +1277,59 @@ paths:
               example:
                 success: false
                 error: The event does not exist or is disabled.
+        '500': { $ref: '#/components/responses/InternalServerError' }
+
+  /api/events/{eventId}/image:
+    parameters:
+      - $ref: '#/components/parameters/EventId'
+    patch:
+      tags: [Events]
+      summary: Upload or replace the event image (E-04)
+      description: Only internal users and admins can upload the image of an active event. The file must be a JPEG or PNG of up to 5 MB, and its first bytes are checked so a renamed file is rejected. Uploading again replaces the previous image and deletes it from storage.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [image]
+              properties:
+                image:
+                  type: string
+                  format: binary
+                  description: JPEG or PNG, max 5 MB.
+      responses:
+        '200':
+          description: Image saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadEventImageSuccessResponse'
+              example:
+                success: true
+                data:
+                  eventId: 1351c12d-a9ca-460b-851a-4e9a8f7bf495
+                  imageUrl: https://xtuuspwioiflfofbhsps.supabase.co/storage/v1/object/public/event-images/1351c12d-a9ca-460b-851a-4e9a8f7bf495/3a5166dd-1ac7-4be1-970d-2ebf569040fe.png
+        '400':
+          description: eventId is not a UUID, the image is missing, is not a JPEG or PNG, or exceeds 5 MB
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+              example:
+                success: false
+                error: 'image: only JPEG or PNG allowed.'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404':
+          description: The event does not exist or is disabled
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+              example:
+                success: false
+                error: Event not found.
         '500': { $ref: '#/components/responses/InternalServerError' }
 
 components:
@@ -1968,6 +2144,67 @@ components:
           nullable: true
           additionalProperties: { type: string }
           example: { email: An account with this email already exists. }
+    
+    CollaboratorDetail:
+      type: object
+      required: [user_id, name, last_name, full_name, initials, email, phone, role, office, joined_at, is_active]
+      properties:
+        user_id: { type: string, format: uuid }
+        name: { type: string, example: Day }
+        last_name: { type: string, example: Alcazar }
+        full_name: { type: string, example: Day Alcazar }
+        initials: { type: string, example: DA, description: First letter of name and last name, in uppercase. }
+        email: { type: string, format: email }
+        phone: { type: string, nullable: true, example: '+524425260012' }
+        role: { type: string, example: internal }
+        office:
+          type: string
+          nullable: true
+          example: Querétaro, Qro.
+          description: Location of the assigned office. Null when no office was assigned.
+        joined_at: { type: string, format: date, example: '2026-10-08', description: Date the account was created. }
+        is_active: { type: boolean, description: False when the account has been deleted. }
+
+    CollaboratorDetailSuccessResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success: { type: boolean, example: true }
+        data: { $ref: '#/components/schemas/CollaboratorDetail' }
+
+    CollaboratorAssignedCase:
+      type: object
+      required: [case_id, case_number, name, violence_types, state, updated_at]
+      properties:
+        case_id: { type: string, format: uuid }
+        case_number: { type: string, nullable: true, example: CAS-2026-0042 }
+        name:
+          type: string
+          example: Denisse Maldonado
+          description: Full name of the external user who owns the record of the case.
+        violence_types:
+          type: array
+          items: { type: string }
+          description: Descriptions of the violence types of the case.
+        state: { type: string, nullable: true, example: Open }
+        updated_at: { type: string, format: date-time, nullable: true }
+
+    CollaboratorCasesData:
+      type: object
+      required: [cases, total]
+      properties:
+        cases:
+          type: array
+          maxItems: 100
+          items: { $ref: '#/components/schemas/CollaboratorAssignedCase' }
+        total: { type: integer, minimum: 0, maximum: 100, description: Number of cases returned. }
+
+    CollaboratorCasesSuccessResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success: { type: boolean, example: true }
+        data: { $ref: '#/components/schemas/CollaboratorCasesData' }
 
     ActivityLogItem:
       type: object
@@ -1975,7 +2212,7 @@ components:
       properties:
         log_id: { type: string, format: uuid }
         actor_name: { type: string, example: Mariana Robles Ortega }
-        action: { type: string, example: update_external_profile }
+        action: { type: string, enum: [update_external_profile, create_collaborator, register_external_user, close_case], example: update_external_profile }
         action_label: { type: string, example: Edición de datos de usuaria }
         entity: { type: string, nullable: true, example: user }
         entity_id: { type: string, format: uuid, nullable: true }
@@ -2092,3 +2329,17 @@ components:
       properties:
         success: { type: boolean, example: true }
         data: { $ref: '#/components/schemas/DisableEventData' }
+
+    UploadEventImageData:
+      type: object
+      required: [eventId, imageUrl]
+      properties:
+        eventId: { type: string, format: uuid }
+        imageUrl: { type: string, format: uri, description: Public link to the image in Storage. }
+
+    UploadEventImageSuccessResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success: { type: boolean, example: true }
+        data: { $ref: '#/components/schemas/UploadEventImageData' }

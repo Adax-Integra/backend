@@ -3,10 +3,16 @@ import CreateEventDTO from '../DTOs/createEvent.dto.js';
 import DisableEventUseCase from '../../Domain/UseCases/disableEvent.usecase.js';
 import DisableEventDTO from '../DTOs/disableEvent.dto.js';
 import UpdateEventUseCase from '../../Domain/UseCases/updateEvent.usecase.js';
+import UploadEventImageUseCase from '../../Domain/UseCases/uploadEventImage.usecase.js';
+import UploadEventImageDTO from '../DTOs/uploadEventImage.dto.js';
+import GetActiveEventsUseCase from '../../Domain/UseCases/getActiveEvents.usecase.js';
+import EventListDTO from '../DTOs/eventList.dto.js';
 
+const getActiveEventsUseCase = new GetActiveEventsUseCase();
 const createEventUseCase = new CreateEventUseCase();
 const disableEventUseCase = new DisableEventUseCase();
 const updateEventUseCase = new UpdateEventUseCase();
+const uploadEventImageUseCase = new UploadEventImageUseCase();
 
 class EventController {
   async createEvent(req, res) {
@@ -75,7 +81,6 @@ class EventController {
         req.body
       );
       // The edited event has the same shape as a newly created one
-
       const payload = new CreateEventDTO(event).toJSON();
 
       return res.status(200).json({
@@ -86,7 +91,7 @@ class EventController {
       const status = error.status ?? 500;
 
       if (status >= 500) {
-        // keep database details in server logs instead of exposing them
+        //Keep database details in server logs instead of exposing them.
         console.error('Failed to update the event:', error);
 
         return res.status(500).json({
@@ -99,6 +104,67 @@ class EventController {
         success: false,
         error: error.message,
         errors: error.details ?? null,
+      });
+    }
+  }
+
+  async uploadEventImage(req, res) {
+    try {
+      const event = await uploadEventImageUseCase.execute(
+        req.params.eventId,
+        req.file
+      );
+      const payload = new UploadEventImageDTO(event).toJSON();
+
+      return res.status(200).json({
+        success: true,
+        data: payload,
+      });
+    } catch (error) {
+      const status = error.status ?? 500;
+
+      if (status >= 500) {
+        //Keep database details in server logs instead of exposing them.
+        console.error('Failed to upload the event image:', error);
+
+        return res.status(500).json({
+          success: false,
+          error: 'Unable to upload the event image.',
+        });
+      }
+
+      return res.status(status).json({
+        success: false,
+        error: error.message,
+      });
+    }
+  }
+  async getActiveEvents(req, res) {
+    try {
+      const events = await getActiveEventsUseCase.execute({
+        scope: req.query.scope,
+      });
+      const payload = events.map((event) => new EventListDTO(event).toJSON());
+
+      return res.status(200).json({
+        success: true,
+        data: payload,
+      });
+    } catch (error) {
+      const status = error.status ?? 500;
+
+      if (status >= 500) {
+        console.error('Failed to get the active events:', error);
+
+        return res.status(500).json({
+          success: false,
+          error: 'Unable to get the events.',
+        });
+      }
+
+      return res.status(status).json({
+        success: false,
+        error: error.message,
       });
     }
   }
