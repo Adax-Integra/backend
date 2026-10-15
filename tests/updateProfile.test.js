@@ -40,6 +40,11 @@ const patchProfile = (roles, body, id, tokenId = id) =>
     .set('Authorization', `Bearer ${tokenFor(roles, tokenId)}`)
     .send(body);
 
+const getProfile = (roles, id, tokenId = id) =>
+  request(app)
+    .get(`/api/profile/${id}`)
+    .set('Authorization', `Bearer ${tokenFor(roles, tokenId)}`);
+
 async function getUser(id) {
   const { data, error } = await supabase
     .from('user')
@@ -413,6 +418,86 @@ describe('Unit tests for R-04', () => {
           not_a_column: 'x',
         })
       ).rejects.toThrow();
+    });
+  });
+
+  describe('GET /api/profile/:userId - returns what PATCH can edit', () => {
+    it('Should return the address an external user just updated', async () => {
+      await patchProfile(
+        ['external'],
+        { name: 'Paula', municipality: 'Zapopan' },
+        externalUserId
+      );
+
+      const response = await getProfile(['external'], externalUserId);
+
+      expect(response.statusCode).toBe(200);
+      expect(response.body.success).toBe(true);
+      const user = await getUser(externalUserId);
+      expect(response.body.data).toEqual({
+        user_id: externalUserId,
+        name: 'Paula',
+        last_name: user.last_name,
+        phone: user.phone,
+        address: await getAddress(externalUserId),
+      });
+      expect(response.body.data.address.municipality).toBe('Zapopan');
+    });
+
+    it('Should not return an address for a user with staff and external roles', async () => {
+      const response = await getProfile(
+        ['external', 'internal'],
+        externalUserId
+      );
+
+      expect(response.statusCode).toBe(200);
+      expect(response.body.data).not.toHaveProperty('address');
+    });
+
+    it.each([['admin'], ['internal']])(
+      'Should only read the user row for an %s user',
+      async (role) => {
+        const userQuery = fakeQuery({
+          data: {
+            user_id: STAFF_USER_ID,
+            name: 'Staff',
+            last_name: 'User',
+            phone: null,
+          },
+          error: null,
+        });
+        const from = jest.spyOn(supabase, 'from').mockReturnValue(userQuery);
+
+        const response = await getProfile([role], STAFF_USER_ID);
+
+        expect(response.statusCode).toBe(200);
+        expect(from).toHaveBeenCalledTimes(1);
+        expect(from).toHaveBeenCalledWith('user');
+        expect(response.body.data).toEqual({
+          user_id: STAFF_USER_ID,
+          name: 'Staff',
+          last_name: 'User',
+          phone: null,
+        });
+      }
+    );
+
+    it('Should respond with code 403 for another user profile', async () => {
+      const response = await getProfile(
+        ['external'],
+        externalUserId,
+        STAFF_USER_ID
+      );
+
+      expect(response.statusCode).toBe(403);
+      expect(response.body.error).toBe('You do not have permission');
+    });
+
+    it('Should respond with code 404 when the user does not exist', async () => {
+      const response = await getProfile(['external'], NONEXISTENT_USER_ID);
+
+      expect(response.statusCode).toBe(404);
+      expect(response.body.success).toBe(false);
     });
   });
 

@@ -216,7 +216,9 @@ paths:
     get:
       tags: [Profile]
       summary: Get the authenticated user's profile (G-13)
-      description: Returns the profile of the user in the token. The userId path parameter is currently ignored.
+      description: |
+        Returns the profile of the user in the token. The userId path parameter must match the token.
+        External users also get their address, admin and internal users do not.
       security:
         - BearerAuth: []
       responses:
@@ -227,12 +229,27 @@ paths:
               schema:
                 $ref: '#/components/schemas/UserProfileSuccessResponse'
         '400':
-          description: The user was not found or the query failed
+          description: The query failed
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '403':
+          description: The userId does not match the token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                error: You do not have permission
+        '404':
+          description: The user was not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
     patch:
       tags: [Profile]
       summary: Update the authenticated user's profile (R-04)
@@ -669,7 +686,7 @@ paths:
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
-  
+
   /api/internal-users/{userId}:
     parameters:
       - $ref: '#/components/parameters/UserId'
@@ -1438,10 +1455,15 @@ components:
         user_id: { type: string, format: uuid }
         name: { type: string }
         last_name: { type: string }
-        email: { type: string, format: email }
-        birth_date: { type: string, format: date, nullable: true }
         phone: { type: string, nullable: true }
-        created_at: { type: string, format: date-time }
+        address:
+          type: object
+          nullable: true
+          description: Only present for external users, with the same fields PATCH /api/profile/{userId} can edit
+          properties:
+            country: { type: string }
+            state: { type: string }
+            municipality: { type: string }
 
     UserProfileSuccessResponse:
       type: object
