@@ -2,6 +2,8 @@ import EventModel from '../../Data/Models/event.model.js';
 
 // Usecase that stablishes the UTC offset for Mexico City, which is used to determine the start of the next month in Mexico time
 
+const VALID_SCOPES = ['all', 'month'];
+
 const MEXICO_UTC_OFFSET_HOURS = 6;
 
 const startOfNextMonthUtc = (now = new Date()) => {
@@ -20,7 +22,13 @@ const startOfNextMonthUtc = (now = new Date()) => {
 };
 
 class GetActiveEventsUseCase {
-  static async execute({ scope = 'all' } = {}) {
+  async execute({ scope = 'all' } = {}) {
+    if (!VALID_SCOPES.includes(scope)) {
+      const error = new Error("scope must be 'all' or 'month'.");
+      error.status = 400;
+      throw error;
+    }
+
     if (scope === 'month') {
       return EventModel.findActive({ startsBefore: startOfNextMonthUtc() });
     }
