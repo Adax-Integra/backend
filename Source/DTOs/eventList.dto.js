@@ -1,5 +1,4 @@
-// Public URL of the "event-images" bucket in supabase
-
+// Public bucket
 const EVENT_IMAGES_BUCKET = 'event-images';
 
 const buildImageUrl = (imagePath) => {
@@ -7,21 +6,23 @@ const buildImageUrl = (imagePath) => {
   return `${process.env.SUPABASE_URL}/storage/v1/object/public/${EVENT_IMAGES_BUCKET}/${imagePath}`;
 };
 
-// Only the fields the card need and the dates stay in  UTC so the frontend formats them
+// Only the fields the app cards need
 class EventListDTO {
-  constructor(row) {
-    this.id = row.event_id;
-    this.title = row.title;
-    this.description = row.description;
-    this.startsAt = row.starts_at;
-    this.endsAt = row.ends_at;
-    this.modality = row.modality;
-    this.location = row.location;
-    this.imageUrl = buildImageUrl(row.image_path);
+  constructor(event) {
+    this.event = event;
   }
 
-  static fromRows(rows) {
-    return rows.map((row) => new EventListDTO(row));
+  toJSON() {
+    return {
+      id: this.event.event_id,
+      title: this.event.title,
+      description: this.event.description,
+      startsAt: this.event.starts_at,
+      endsAt: this.event.ends_at,
+      modality: this.event.modality,
+      location: this.event.location,
+      imageUrl: buildImageUrl(this.event.image_path),
+    };
   }
 }
 
