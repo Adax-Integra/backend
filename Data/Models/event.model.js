@@ -133,6 +133,29 @@ class EventModel {
 
     return data?.publicUrl ?? null;
   }
+
+  // Active events are those that have not been deleted and have not ended yet startsBefore
+  // keeps only events that start before it so it lets the use case ask for the events of the month for us E-01
+  static async findActive({ startsBefore } = {}) {
+    let query = supabase
+      .from('event')
+      .select('*')
+      .is('deleted_at', null)
+      .gte('ends_at', new Date().toISOString())
+      .order('starts_at', { ascending: true });
+
+    if (startsBefore) {
+      query = query.lt('starts_at', startsBefore);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return data;
+  }
 }
 
 export default EventModel;

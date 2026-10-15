@@ -46,28 +46,47 @@ class PasswordRecoveryUseCase {
     return { message };
   }
 
-  async resetPassword(email, code, newPassword) {
-    const cleanEmail = EmailValidator.validateEmail(email).toLowerCase();
+  //validate code before moving to reset password
+  async validateCode(email, code) {
     const cleanCode = String(code ?? '').trim();
+    const cleanEmail = EmailValidator.validateEmail(email).toLowerCase();
 
     if (!CODE_PATTERN.test(cleanCode)) {
       throw createError('El código debe tener 6 dígitos.', 400, 'CODE_INVALID');
     }
 
-    const password = PasswordValidator.validatePassword(newPassword);
     const user = await UserModel.findByEmail(cleanEmail);
 
     if (!user) {
       throw createError('Código incorrecto.', 400, 'CODE_INVALID');
     }
 
-    //validate without deleting the code.
+    //validate without deleting the code
     await EmailCodeService.validateCode({
       userId: user.user_id,
       purpose: EMAIL_CODE_PURPOSE.RESET_PASSWORD,
       code: cleanCode,
     });
 
+    return { message: 'Código validado correctamente.' };
+  }
+
+  async resetPassword(email, code, newPassword) {
+    const cleanEmail = EmailValidator.validateEmail(email).toLowerCase();
+    const user = await UserModel.findByEmail(cleanEmail);
+
+    if (!user) {
+      throw createError('Código incorrecto.', 400, 'CODE_INVALID');
+    }
+
+    //revalidate code
+    await EmailCodeService.validateCode({
+      userId: user.user_id,
+      purpose: EMAIL_CODE_PURPOSE.RESET_PASSWORD,
+      code: String(code ?? '').trim(),
+    });
+
+    const password = PasswordValidator.validatePassword(newPassword);
     const passwordHash = await bcrypt.hash(password, BCRYPT_SALT_ROUNDS);
 
     const updatedUser = await UserModel.updatePassword(
@@ -83,7 +102,7 @@ class PasswordRecoveryUseCase {
       );
     }
 
-    //delete code only after update password
+    //remove code once password has been updated
     await EmailCodeService.removeCode(
       user.user_id,
       EMAIL_CODE_PURPOSE.RESET_PASSWORD

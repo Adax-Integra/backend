@@ -5,6 +5,7 @@ import {
   adminInternalOnly,
   adminOnly,
 } from '../Middlewares/role.middleware.js';
+import { createCaseLimiter } from '../Middlewares/rateLimit.middleware.js';
 
 const router = express.Router();
 
@@ -14,6 +15,15 @@ router.get(
   authMiddleware,
   adminInternalOnly,
   internalUserController.getAllCasesFromUser
+);
+
+// R-11 Create a case for an external user from an internal account
+router.post(
+  '/internal-users/external-users/:userId/cases',
+  authMiddleware,
+  adminInternalOnly,
+  createCaseLimiter,
+  internalUserController.createCaseForExternalUser
 );
 
 // R-03 Register a new external user's expediente
@@ -70,6 +80,29 @@ router.get(
   authMiddleware,
   adminOnly,
   internalUserController.listCollaborators
+);
+// G-10 Admin and ONLY ADMIN  consults the detail of a internal user
+router.get(
+  '/internal-users/:userId',
+  authMiddleware,
+  adminOnly,
+  internalUserController.getCollaboratorDetail
+);
+
+// G-10 Admin and ONLY ADMIN consults the detail of a collaborator
+router.get(
+  '/internal-users/:userId',
+  authMiddleware,
+  adminOnly,
+  internalUserController.getCollaboratorDetail
+);
+
+// G-10 Admin consults the cases assigned to a collaborator
+router.get(
+  '/internal-users/:userId/assigned-cases',
+  authMiddleware,
+  adminOnly,
+  internalUserController.getCollaboratorCases
 );
 
 export default router;

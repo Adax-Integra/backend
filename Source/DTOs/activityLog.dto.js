@@ -21,6 +21,11 @@ const ACTIONS = {
     title: 'Cierre de caso',
     verb: 'cerró el caso',
   },
+  // R-11: an internal user creates a case for an external user
+  internal_create_case: {
+    title: 'Registro de caso',
+    verb: 'registró el caso',
+  },
 };
 
 const UNKNOWN_ACTOR = 'Usuaria no disponible';
