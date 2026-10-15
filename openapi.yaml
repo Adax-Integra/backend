@@ -669,6 +669,82 @@ paths:
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
+  
+    /api/internal-users/{userId}:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+    get:
+      tags: [Internal Users]
+      summary: Get the detail of a collaborator (G-10)
+      description: Admin only. Returns the information of one internal account. Accounts that are not internal (admins and external users) return 404. An account is inactive when it has been deleted, and inactive collaborators can still be consulted. The role is the one stored in the database and the office is null when none was assigned.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Collaborator detail retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CollaboratorDetailSuccessResponse'
+        '400':
+          description: userId is not a valid UUID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                error: userId must be a valid UUID
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404':
+          description: The user does not exist or is not an internal account
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                error: Collaborator not found
+        '500': { $ref: '#/components/responses/InternalServerError' }
+
+  /api/internal-users/{userId}/assigned-cases:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+    get:
+      tags: [Internal Users]
+      summary: List the cases assigned to a collaborator (G-10)
+      description: Admin only. Returns the case cards of the cases assigned to the collaborator, most recently updated first. Removed assignments are ignored. Cases of an inactive collaborator are still returned because they stay assigned until they are reassigned. The list has no pagination and returns at most 100 cases, and total is the number of cases returned. Accounts that are not internal return 404 instead of an empty list.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Assigned cases retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CollaboratorCasesSuccessResponse'
+        '400':
+          description: userId is not a valid UUID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                error: userId must be a valid UUID
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404':
+          description: The user does not exist or is not an internal account
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                error: Collaborator not found
+        '500': { $ref: '#/components/responses/InternalServerError' }
 
   /api/internal-users/external-users:
     post:
@@ -1903,6 +1979,67 @@ components:
           nullable: true
           additionalProperties: { type: string }
           example: { email: An account with this email already exists. }
+    
+    CollaboratorDetail:
+      type: object
+      required: [user_id, name, last_name, full_name, initials, email, phone, role, office, joined_at, is_active]
+      properties:
+        user_id: { type: string, format: uuid }
+        name: { type: string, example: Day }
+        last_name: { type: string, example: Alcazar }
+        full_name: { type: string, example: Day Alcazar }
+        initials: { type: string, example: DA, description: First letter of name and last name, in uppercase. }
+        email: { type: string, format: email }
+        phone: { type: string, nullable: true, example: '+524425260012' }
+        role: { type: string, example: internal }
+        office:
+          type: string
+          nullable: true
+          example: Querétaro, Qro.
+          description: Location of the assigned office. Null when no office was assigned.
+        joined_at: { type: string, format: date, example: '2026-10-08', description: Date the account was created. }
+        is_active: { type: boolean, description: False when the account has been deleted. }
+
+    CollaboratorDetailSuccessResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success: { type: boolean, example: true }
+        data: { $ref: '#/components/schemas/CollaboratorDetail' }
+
+    CollaboratorAssignedCase:
+      type: object
+      required: [case_id, case_number, name, violence_types, state, updated_at]
+      properties:
+        case_id: { type: string, format: uuid }
+        case_number: { type: string, nullable: true, example: CAS-2026-0042 }
+        name:
+          type: string
+          example: Denisse Maldonado
+          description: Full name of the external user who owns the record of the case.
+        violence_types:
+          type: array
+          items: { type: string }
+          description: Descriptions of the violence types of the case.
+        state: { type: string, nullable: true, example: Open }
+        updated_at: { type: string, format: date-time, nullable: true }
+
+    CollaboratorCasesData:
+      type: object
+      required: [cases, total]
+      properties:
+        cases:
+          type: array
+          maxItems: 100
+          items: { $ref: '#/components/schemas/CollaboratorAssignedCase' }
+        total: { type: integer, minimum: 0, maximum: 100, description: Number of cases returned. }
+
+    CollaboratorCasesSuccessResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success: { type: boolean, example: true }
+        data: { $ref: '#/components/schemas/CollaboratorCasesData' }
 
     ActivityLogItem:
       type: object
