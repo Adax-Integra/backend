@@ -65,6 +65,46 @@ class EventModel {
     return data;
   }
 
+  // A disabled event can no longer be edited, so it finds nothing
+  static async update(
+    eventId,
+    {
+      title,
+      startsAt,
+      endsAt,
+      modality,
+      location,
+      link,
+      phone,
+      description,
+      notes,
+    }
+  ) {
+    const { data, error } = await supabase
+      .from('event')
+      .update({
+        title,
+        starts_at: startsAt,
+        ends_at: endsAt,
+        modality,
+        location,
+        link,
+        phone,
+        description,
+        notes,
+      })
+      .eq('event_id', eventId)
+      .is('deleted_at', null)
+      .select('*')
+      .maybeSingle();
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return data;
+  }
+
   static async findActiveById(eventId) {
     const { data, error } = await supabase
       .from('event')

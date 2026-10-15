@@ -814,6 +814,46 @@ paths:
         '500': { $ref: '#/components/responses/InternalServerError' }
 
   /api/internal-users/external-users:
+    get:
+      tags: [Internal Users]
+      summary: List external accounts (G-16)
+      description: Admin only. Returns 10 external accounts per page. By default only active accounts are returned, newest first. Can search by full name or email, filter by account status and order alphabetically. An account is inactive when it has been deleted. Validation errors include an "errors" object with one message per parameter.
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, minimum: 1, default: 1 }
+          description: Page number (10 accounts per page).
+        - in: query
+          name: search
+          schema: { type: string, maxLength: 100 }
+          description: Matches the full name or the email, without case sensitivity.
+        - in: query
+          name: status
+          schema: { type: string, enum: [active, inactive, all], default: active }
+          description: Filters by account status.
+        - in: query
+          name: sort
+          schema: { type: string, enum: [recent, alphabetical], default: recent }
+          description: recent orders by creation date (newest first). alphabetical orders by full name (A-Z).
+      responses:
+        '200':
+          description: External accounts retrieved. An empty page returns users as an empty array.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExternalUserListSuccessResponse'
+        '400':
+          description: Invalid query parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExternalUserListErrorResponse'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '500': { $ref: '#/components/responses/InternalServerError'}
+
     post:
       tags: [Internal Users]
       summary: Register an external user's expediente (R-03)
@@ -1279,6 +1319,71 @@ paths:
               example:
                 success: false
                 error: The event is already disabled or does not exist.
+        '500': { $ref: '#/components/responses/InternalServerError' }
+
+  /api/events/{eventId}:
+    parameters:
+      - $ref: '#/components/parameters/EventId'
+    put:
+      tags: [Events]
+      summary: Update an event (E-02)
+      description: Only internal users and admins can update events. The whole event is sent and follows the same rules as registering it, so a field left out is cleared. Any other field in the body is ignored. Dates must include the time zone offset and are returned in UTC. A missing event and a disabled event both return 404.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEventRequest'
+            example:
+              title: Reunión de equipo
+              startsAt: '2026-11-03T10:00:00-06:00'
+              endsAt: '2026-11-03T12:00:00-06:00'
+              modality: Virtual
+              link: https://meet.google.com/abc
+              description: Revisión semanal de avance de casos activos
+      responses:
+        '200':
+          description: Event updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateEventSuccessResponse'
+              example:
+                success: true
+                data:
+                  eventId: 9bd51c3f-bb56-49ec-8911-3f8209a3b5ce
+                  title: Reunión de equipo
+                  startsAt: '2026-11-03T16:00:00+00:00'
+                  endsAt: '2026-11-03T18:00:00+00:00'
+                  modality: Virtual
+                  location: null
+                  link: https://meet.google.com/abc
+                  phone: null
+                  description: Revisión semanal de avance de casos activos
+                  notes: null
+        '400':
+          description: eventId is not a UUID or the body is invalid. errors has the reason for each field.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateEventErrorResponse'
+              example:
+                success: false
+                error: endsAt must be after startsAt
+                errors:
+                  endsAt: endsAt must be after startsAt
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404':
+          description: The event does not exist or is disabled
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+              example:
+                success: false
+                error: The event does not exist or is disabled.
         '500': { $ref: '#/components/responses/InternalServerError' }
 
   /api/events/{eventId}/image:
@@ -2254,6 +2359,43 @@ components:
           nullable: true
           additionalProperties: { type: string }
           example: { to: to must be later than from. }
+
+    ExternalUserListItem:
+      type: object
+      properties:
+        user_id: { type: string, format: uuid }
+        name: { type: string, example: Ana }
+        last_name: { type: string, example: López Ruiz }
+        email: { type: string, format: email, example: ana.lopez@example.com }
+        created_at: { type: string, format: date-time }
+        is_active: { type: boolean, example: true }
+    
+    ExternalUserListSuccessResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success: { type: boolean, example: true }
+        data:
+          type: object
+          properties:
+            users:
+              type: array
+              items: { $ref: '#/components/schemas/ExternalUserListItem' }
+            total: { type: integer, example: 23 }
+            page: { type: integer, example: 1 }
+            limit: { type: integer, example: 10 }
+
+    ExternalUserListErrorResponse:
+      type: object
+      required: [success, error]
+      properties:
+        success: { type: boolean, example: false }
+        error: { type: string }
+        errors:
+          type: object
+          nullable: true
+          additionalProperties: { type: string }
+          example: { status: status must be active, inactive or all. }
 
     CreateEventRequest:
       type: object
