@@ -17,7 +17,7 @@ router.get(
   internalUserController.getAllCasesFromUser
 );
 
-// R-02 Create a case for an external user from an internal account
+// R-11 Create a case for an external user from an internal account
 router.post(
   '/internal-users/external-users/:userId/cases',
   authMiddleware,

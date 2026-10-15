@@ -82,7 +82,7 @@ class InternalUserController {
     }
   };
 
-  // R-02: An internal user registers a case for an external user
+  // R-11: An internal user registers a case for an external user
   createCaseForExternalUser = async (req, res) => {
     try {
       const created = await createCaseUseCase.execute(
