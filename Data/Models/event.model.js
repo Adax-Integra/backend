@@ -59,7 +59,7 @@ class EventModel {
   }
 
   // Active events are those that have not been deleted and have not ended yet startsBefore
-  // keeps only events that start before it so it lets the use case ask for the events of the month
+  // keeps only events that start before it so it lets the use case ask for the events of the month for us E-01
   static async findActive({ startsBefore } = {}) {
     let query = supabase
       .from('event')
