@@ -12,6 +12,8 @@ import ActivityLogDTO from '../DTOs/activityLog.dto.js';
 import ListCollaboratorsUseCase from '../../Domain/UseCases/listCollaborators.usecase.js';
 import CollaboratorListDTO from '../DTOs/collaboratorList.dto.js';
 import LogActivityUseCase from '../../Domain/UseCases/logActivity.usecase.js';
+import CreateCaseUseCase from '../../Domain/UseCases/createCase.usecase.js';
+import CreateCaseDTO from '../DTOs/createCase.dto.js';
 
 const listCollaboratorsUseCase = new ListCollaboratorsUseCase();
 const getAllCasesFromUser = new GetAllCasesFromUser();
@@ -21,6 +23,7 @@ const updateExternalProfileUseCase = new UpdateExternalProfileUseCase();
 const createCollaboratorUseCase = new CreateCollaboratorUseCase();
 const listActivityLogUseCase = new ListActivityLogUseCase();
 const logActivityUseCase = new LogActivityUseCase();
+const createCaseUseCase = new CreateCaseUseCase();
 
 class InternalUserController {
   getAllCasesFromUser = async (req, res) => {
@@ -75,6 +78,47 @@ class InternalUserController {
       return res.status(400).json({
         success: false,
         error: error.message,
+      });
+    }
+  };
+
+  // R-02: An internal user registers a case for an external user
+  createCaseForExternalUser = async (req, res) => {
+    try {
+      const created = await createCaseUseCase.execute(
+        req.params.userId,
+        req.body
+      );
+      const payload = new CreateCaseDTO(created).toJSON();
+
+      // V-06: the internal user who created the case appears in the activity log
+      await logActivityUseCase.execute({
+        actorId: req.user.user_id,
+        action: 'internal_create_case',
+        entity: 'case',
+        entityId: payload.caseId,
+      });
+
+      return res.status(201).json({
+        success: true,
+        data: payload,
+      });
+    } catch (error) {
+      const status = error.status ?? 500;
+
+      if (status >= 500) {
+        console.error('Failed to create case for external user: ', error);
+
+        return res.status(500).json({
+          success: false,
+          error: 'Unable to create the case',
+        });
+      }
+
+      return res.status(status).json({
+        success: false,
+        error: error.message,
+        errors: error.details ?? null,
       });
     }
   };

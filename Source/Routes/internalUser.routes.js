@@ -5,6 +5,7 @@ import {
   adminInternalOnly,
   adminOnly,
 } from '../Middlewares/role.middleware.js';
+import { createCaseLimiter } from '../Middlewares/rateLimit.middleware.js';
 
 const router = express.Router();
 
@@ -14,6 +15,15 @@ router.get(
   authMiddleware,
   adminInternalOnly,
   internalUserController.getAllCasesFromUser
+);
+
+// R-02 Create a case for an external user from an internal account
+router.post(
+  '/internal-users/external-users/:userId/cases',
+  authMiddleware,
+  adminInternalOnly,
+  createCaseLimiter,
+  internalUserController.createCaseForExternalUser
 );
 
 // R-03 Register a new external user's expediente
