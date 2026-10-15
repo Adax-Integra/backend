@@ -73,5 +73,28 @@ router.get(
   adminOnly,
   internalUserController.listCollaborators
 );
+// G-10 Admin and ONLY ADMIN  consults the detail of a internal user
+router.get(
+  '/internal-users/:userId',
+  authMiddleware,
+  adminOnly,
+  internalUserController.getCollaboratorDetail
+);
+
+// G-10 Admin and ONLY ADMIN consults the detail of a collaborator
+router.get(
+  '/internal-users/:userId',
+  authMiddleware,
+  adminOnly,
+  internalUserController.getCollaboratorDetail
+);
+
+// G-10 Admin consults the cases assigned to a collaborator
+router.get(
+  '/internal-users/:userId/assigned-cases',
+  authMiddleware,
+  adminOnly,
+  internalUserController.getCollaboratorCases
+);
 
 export default router;
