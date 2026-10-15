@@ -18,7 +18,7 @@ const ACTIVITY_LOG_COLUMNS = `
 `;
 
 // Data Model for the activity_log.
-// Entries are written by other features, V-06 only reads them.
+// V-06 reads the entries, the other features write them with create()
 class ActivityLogModel {
   static async findAll({ page = 1, from = null, to = null } = {}) {
     const start = (page - 1) * PAGE_SIZE;
@@ -115,6 +115,21 @@ class ActivityLogModel {
       ...log,
       target: targets[log.entity_id] || null,
     }));
+  }
+
+  // V-06: writes one entry, used by the features that log their actions
+  static async create({ actorId, action, entity, entityId, details = null }) {
+    const { error } = await supabase.from('activity_log').insert({
+      actor_user_id: actorId,
+      action,
+      entity,
+      entity_id: entityId,
+      details,
+    });
+
+    if (error) {
+      throw new Error(error.message);
+    }
   }
 }
 

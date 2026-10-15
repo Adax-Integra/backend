@@ -1910,7 +1910,7 @@ components:
       properties:
         log_id: { type: string, format: uuid }
         actor_name: { type: string, example: Mariana Robles Ortega }
-        action: { type: string, example: update_external_profile }
+        action: { type: string, enum: [update_external_profile, create_collaborator, register_external_user, close_case], example: update_external_profile }
         action_label: { type: string, example: Edición de datos de usuaria }
         entity: { type: string, nullable: true, example: user }
         entity_id: { type: string, format: uuid, nullable: true }
