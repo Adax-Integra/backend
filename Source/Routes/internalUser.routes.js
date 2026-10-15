@@ -24,6 +24,14 @@ router.post(
   internalUserController.registerExternalUser
 );
 
+// G-16 Admin consults the list of external accounts
+router.get(
+  '/internal-users/external-users',
+  authMiddleware,
+  adminOnly,
+  internalUserController.listExternalUsers
+);
+
 // G-07 Get the personal data of an external user (admin only)
 router.get(
   '/internal-users/external-users/:userId',
