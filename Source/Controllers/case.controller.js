@@ -4,11 +4,13 @@ import CaseListDTO from '../DTOs/caseList.dto.js';
 import GetAllCasesFromUser from '../../Domain/UseCases/getAllCasesFromUser.usecase.js';
 import CaseSummaryDTO from '../DTOs/getAllCases.dto.js';
 import CloseCaseUseCase from '../../Domain/UseCases/closeCase.usecase.js';
+import LogActivityUseCase from '../../Domain/UseCases/logActivity.usecase.js';
 
 const listCasesUseCase = new ListCasesUseCase();
 const getCaseByIdUseCase = new GetCaseByIdUseCase();
 const getAllCasesFromUser = new GetAllCasesFromUser();
 const closeCaseUseCase = new CloseCaseUseCase();
+const logActivityUseCase = new LogActivityUseCase();
 
 class CaseController {
   async listCases(req, res) {
@@ -119,6 +121,14 @@ class CaseController {
       const { caseId } = req.params;
 
       const closedCase = await closeCaseUseCase.execute(caseId);
+
+      // V-06: who closed the case appears in the activity log
+      await logActivityUseCase.execute({
+        actorId: req.user.user_id,
+        action: 'close_case',
+        entity: 'case',
+        entityId: closedCase.case_id,
+      });
 
       return res.status(200).json({
         success: true,

@@ -2,9 +2,12 @@ import CreateEventUseCase from '../../Domain/UseCases/createEvent.usecase.js';
 import CreateEventDTO from '../DTOs/createEvent.dto.js';
 import DisableEventUseCase from '../../Domain/UseCases/disableEvent.usecase.js';
 import DisableEventDTO from '../DTOs/disableEvent.dto.js';
+import UploadEventImageUseCase from '../../Domain/UseCases/uploadEventImage.usecase.js';
+import UploadEventImageDTO from '../DTOs/uploadEventImage.dto.js';
 
 const createEventUseCase = new CreateEventUseCase();
 const disableEventUseCase = new DisableEventUseCase();
+const uploadEventImageUseCase = new UploadEventImageUseCase();
 
 class EventController {
   async createEvent(req, res) {
@@ -56,6 +59,38 @@ class EventController {
         return res.status(500).json({
           success: false,
           error: 'Unable to disable the event.',
+        });
+      }
+
+      return res.status(status).json({
+        success: false,
+        error: error.message,
+      });
+    }
+  }
+
+  async uploadEventImage(req, res) {
+    try {
+      const event = await uploadEventImageUseCase.execute(
+        req.params.eventId,
+        req.file
+      );
+      const payload = new UploadEventImageDTO(event).toJSON();
+
+      return res.status(200).json({
+        success: true,
+        data: payload,
+      });
+    } catch (error) {
+      const status = error.status ?? 500;
+
+      if (status >= 500) {
+        //Keep database details in server logs instead of exposing them.
+        console.error('Failed to upload the event image:', error);
+
+        return res.status(500).json({
+          success: false,
+          error: 'Unable to upload the event image.',
         });
       }
 
