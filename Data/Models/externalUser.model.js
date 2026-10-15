@@ -1,5 +1,17 @@
 import { supabase } from '../Config/supabase.js';
 
+// G-16 shows 10 accounts per page, the same size as V-05 and V-06
+const LIST_PAGE_SIZE = 10;
+
+const EXTERNAL_USER_LIST_COLUMNS = `
+  user_id,
+  name,
+  last_name,
+  email,
+  created_at,
+  is_active
+`;
+
 /*
 Data Model for the "external-user".
 Domain use cases call this layer to talk to Supabase.
@@ -206,6 +218,61 @@ class ExternalUserModel {
     }
 
     return data;
+  }
+
+  // G-16: Gets a page of external accounts from the external_user_list view
+  static async findAll({
+    page = 1,
+    search = '',
+    status = 'active',
+    sort = 'recent',
+  } = {}) {
+    const from = (page - 1) * LIST_PAGE_SIZE;
+    const to = from + LIST_PAGE_SIZE - 1;
+
+    let query = supabase
+      .from('external_user_list')
+      .select(EXTERNAL_USER_LIST_COLUMNS, { count: 'exact' });
+
+    // "all" means no status filter
+    if (status === 'active') {
+      query = query.eq('is_active', true);
+    } else if (status === 'inactive') {
+      query = query.eq('is_active', false);
+    }
+
+    if (search) {
+      // Treats SQL wildcard characters as literal search text
+      const escapedSearch = search.replace(/[\\%_]/g, '\\$&');
+
+      // search_text has the full name and the email together
+      query = query.ilike('search_text', `%${escapedSearch}%`);
+    }
+
+    if (sort === 'alphabetical') {
+      query = query.order('full_name', { ascending: true });
+    } else {
+      query = query.order('created_at', { ascending: false });
+    }
+
+    const { data, error, count } = await query
+      // user_id keeps a stable order between pages
+      .order('user_id', { ascending: true })
+      .range(from, to);
+
+    if (error) {
+      // PGRST103: the page is after the last account, so it is an empty page
+      if (error.code === 'PGRST103') {
+        return { users: [], total: count ?? 0, page, limit: LIST_PAGE_SIZE };
+      }
+      throw new Error(error.message);
+    }
+    return {
+      users: data ?? [],
+      total: count ?? 0,
+      page,
+      limit: LIST_PAGE_SIZE,
+    };
   }
 }
 
