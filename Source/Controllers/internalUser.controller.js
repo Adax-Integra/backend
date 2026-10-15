@@ -15,6 +15,7 @@ import GetCollaboratorByIdUseCase from '../../Domain/UseCases/getCollaboratorByI
 import CollaboratorDetailDTO from '../DTOs/collaboratorDetail.dto.js';
 import ListCollaboratorCasesUseCase from '../../Domain/UseCases/listCollaboratorCases.usecase.js';
 import CollaboratorCasesDTO from '../DTOs/collaboratorCases.dto.js';
+import LogActivityUseCase from '../../Domain/UseCases/logActivity.usecase.js';
 
 const listCollaboratorsUseCase = new ListCollaboratorsUseCase();
 const getAllCasesFromUser = new GetAllCasesFromUser();
@@ -25,6 +26,7 @@ const createCollaboratorUseCase = new CreateCollaboratorUseCase();
 const listActivityLogUseCase = new ListActivityLogUseCase();
 const getCollaboratorByIdUseCase = new GetCollaboratorByIdUseCase();
 const listCollaboratorCasesUseCase = new ListCollaboratorCasesUseCase();
+const logActivityUseCase = new LogActivityUseCase();
 
 class InternalUserController {
   getAllCasesFromUser = async (req, res) => {
@@ -62,6 +64,14 @@ class InternalUserController {
     try {
       const created = await registerExternalUserUseCase.execute(req.body);
       const payload = new RegisterExternalUserDTO(created).toJSON();
+
+      // V-06: the collaborator who registered the record appears in the activity log
+      await logActivityUseCase.execute({
+        actorId: req.user.user_id,
+        action: 'register_external_user',
+        entity: 'user',
+        entityId: payload.user_id,
+      });
 
       return res.status(201).json({
         success: true,
@@ -143,6 +153,14 @@ class InternalUserController {
     try {
       const created = await createCollaboratorUseCase.execute(req.body);
       const payload = new CreateCollaboratorDTO(created).toJSON();
+
+      // V-06: the admin who created the account appears in the activity log
+      await logActivityUseCase.execute({
+        actorId: req.user.user_id,
+        action: 'create_collaborator',
+        entity: 'user',
+        entityId: payload.user_id,
+      });
 
       return res.status(201).json({
         success: true,

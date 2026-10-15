@@ -1167,6 +1167,59 @@ paths:
                 error: The event is already disabled or does not exist.
         '500': { $ref: '#/components/responses/InternalServerError' }
 
+  /api/events/{eventId}/image:
+    parameters:
+      - $ref: '#/components/parameters/EventId'
+    patch:
+      tags: [Events]
+      summary: Upload or replace the event image (E-04)
+      description: Only internal users and admins can upload the image of an active event. The file must be a JPEG or PNG of up to 5 MB, and its first bytes are checked so a renamed file is rejected. Uploading again replaces the previous image and deletes it from storage.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [image]
+              properties:
+                image:
+                  type: string
+                  format: binary
+                  description: JPEG or PNG, max 5 MB.
+      responses:
+        '200':
+          description: Image saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadEventImageSuccessResponse'
+              example:
+                success: true
+                data:
+                  eventId: 1351c12d-a9ca-460b-851a-4e9a8f7bf495
+                  imageUrl: https://xtuuspwioiflfofbhsps.supabase.co/storage/v1/object/public/event-images/1351c12d-a9ca-460b-851a-4e9a8f7bf495/3a5166dd-1ac7-4be1-970d-2ebf569040fe.png
+        '400':
+          description: eventId is not a UUID, the image is missing, is not a JPEG or PNG, or exceeds 5 MB
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+              example:
+                success: false
+                error: 'image: only JPEG or PNG allowed.'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404':
+          description: The event does not exist or is disabled
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+              example:
+                success: false
+                error: Event not found.
+        '500': { $ref: '#/components/responses/InternalServerError' }
+
 components:
   parameters:
     UserId:
@@ -2047,7 +2100,7 @@ components:
       properties:
         log_id: { type: string, format: uuid }
         actor_name: { type: string, example: Mariana Robles Ortega }
-        action: { type: string, example: update_external_profile }
+        action: { type: string, enum: [update_external_profile, create_collaborator, register_external_user, close_case], example: update_external_profile }
         action_label: { type: string, example: Edición de datos de usuaria }
         entity: { type: string, nullable: true, example: user }
         entity_id: { type: string, format: uuid, nullable: true }
@@ -2164,3 +2217,17 @@ components:
       properties:
         success: { type: boolean, example: true }
         data: { $ref: '#/components/schemas/DisableEventData' }
+
+    UploadEventImageData:
+      type: object
+      required: [eventId, imageUrl]
+      properties:
+        eventId: { type: string, format: uuid }
+        imageUrl: { type: string, format: uri, description: Public link to the image in Storage. }
+
+    UploadEventImageSuccessResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success: { type: boolean, example: true }
+        data: { $ref: '#/components/schemas/UploadEventImageData' }

@@ -41,4 +41,29 @@ function preSubmissionUploadMiddleware(req, res, next) {
   });
 }
 
+// E-04 Event image, a separate config because events only accept pictures
+const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png'];
+
+const eventImageUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: MAX_FILE_SIZE, files: 1 },
+  fileFilter: (req, file, cb) => {
+    if (!ALLOWED_IMAGE_TYPES.includes(file.mimetype)) {
+      return cb(new Error('image: only JPEG or PNG allowed.'));
+    }
+    cb(null, true);
+  },
+}).single('image');
+
+export function eventImageUploadMiddleware(req, res, next) {
+  eventImageUpload(req, res, (error) => {
+    if (!error) return next();
+    const message =
+      error.code === 'LIMIT_FILE_SIZE'
+        ? 'File exceeds the 5 MB limit.'
+        : error.message;
+    return res.status(400).json({ success: false, error: message });
+  });
+}
+
 export default preSubmissionUploadMiddleware;
