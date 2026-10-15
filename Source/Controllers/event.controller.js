@@ -2,7 +2,10 @@ import CreateEventUseCase from '../../Domain/UseCases/createEvent.usecase.js';
 import CreateEventDTO from '../DTOs/createEvent.dto.js';
 import DisableEventUseCase from '../../Domain/UseCases/disableEvent.usecase.js';
 import DisableEventDTO from '../DTOs/disableEvent.dto.js';
+import GetActiveEventsUseCase from '../../Domain/UseCases/getActiveEvents.usecase.js';
+import EventListDTO from '../DTOs/eventList.dto.js';
 
+const getActiveEventsUseCase = new GetActiveEventsUseCase();
 const createEventUseCase = new CreateEventUseCase();
 const disableEventUseCase = new DisableEventUseCase();
 
@@ -56,6 +59,36 @@ class EventController {
         return res.status(500).json({
           success: false,
           error: 'Unable to disable the event.',
+        });
+      }
+
+      return res.status(status).json({
+        success: false,
+        error: error.message,
+      });
+    }
+  }
+
+  async getActiveEvents(req, res) {
+    try {
+      const events = await getActiveEventsUseCase.execute({
+        scope: req.query.scope,
+      });
+      const payload = events.map((event) => new EventListDTO(event).toJSON());
+
+      return res.status(200).json({
+        success: true,
+        data: payload,
+      });
+    } catch (error) {
+      const status = error.status ?? 500;
+
+      if (status >= 500) {
+        console.error('Failed to get the active events:', error);
+
+        return res.status(500).json({
+          success: false,
+          error: 'Unable to get the events.',
         });
       }
 

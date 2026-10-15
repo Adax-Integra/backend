@@ -6,6 +6,7 @@ import { createEventLimiter } from '../Middlewares/rateLimit.middleware.js';
 
 const router = express.Router();
 
+router.get('/events', authMiddleware, eventController.getActiveEvents);
 // Register an event, internal/admin only
 router.post(
   '/events',

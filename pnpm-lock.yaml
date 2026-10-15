@@ -133,9 +133,6 @@ importers:
       helmet:
         specifier: ^8.3.0
         version: 8.3.0
-      jest:
-        specifier: ^30.5.2
-        version: 30.5.2(@types/node@26.6.3)(supports-color@5.5.0)
       jsonwebtoken:
         specifier: ^9.0.3
         version: 9.0.3
@@ -176,6 +173,9 @@ importers:
       husky:
         specifier: ^9.1.7
         version: 9.1.7
+      jest:
+        specifier: ^30.5.2
+        version: 30.5.2(@types/node@26.6.3)(supports-color@5.5.0)
       lint-staged:
         specifier: ^17.5.0
         version: 17.6.0
