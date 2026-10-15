@@ -26,6 +26,11 @@ const ACTIONS = {
     title: 'Registro de caso',
     verb: 'registró el caso',
   },
+  // G-08: an external or internal user deactivates her own account
+  deactivate_account: {
+    title: 'Baja de cuenta',
+    verb: 'desactivó la cuenta de',
+  },
 };
 
 const UNKNOWN_ACTOR = 'Usuaria no disponible';

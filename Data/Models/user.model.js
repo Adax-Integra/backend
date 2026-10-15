@@ -71,6 +71,25 @@ class UserModel {
       throw new Error(error.message);
     }
   }
+
+  // G-08: the account is marked with deleted_at instead of being deleted,
+  // so the login stops finding it and its records, cases and log entries are kept.
+  // Returns null when the account does not exist or was already deactivated
+  static async deactivate(userId) {
+    const { data, error } = await supabase
+      .from(UserModel.TABLE)
+      .update({ deleted_at: new Date().toISOString() })
+      .eq('user_id', userId)
+      .is('deleted_at', null)
+      .select('user_id, deleted_at')
+      .maybeSingle();
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return data;
+  }
 }
 
 export default UserModel;
