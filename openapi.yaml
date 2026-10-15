@@ -694,6 +694,53 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
 
+  /api/internal-users/external-users/{userId}/cases:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+    post:
+      tags: [Internal Users]
+      summary: Create a case for an external user (R-11)
+      description: >
+        Admin and internal users only. Creates a case in the external user's
+        active record. The request body uses the same fields as the external
+        user's case creation flow.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCaseRequest'
+      responses:
+        '201':
+          description: Case created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateCaseSuccessResponse'
+        '400':
+          description: Invalid userId or request body.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateCaseErrorResponse'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404':
+          description: The user has no active record
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateCaseErrorResponse'
+        '409':
+          description: The user's record already has the maximum number of active cases
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateCaseErrorResponse'
+        '500': { $ref: '#/components/responses/InternalServerError' }
+
   /api/internal-users/external-users/{userId}:
     parameters:
       - $ref: '#/components/parameters/UserId'
