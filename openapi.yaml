@@ -686,8 +686,8 @@ paths:
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
-  
-    /api/internal-users/{userId}:
+
+  /api/internal-users/{userId}:
     parameters:
       - $ref: '#/components/parameters/UserId'
     get:
