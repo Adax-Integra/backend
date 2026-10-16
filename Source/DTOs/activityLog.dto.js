@@ -31,6 +31,11 @@ const ACTIONS = {
     title: 'Consulta de documentos',
     verb: 'consultó los documentos',
   },
+  // R-08: an internal user assigns help types to a case
+  assign_case_help: {
+    title: 'Asignación de ayudas',
+    verb: 'asignó ayudas al caso de',
+  },
   // G-08: an external or internal user deactivates her own account
   deactivate_account: {
     title: 'Baja de cuenta',
