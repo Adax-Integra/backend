@@ -1,5 +1,6 @@
 import express from 'express';
 import caseController from '../Controllers/case.controller.js';
+import violenceTypeController from '../Controllers/violenceType.controller.js';
 import authMiddleware from '../Middlewares/auth.middleware.js';
 import {
   adminInternalOnly,
@@ -38,6 +39,27 @@ router.patch(
   authMiddleware,
   adminInternalOnly,
   caseController.closeCase
+);
+
+router.get(
+  '/violence-types',
+  authMiddleware,
+  adminInternalOnly,
+  violenceTypeController.listViolenceTypes
+);
+
+router.patch(
+  '/cases/:caseId/violence-types',
+  authMiddleware,
+  adminInternalOnly,
+  violenceTypeController.assignViolenceTypes
+);
+
+router.get(
+  '/cases/:caseId/violence-types',
+  authMiddleware,
+  adminInternalOnly,
+  violenceTypeController.getAssignedViolenceTypes
 );
 
 export default router;
