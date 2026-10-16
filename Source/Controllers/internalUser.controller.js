@@ -18,6 +18,8 @@ import CollaboratorCasesDTO from '../DTOs/collaboratorCases.dto.js';
 import LogActivityUseCase from '../../Domain/UseCases/logActivity.usecase.js';
 import CreateCaseUseCase from '../../Domain/UseCases/createCase.usecase.js';
 import CreateCaseDTO from '../DTOs/createCase.dto.js';
+import UpdateCollaboratorStatusUseCase from '../../Domain/UseCases/updateCollaboratorStatus.usecase.js';
+import CollaboratorStatusDTO from '../DTOs/collaboratorStatus.dto.js';
 import ListExternalUsersUseCase from '../../Domain/UseCases/listExternalUsers.usecase.js';
 import ExternalUserListDTO from '../DTOs/externalUserList.dto.js';
 
@@ -32,6 +34,7 @@ const getCollaboratorByIdUseCase = new GetCollaboratorByIdUseCase();
 const listCollaboratorCasesUseCase = new ListCollaboratorCasesUseCase();
 const logActivityUseCase = new LogActivityUseCase();
 const createCaseUseCase = new CreateCaseUseCase();
+const updateCollaboratorStatusUseCase = new UpdateCollaboratorStatusUseCase();
 const listExternalUsersUseCase = new ListExternalUsersUseCase();
 
 class InternalUserController {
@@ -347,6 +350,57 @@ class InternalUserController {
         });
       }
 
+      return res.status(status).json({
+        success: false,
+        error: error.message,
+      });
+    }
+  };
+
+  // G-04: Admin activates or deactivates a collaborator account
+  updateCollaboratorStatus = async (req, res) => {
+    try {
+      const userId = req.params.userId;
+      const isActive = req.body.is_active;
+
+      // Changes the status of the account
+      const updatedCollaborator = await updateCollaboratorStatusUseCase.execute(
+        userId,
+        isActive
+      );
+
+      // Prepares the data for the app
+      const payload = new CollaboratorStatusDTO(updatedCollaborator).toJSON();
+
+      // V-06: saves the change in the activity log
+      await logActivityUseCase.execute({
+        actorId: req.user.user_id,
+        action: 'update_collaborator_status',
+        entity: 'user',
+        entityId: payload.user_id,
+      });
+
+      return res.status(200).json({
+        success: true,
+        data: payload,
+      });
+    } catch (error) {
+      let status = 500;
+      if (error.status) {
+        status = error.status;
+      }
+
+      // Server error
+      if (status === 500) {
+        console.error('Failed to update collaborator status: ', error);
+
+        return res.status(500).json({
+          success: false,
+          error: 'Unable to update the collaborator status',
+        });
+      }
+
+      // Client error (400, 404 or 409)
       return res.status(status).json({
         success: false,
         error: error.message,
