@@ -1080,6 +1080,87 @@ paths:
                 error: Case with ID 3fa85f64-5717-4562-b3fc-2c963f66afa6 is already closed or does not exist.
         '500': { $ref: '#/components/responses/InternalServerError' }
 
+  /api/help-types:
+    get:
+      tags: [Case helps]
+      summary: List the help types catalog (R-08)
+      description: Returns the active help types an internal user can assign to a case. Internal and admin only.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Help types catalog
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HelpTypeListResponse'
+        '401':
+          description: Missing or invalid token
+        '403':
+          description: The user is not internal or admin
+        '500':
+          description: Unable to retrieve help types
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CaseHelpErrorResponse'
+
+  /api/cases/{caseId}/helps:
+    put:
+      tags: [Case helps]
+      summary: Assign the required helps to a case (R-08)
+      description: Replaces the helps of a case with the given list. An empty list removes every help. Internal and admin only.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: caseId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignCaseHelpsRequest'
+      responses:
+        '200':
+          description: Helps assigned to the case
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssignCaseHelpsSuccessResponse'
+        '400':
+          description: Invalid case id, invalid helpIds (VALIDATION_ERROR) or help types that do not exist (INVALID_HELP_TYPE)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CaseHelpErrorResponse'
+        '401':
+          description: Missing or invalid token
+        '403':
+          description: The user is not internal or admin
+        '404':
+          description: Case not found (CASE_NOT_FOUND)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CaseHelpErrorResponse'
+        '409':
+          description: The case is closed (CASE_CLOSED)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CaseHelpErrorResponse'
+        '500':
+          description: Unable to assign case helps
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CaseHelpErrorResponse'
+
   /api/users/{userId}/cases:
     parameters:
       - $ref: '#/components/parameters/UserId'
@@ -2060,6 +2141,56 @@ components:
       properties:
         success: { type: boolean, example: true }
         data: { $ref: '#/components/schemas/CloseCaseData' }
+
+    HelpType:
+      type: object
+      properties:
+        helpId: { type: string, format: uuid }
+        description: { type: string, example: Asesoría legal }
+
+    HelpTypeListResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success: { type: boolean, example: true }
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/HelpType' }
+
+    AssignCaseHelpsRequest:
+      type: object
+      required: [helpIds]
+      properties:
+        helpIds:
+          type: array
+          maxItems: 20
+          description: Final list of help types for the case. An empty list removes every help.
+          items: { type: string, format: uuid }
+
+    AssignCaseHelpsSuccessResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success: { type: boolean, example: true }
+        data:
+          type: object
+          properties:
+            caseId: { type: string, format: uuid }
+            helps:
+              type: array
+              items: { $ref: '#/components/schemas/HelpType' }
+
+    CaseHelpErrorResponse:
+      type: object
+      required: [success, error]
+      properties:
+        success: { type: boolean, example: false }
+        code: { type: string, example: CASE_CLOSED }
+        error: { type: string }
+        errors:
+          type: object
+          nullable: true
+          additionalProperties: { type: string }
 
     CaseDetail:
       type: object
