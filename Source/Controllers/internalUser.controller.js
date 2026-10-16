@@ -22,6 +22,8 @@ import UpdateCollaboratorStatusUseCase from '../../Domain/UseCases/updateCollabo
 import CollaboratorStatusDTO from '../DTOs/collaboratorStatus.dto.js';
 import ListExternalUsersUseCase from '../../Domain/UseCases/listExternalUsers.usecase.js';
 import ExternalUserListDTO from '../DTOs/externalUserList.dto.js';
+import GetExternalUserDocumentsUseCase from '../../Domain/UseCases/getExternalUserDocuments.usecase.js';
+import ExternalUserDocumentsDTO from '../DTOs/externalUserDocuments.dto.js';
 
 const listCollaboratorsUseCase = new ListCollaboratorsUseCase();
 const getAllCasesFromUser = new GetAllCasesFromUser();
@@ -36,6 +38,7 @@ const logActivityUseCase = new LogActivityUseCase();
 const createCaseUseCase = new CreateCaseUseCase();
 const updateCollaboratorStatusUseCase = new UpdateCollaboratorStatusUseCase();
 const listExternalUsersUseCase = new ListExternalUsersUseCase();
+const getExternalUserDocumentsUseCase = new GetExternalUserDocumentsUseCase();
 
 class InternalUserController {
   getAllCasesFromUser = async (req, res) => {
@@ -194,6 +197,48 @@ class InternalUserController {
         success: false,
         error: error.message,
         errors: error.details ?? null,
+      });
+    }
+  };
+
+  //V-13: An internal user views the documents of an external user's record
+  getExternalUserDocuments = async (req, res) => {
+    try {
+      const documents = await getExternalUserDocumentsUseCase.execute(
+        req.params.userId
+      );
+      const payload = new ExternalUserDocumentsDTO(documents).toJSON();
+
+      //V-06 identity documents are sensitive, every consultation is logged
+      await logActivityUseCase.execute({
+        actorId: req.user.user_id,
+        action: 'view_external_documents',
+        entity: 'user',
+        entityId: payload.user_id,
+      });
+
+      //The response carries signed URLs, it must not be cached
+      res.set('Cache-Control', 'no-store');
+
+      return res.status(200).json({
+        success: true,
+        data: payload,
+      });
+    } catch (error) {
+      const status = error.status ?? 500;
+
+      if (status >= 500) {
+        console.error('Failed to get external user documents: ', error);
+
+        return res.status(500).json({
+          success: false,
+          error: 'Unable to get the documents',
+        });
+      }
+
+      return res.status(status).json({
+        success: false,
+        error: error.message,
       });
     }
   };

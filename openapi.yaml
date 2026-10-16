@@ -1058,7 +1058,52 @@ paths:
                 success: false
                 error: This email is already registered
                 errors: null
-        '500': { $ref: '#/components/responses/InternalServerError' } 
+        '500': { $ref: '#/components/responses/InternalServerError' }
+
+  /api/internal-users/external-users/{userId}/documents:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+    get:
+      tags: [Internal Users]
+      summary: View the documents of an external user's record (V-13)
+      description: |
+        Internal users and admins open the identity document (INE) and the
+        proof of address that the external user uploaded in R-06.
+
+        Storage paths are never returned, only signed URLs that expire after
+        15 minutes and the kind of file. Accounts that are not external users
+        return 404. Each consultation is saved in the activity log as
+        view_external_documents.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Documents retrieved (null when not uploaded yet)
+          headers:
+            Cache-Control:
+              schema: { type: string, example: no-store }
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [success, data]
+                properties:
+                  success: { type: boolean, example: true }
+                  data:
+                    $ref: '#/components/schemas/RecordDocuments'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404':
+          description: The user does not exist or is not an external user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                error: External user not found
+        '500': { $ref: '#/components/responses/InternalServerError' }
 
   /api/cases:
     get:
@@ -1871,6 +1916,31 @@ components:
           format: uri
           nullable: true
           description: Signed URL that expires after 15 minutes.
+
+    RecordDocument:
+      type: object
+      nullable: true
+      description: Null when the external user has not uploaded this document.
+      required: [url, file_type]
+      properties:
+        url:
+          type: string
+          format: uri
+          nullable: true
+          description: Signed URL that expires after 15 minutes. Null when storage could not sign it.
+        file_type:
+          type: string
+          enum: [pdf, image]
+
+    RecordDocuments:
+      type: object
+      required: [user_id, identity_document, proof_of_address]
+      properties:
+        user_id: { type: string, format: uuid }
+        identity_document:
+          $ref: '#/components/schemas/RecordDocument'
+        proof_of_address:
+          $ref: '#/components/schemas/RecordDocument'
 
     PreSubmissionData:
       type: object
