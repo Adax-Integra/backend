@@ -106,6 +106,17 @@ const ASSIGNED_CASE_COLUMNS = `
 //  Maximum number of assigned cases returned for a internal user only for US G-10
 const MAX_ASSIGNED_CASES = 100;
 
+// V-12: Same card columns as CASE_COLUMNS plus a second join with an alias.
+// Filtering on case_assignment directly would also trim the list of assigned
+// interns, so my_assignment only filters and case_assignment keeps every name
+const MY_ASSIGNED_CASE_COLUMNS = `
+  ${CASE_COLUMNS},
+  my_assignment:case_assignment!inner (
+    user_id,
+    deleted_at
+  )
+`;
+
 // Data access for case listings. Urgency calculation and ordering are pending.
 class CaseModel {
   // Extract page and limit from the input object; their defaults are 1 and 20.
@@ -190,6 +201,46 @@ class CaseModel {
       total: cases.length,
     };
   }
+  // V-12: One page of the cases assigned to the logged-in collaborator,
+  // open and closed. The use case reads every page before sorting by severity
+  static async findPageByAssignedUser(userId, { page = 1, limit = 100 } = {}) {
+    if (!Number.isSafeInteger(page) || page < 1) {
+      throw new Error('page must be a positive integer.');
+    }
+
+    if (!Number.isSafeInteger(limit) || limit < 1 || limit > 100) {
+      throw new Error('limit must be a positive integer between 1 and 100.');
+    }
+
+    // range() includes the end position, so subtract 1
+    const from = (page - 1) * limit;
+    const to = from + limit - 1;
+
+    const { data, error, count } = await supabase
+      .from('case')
+      .select(MY_ASSIGNED_CASE_COLUMNS, { count: 'exact' })
+      // Only the cases where this collaborator has an active assignment
+      .eq('my_assignment.user_id', userId)
+      .is('my_assignment.deleted_at', null)
+      .is('deleted_at', null)
+      .is('record.deleted_at', null)
+      .is('record.user.deleted_at', null)
+      .is('case_violence.deleted_at', null)
+      .is('case_violence.violence_types.deleted_at', null)
+      .order('updated_at', { ascending: false, nullsFirst: false })
+      .order('case_id', { ascending: true })
+      .range(from, to);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return {
+      cases: data ?? [],
+      total: count ?? 0,
+    };
+  }
+
   //case will be retrieved by caseId to display correct information of progress to external user (V-07)
   static async findById(caseId) {
     const { data, error } = await supabase
