@@ -58,6 +58,14 @@ router.patch(
   internalUserController.updateExternalProfile
 );
 
+// V-13 Internal users view the documents of an external user's record
+router.get(
+  '/internal-users/external-users/:userId/documents',
+  authMiddleware,
+  adminInternalOnly,
+  internalUserController.getExternalUserDocuments
+);
+
 // G-03 Admin creates a new collaborator (internal user) account
 router.post(
   '/internal-users',

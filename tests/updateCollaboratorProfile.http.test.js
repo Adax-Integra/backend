@@ -46,6 +46,14 @@ jest.unstable_mockModule(
   })
 );
 
+// The auth middleware validates the session against the database, so the
+// token model is mocked to keep these route tests isolated from Supabase.
+const isActiveMock = jest.fn();
+
+jest.unstable_mockModule('../Data/Models/authToken.model.js', () => ({
+  default: { isActive: isActiveMock },
+}));
+
 // Import the real router (with its real controller and middlewares).
 const { default: internalUserRoutes } =
   await import('../Source/Routes/internalUser.routes.js');
@@ -69,6 +77,8 @@ const internalToken = jwt.sign(
 describe('G-18: PATCH /internal-users/:userId (HTTP)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // By default the session is active, so auth passes and the route runs.
+    isActiveMock.mockResolvedValue(true);
   });
 
   // No token -> 401.

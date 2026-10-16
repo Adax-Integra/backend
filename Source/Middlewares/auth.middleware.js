@@ -1,33 +1,68 @@
 import jwt from 'jsonwebtoken';
 
-// Checks that the request includes a valid token
-function authMiddleware(req, res, next) {
+import AuthTokenModel from '../../Data/Models/authToken.model.js';
+import SessionService from '../../Domain/Services/session.service.js';
+
+// Validates the token and checks that its session is still active.
+async function authMiddleware(req, res, next) {
   const header = req.headers.authorization;
 
   if (!header || !header.startsWith('Bearer ')) {
-    // If it doesn't meet either condition, it means we didn't receive a token correctly
     return res.status(401).json({
       success: false,
       error: 'Token is required.',
     });
   }
 
-  const token = header.split(' ')[1];
-  // Checks that the token was sent using Bearer
+  const token = header.slice(7).trim();
+  let payload;
 
+  // Rejects tokens with an invalid signature or expiration.
   try {
-    // Verifies the token using the secret key
-    const payload = jwt.verify(token, process.env.JWT_SECRET);
-    // Saves the user ID and roles so they can be used in the next middleware
-    req.user = { user_id: payload.user_id, roles: payload.roles };
-    next();
+    payload = jwt.verify(token, process.env.JWT_SECRET);
+
+    if (
+      typeof payload !== 'object' ||
+      typeof payload.user_id !== 'string' ||
+      !Array.isArray(payload.roles)
+    ) {
+      throw new Error('Invalid token payload.');
+    }
   } catch {
-    // Returns an error if the token is invalid or expired
     return res.status(401).json({
       success: false,
-      error: 'Invalid or expired token',
+      error: 'Invalid or expired token.',
     });
   }
+
+  const tokenHash = SessionService.hashToken(token);
+
+  try {
+    const isActive = await AuthTokenModel.isActive(payload.user_id, tokenHash);
+
+    if (!isActive) {
+      return res.status(401).json({
+        success: false,
+        error: 'Session is no longer active.',
+      });
+    }
+  } catch {
+    // A database failure does not mean the user's token is invalid.
+    return res.status(503).json({
+      success: false,
+      error: 'Unable to validate the session. Please try again.',
+    });
+  }
+
+  req.user = {
+    user_id: payload.user_id,
+    roles: payload.roles,
+  };
+
+  // Used by logout to clear only the token making the request.
+  req.tokenHash = tokenHash;
+
+  return next();
 }
 
 export default authMiddleware;

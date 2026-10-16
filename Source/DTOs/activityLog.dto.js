@@ -26,10 +26,20 @@ const ACTIONS = {
     title: 'Registro de caso',
     verb: 'registró el caso',
   },
+  //V-13: an internal user views the documents of an external user
+  view_external_documents: {
+    title: 'Consulta de documentos',
+    verb: 'consultó los documentos',
+  },
   // R-08: an internal user assigns help types to a case
   assign_case_help: {
     title: 'Asignación de ayudas',
     verb: 'asignó ayudas al caso de',
+  },
+  // R-10: an internal user is assigned to a case
+  assign_case_collaborator: {
+    title: 'Asignación de colaboradora',
+    verb: 'asignó una colaboradora al caso de',
   },
   // G-08: an external or internal user deactivates her own account
   deactivate_account: {
