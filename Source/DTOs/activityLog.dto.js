@@ -31,6 +31,11 @@ const ACTIONS = {
     title: 'Asignación de ayudas',
     verb: 'asignó ayudas al caso de',
   },
+  // G-08: an external or internal user deactivates her own account
+  deactivate_account: {
+    title: 'Baja de cuenta',
+    verb: 'desactivó la cuenta de',
+  },
 };
 
 const UNKNOWN_ACTOR = 'Usuaria no disponible';

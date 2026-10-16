@@ -1,5 +1,8 @@
 import ProfileUseCase from '../../Domain/UseCases/profile.usecase.js';
 import UpdateProfileUseCase from '../../Domain/UseCases/updateProfile.usecase.js';
+import DeactivateAccountUseCase from '../../Domain/UseCases/deactivateAccount.usecase.js';
+
+const deactivateAccountUseCase = new DeactivateAccountUseCase();
 import GetEditableProfileUseCase from '../../Domain/UseCases/getEditableProfile.usecase.js';
 import EditableProfileDTO from '../DTOs/editableProfile.dto.js';
 
@@ -64,6 +67,27 @@ class ProfileController {
         success: false,
         error: error.message,
         errors: error.details ?? null,
+      });
+    }
+  }
+
+  // The user deactivates her own account, userId always comes from the session (g-08)
+  async deactivateAccount(req, res) {
+    try {
+      const data = await deactivateAccountUseCase.execute(
+        req.user.user_id,
+        req.user.roles
+      );
+
+      // The app closes the session after this response
+      return res.status(200).json({
+        success: true,
+        data,
+      });
+    } catch (error) {
+      return res.status(error.status ?? 500).json({
+        success: false,
+        error: error.message,
       });
     }
   }
