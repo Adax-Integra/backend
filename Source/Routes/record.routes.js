@@ -13,4 +13,11 @@ router.get(
   recordController.listRecords
 );
 
+router.patch(
+  '/records/:recordId/status',
+  authMiddleware,
+  adminInternalOnly,
+  recordController.updateRecordStatus
+);
+
 export default router;

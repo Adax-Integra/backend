@@ -40,9 +40,9 @@ const patchProfile = (roles, body, id, tokenId = id) =>
     .set('Authorization', `Bearer ${tokenFor(roles, tokenId)}`)
     .send(body);
 
-const getProfile = (roles, id, tokenId = id) =>
+const getEditableProfile = (roles, id, tokenId = id) =>
   request(app)
-    .get(`/api/profile/${id}`)
+    .get(`/api/profile/${id}/edit`)
     .set('Authorization', `Bearer ${tokenFor(roles, tokenId)}`);
 
 async function getUser(id) {
@@ -421,7 +421,7 @@ describe('Unit tests for R-04', () => {
     });
   });
 
-  describe('GET /api/profile/:userId - returns what PATCH can edit', () => {
+  describe('GET /api/profile/:userId/edit - returns what PATCH can edit', () => {
     it('Should return the address an external user just updated', async () => {
       await patchProfile(
         ['external'],
@@ -429,7 +429,7 @@ describe('Unit tests for R-04', () => {
         externalUserId
       );
 
-      const response = await getProfile(['external'], externalUserId);
+      const response = await getEditableProfile(['external'], externalUserId);
 
       expect(response.statusCode).toBe(200);
       expect(response.body.success).toBe(true);
@@ -445,7 +445,7 @@ describe('Unit tests for R-04', () => {
     });
 
     it('Should not return an address for a user with staff and external roles', async () => {
-      const response = await getProfile(
+      const response = await getEditableProfile(
         ['external', 'internal'],
         externalUserId
       );
@@ -468,7 +468,7 @@ describe('Unit tests for R-04', () => {
         });
         const from = jest.spyOn(supabase, 'from').mockReturnValue(userQuery);
 
-        const response = await getProfile([role], STAFF_USER_ID);
+        const response = await getEditableProfile([role], STAFF_USER_ID);
 
         expect(response.statusCode).toBe(200);
         expect(from).toHaveBeenCalledTimes(1);
@@ -483,7 +483,7 @@ describe('Unit tests for R-04', () => {
     );
 
     it('Should respond with code 403 for another user profile', async () => {
-      const response = await getProfile(
+      const response = await getEditableProfile(
         ['external'],
         externalUserId,
         STAFF_USER_ID
@@ -494,10 +494,29 @@ describe('Unit tests for R-04', () => {
     });
 
     it('Should respond with code 404 when the user does not exist', async () => {
-      const response = await getProfile(['external'], NONEXISTENT_USER_ID);
+      const response = await getEditableProfile(
+        ['external'],
+        NONEXISTENT_USER_ID
+      );
 
       expect(response.statusCode).toBe(404);
       expect(response.body.success).toBe(false);
+    });
+  });
+
+  describe('GET /api/profile/:userId - G-13 response is unchanged', () => {
+    it('Should still return the created_at and email the profile tab uses', async () => {
+      const response = await request(app)
+        .get(`/api/profile/${externalUserId}`)
+        .set(
+          'Authorization',
+          `Bearer ${tokenFor(['external'], externalUserId)}`
+        );
+
+      expect(response.statusCode).toBe(200);
+      expect(response.body.data).toHaveProperty('created_at');
+      expect(response.body.data).toHaveProperty('email');
+      expect(response.body.data).not.toHaveProperty('address');
     });
   });
 
