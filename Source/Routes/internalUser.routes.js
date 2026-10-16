@@ -81,13 +81,6 @@ router.get(
   adminOnly,
   internalUserController.listCollaborators
 );
-// G-10 Admin and ONLY ADMIN  consults the detail of a internal user
-router.get(
-  '/internal-users/:userId',
-  authMiddleware,
-  adminOnly,
-  internalUserController.getCollaboratorDetail
-);
 
 // G-10 Admin and ONLY ADMIN consults the detail of a collaborator
 router.get(
@@ -95,6 +88,14 @@ router.get(
   authMiddleware,
   adminOnly,
   internalUserController.getCollaboratorDetail
+);
+
+// G-18 Admin edits the name, last name or email of a collaborator
+router.patch(
+  '/internal-users/:userId',
+  authMiddleware,
+  adminOnly,
+  internalUserController.updateCollaboratorProfile
 );
 
 // G-10 Admin consults the cases assigned to a collaborator

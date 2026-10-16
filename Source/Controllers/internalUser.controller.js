@@ -22,6 +22,7 @@ import UpdateCollaboratorStatusUseCase from '../../Domain/UseCases/updateCollabo
 import CollaboratorStatusDTO from '../DTOs/collaboratorStatus.dto.js';
 import ListExternalUsersUseCase from '../../Domain/UseCases/listExternalUsers.usecase.js';
 import ExternalUserListDTO from '../DTOs/externalUserList.dto.js';
+import UpdateCollaboratorProfileUseCase from '../../Domain/UseCases/updateCollaboratorProfile.usecase.js';
 
 const listCollaboratorsUseCase = new ListCollaboratorsUseCase();
 const getAllCasesFromUser = new GetAllCasesFromUser();
@@ -36,6 +37,7 @@ const logActivityUseCase = new LogActivityUseCase();
 const createCaseUseCase = new CreateCaseUseCase();
 const updateCollaboratorStatusUseCase = new UpdateCollaboratorStatusUseCase();
 const listExternalUsersUseCase = new ListExternalUsersUseCase();
+const updateCollaboratorProfileUseCase = new UpdateCollaboratorProfileUseCase();
 
 class InternalUserController {
   getAllCasesFromUser = async (req, res) => {
@@ -404,6 +406,43 @@ class InternalUserController {
       return res.status(status).json({
         success: false,
         error: error.message,
+      });
+    }
+  };
+
+  updateCollaboratorProfile = async (req, res) => {
+    try {
+      const updated = await updateCollaboratorProfileUseCase.execute(
+        req.user.user_id,
+        req.params.userId,
+        req.body
+      );
+
+      return res.status(200).json({
+        success: true,
+        data: {
+          user_id: updated.user_id,
+          name: updated.name,
+          last_name: updated.last_name,
+          email: updated.email,
+        },
+      });
+    } catch (error) {
+      const status = error.status ?? 500;
+
+      if (status >= 500) {
+        console.error('Failed to update collaborator profile: ', error);
+
+        return res.status(500).json({
+          success: false,
+          error: 'Unable to update the collaborator profile',
+        });
+      }
+
+      return res.status(status).json({
+        success: false,
+        error: error.message,
+        errors: error.details ?? null,
       });
     }
   };
