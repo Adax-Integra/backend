@@ -1,7 +1,9 @@
 import ListRecordsUseCase from '../../Domain/UseCases/listRecords.usecase.js';
 import RecordListDTO from '../DTOs/recordList.dto.js';
+import UpdateRecordStatusUseCase from '../../Domain/UseCases/updateRecordStatus.usecase.js';
 
 const listRecordsUseCase = new ListRecordsUseCase();
+const updateRecordStatusUseCase = new UpdateRecordStatusUseCase();
 
 class RecordController {
   async listRecords(req, res) {
@@ -54,7 +56,12 @@ class RecordController {
     }
 
     // Only teh four lifecycle status are valid filter values.
-    const ALLOWED_STATUSES = ['SIN_EMPEZAR', 'EN_REVISION', 'EN_SEGUIMIENTO', 'COMPLETADO'];
+    const ALLOWED_STATUSES = [
+      'SIN_EMPEZAR',
+      'EN_REVISION',
+      'EN_SEGUIMIENTO',
+      'COMPLETADO',
+    ];
 
     if (statusQuery !== undefined && !ALLOWED_STATUSES.includes(statusQuery)) {
       return res.status(400).json({
@@ -62,7 +69,7 @@ class RecordController {
         error: 'status must be a valid record status when provided.',
       });
     }
-    
+
     // Omission means no status filter.
     const status = statusQuery === undefined ? null : statusQuery;
 
@@ -93,6 +100,68 @@ class RecordController {
       return res.status(500).json({
         success: false,
         error: 'Unable to retrieve records.',
+      });
+    }
+  }
+
+  async updateRecordStatus(req, res) {
+    const { recordId } = req.params;
+    const { status: newStatus } = req.body ?? {};
+
+    if (typeof recordId !== 'string' || recordId.trim() === '') {
+      return res.status(400).json({
+        success: false,
+        error: 'recordId is required.',
+      });
+    }
+
+    const ALLOWED_STATUSES = [
+      'SIN_EMPEZAR',
+      'EN_REVISION',
+      'EN_SEGUIMIENTO',
+      'COMPLETADO',
+    ];
+
+    if (
+      typeof newStatus !== 'string' ||
+      !ALLOWED_STATUSES.includes(newStatus)
+    ) {
+      return res.status(400).json({
+        success: false,
+        error: 'status must be a valid record status.',
+      });
+    }
+
+    try {
+      const updated = await updateRecordStatusUseCase.execute({
+        recordId,
+        newStatus,
+      });
+
+      return res.status(200).json({
+        success: true,
+        data: updated,
+      });
+    } catch (error) {
+      if (error.status === 404) {
+        return res.status(404).json({
+          success: false,
+          error: 'Record not found.',
+        });
+      }
+
+      if (error.status === 409) {
+        return res.status(409).json({
+          success: false,
+          error: error.message,
+        });
+      }
+
+      console.error('Failed to update record status:', error);
+
+      return res.status(500).json({
+        success: false,
+        error: 'Unable to update record status.',
       });
     }
   }
