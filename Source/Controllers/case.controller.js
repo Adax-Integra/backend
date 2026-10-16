@@ -4,12 +4,16 @@ import CaseListDTO from '../DTOs/caseList.dto.js';
 import GetAllCasesFromUser from '../../Domain/UseCases/getAllCasesFromUser.usecase.js';
 import CaseSummaryDTO from '../DTOs/getAllCases.dto.js';
 import CloseCaseUseCase from '../../Domain/UseCases/closeCase.usecase.js';
+import AssignViolenceTypesUseCase from '../../Domain/UseCases/assignViolenceTypes.usecase.js';
+import ListViolenceTypesUseCase from '../../Domain/UseCases/listViolenceTypes.usecase.js';
 import LogActivityUseCase from '../../Domain/UseCases/logActivity.usecase.js';
 
 const listCasesUseCase = new ListCasesUseCase();
 const getCaseByIdUseCase = new GetCaseByIdUseCase();
 const getAllCasesFromUser = new GetAllCasesFromUser();
 const closeCaseUseCase = new CloseCaseUseCase();
+const assignViolenceTypesUseCase = new AssignViolenceTypesUseCase();
+const listViolenceTypesUseCase = new ListViolenceTypesUseCase();
 const logActivityUseCase = new LogActivityUseCase();
 
 class CaseController {
@@ -165,6 +169,55 @@ class CaseController {
     }
   }
 
+  // Retrieves active violence types (R-07)
+  async listViolenceTypes(req, res) {
+    try {
+      const data = await listViolenceTypesUseCase.execute();
+
+      return res.status(200).json({
+        success: true,
+        data,
+      });
+    } catch (error) {
+      console.error('Failed to list violence types:', error);
+
+      return res.status(500).json({
+        success: false,
+        error: 'Unable to retrieve violence types.',
+      });
+    }
+  }
+  // Assigns violence types to a case (R-07)
+  async assignViolenceTypes(req, res) {
+    try {
+      const { caseId } = req.params;
+      const { violenceIds } = req.body ?? {};
+
+      const data = await assignViolenceTypesUseCase.execute(
+        caseId,
+        violenceIds
+      );
+
+      return res.status(200).json({
+        success: true,
+        data,
+      });
+    } catch (error) {
+      if (error.status === 400 || error.status === 404) {
+        return res.status(error.status).json({
+          success: false,
+          error: error.message,
+        });
+      }
+
+      console.error('Failed to assign violence types:', error);
+
+      return res.status(500).json({
+        success: false,
+        error: 'Unable to assign violence types.',
+      });
+    }
+  }
   async getCasesByUser(req, res) {
     try {
       const { userId } = req.params;

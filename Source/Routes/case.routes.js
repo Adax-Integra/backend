@@ -40,4 +40,20 @@ router.patch(
   caseController.closeCase
 );
 
+// List available violence types (R-07), internal/admin only
+router.get(
+  '/violence-types',
+  authMiddleware,
+  adminInternalOnly,
+  caseController.listViolenceTypes
+);
+
+// Assign violence types to a case (R-07), internal/admin only
+router.patch(
+  '/cases/:caseId/violence-types',
+  authMiddleware,
+  adminInternalOnly,
+  caseController.assignViolenceTypes
+);
+
 export default router;
