@@ -7,6 +7,7 @@ import CloseCaseUseCase from '../../Domain/UseCases/closeCase.usecase.js';
 import LogActivityUseCase from '../../Domain/UseCases/logActivity.usecase.js';
 import ListAssignedCasesUseCase from '../../Domain/UseCases/listAssignedCases.usecase.js';
 import AssignedCasesQueryValidator from '../../Data/Validators/assignedCasesQuery.validator.js';
+import AssignCaseCollaboratorUseCase from '../../Domain/UseCases/assignCaseCollaborator.usecase.js';
 
 const listCasesUseCase = new ListCasesUseCase();
 const getCaseByIdUseCase = new GetCaseByIdUseCase();
@@ -14,6 +15,7 @@ const getAllCasesFromUser = new GetAllCasesFromUser();
 const closeCaseUseCase = new CloseCaseUseCase();
 const logActivityUseCase = new LogActivityUseCase();
 const listAssignedCasesUseCase = new ListAssignedCasesUseCase();
+const assignCaseCollaboratorUseCase = new AssignCaseCollaboratorUseCase();
 
 class CaseController {
   async listCases(req, res) {
@@ -201,6 +203,49 @@ class CaseController {
       return res.status(500).json({
         success: false,
         error: 'Unable to close case.',
+      });
+    }
+  }
+
+  /*
+  R-10: assigns an internal user to a case, 
+  assigning the same user again returns the same assignment
+  */
+  async assignCollaborator(req, res) {
+    try {
+      const { caseId, userId } = await assignCaseCollaboratorUseCase.execute(
+        req.params.caseId,
+        req.body
+      );
+
+      // V-06: who assigned the collaborator appears in the activity log
+      await logActivityUseCase.execute({
+        actorId: req.user.user_id,
+        action: 'assign_case_collaborator',
+        entity: 'case',
+        entityId: caseId,
+        details: { userId },
+      });
+
+      // It is only an action, the app already has the ids it sent
+      return res.status(200).json({ success: true });
+    } catch (error) {
+      const status = error.status ?? 500;
+
+      if (status >= 500) {
+        console.error('Failed to assign case collaborator:', error);
+
+        return res.status(500).json({
+          success: false,
+          code: 'SERVER_ERROR',
+          error: 'Unable to assign the collaborator.',
+        });
+      }
+
+      return res.status(status).json({
+        success: false,
+        code: error.code ?? 'VALIDATION_ERROR',
+        error: error.message,
       });
     }
   }

@@ -201,6 +201,7 @@ class CaseModel {
       total: cases.length,
     };
   }
+
   // V-12: One page of the cases assigned to the logged-in collaborator,
   // open and closed. The use case reads every page before sorting by severity
   static async findPageByAssignedUser(userId, { page = 1, limit = 100 } = {}) {
@@ -241,6 +242,25 @@ class CaseModel {
     };
   }
 
+  /*
+  R-10: Assigns an internal to a case.
+  */
+  static async assignUser(caseId, userId) {
+    const { error } = await supabase.from('case_assignment').upsert(
+      {
+        case_id: caseId,
+        user_id: userId,
+        deleted_at: null,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'case_id,user_id' }
+    );
+
+    if (error) {
+      throw new Error(error.message);
+    }
+  }
+
   //case will be retrieved by caseId to display correct information of progress to external user (V-07)
   static async findById(caseId) {
     const { data, error } = await supabase
@@ -251,6 +271,8 @@ class CaseModel {
       .is('record.deleted_at', null)
       .is('record.user.deleted_at', null)
       .is('case_steps.deleted_at', null)
+      // R-08: Helps remove form the case are soft deleted
+      .is('case_help.deleted_at', null)
       //order the steps to show progress correctly
       .order('step_number', {
         foreignTable: 'case_steps',
