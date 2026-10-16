@@ -1,5 +1,6 @@
 import ExternalUserDocumentsModel from '../../Data/Models/externalUserDocuments.model.js';
 import validIdValidator from '../../Data/Validators/validId.validator.js';
+import UserModel from '../../Data/Models/user.model.js';
 
 const DOCUMENT_KEYS = ['identity_document', 'proof_of_address'];
 
@@ -59,6 +60,28 @@ class UploadDocumentsUseCase {
       await ExternalUserDocumentsModel.removeFiles(previousPaths).catch(
         () => {}
       );
+      try {
+        const hasIdentity =
+          typeof updatedDocuments.identity_document === 'string' &&
+          updatedDocuments.identity_document.length > 0;
+
+        const hasProof =
+          typeof updatedDocuments.proof_of_address === 'string' &&
+          updatedDocuments.proof_of_address.length > 0;
+
+        if (hasIdentity && hasProof) {
+          const current = await UserModel.getVerificationStatus(validUserId);
+
+          if (current?.verification_status === 'NO_VERIFICADO') {
+            await UserModel.updateVerificationStatus(
+              validUserId,
+              'EN_REVISION'
+            );
+          }
+        }
+      } catch {
+        // Keep the upload successful even if the status flip fails.
+      }
 
       return await ExternalUserDocumentsModel.attachSignedUrls(
         updatedDocuments
