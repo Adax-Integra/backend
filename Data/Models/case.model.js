@@ -200,6 +200,8 @@ class CaseModel {
       .is('record.deleted_at', null)
       .is('record.user.deleted_at', null)
       .is('case_steps.deleted_at', null)
+      // R-08: Helps remove form the case are soft deleted
+      .is('case_help.deleted_at', null)
       //order the steps to show progress correctly
       .order('step_number', {
         foreignTable: 'case_steps',
