@@ -60,7 +60,10 @@ class AssignCaseCollaboratorUseCase {
       );
     }
 
-    return CaseModel.assignUser(validCaseId, validUserId);
+    await CaseModel.assignUser(validCaseId, validUserId);
+
+    // The validated ids are returned so the controller can write the activity log
+    return { caseId: validCaseId, userId: validUserId };
   }
 }
 
