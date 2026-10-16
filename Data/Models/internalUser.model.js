@@ -26,6 +26,7 @@ class InternalUserModel {
         email,
         password: hashedPassword,
         phone,
+        email_verified_at: null,
       })
       .select('user_id, name, last_name, email, phone')
       .single();
