@@ -190,6 +190,26 @@ class CaseModel {
       total: cases.length,
     };
   }
+
+  /*
+  R-10: Assigns an internal to a case.
+  */
+  static async assignUser(caseId, userId) {
+    const { error } = await supabase.from('case_assignment').upsert(
+      {
+        case_id: caseId,
+        user_id: userId,
+        deleted_at: null,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'case_id,user_id' }
+    );
+
+    if (error) {
+      throw new Error(error.message);
+    }
+  }
+
   //case will be retrieved by caseId to display correct information of progress to external user (V-07)
   static async findById(caseId) {
     const { data, error } = await supabase

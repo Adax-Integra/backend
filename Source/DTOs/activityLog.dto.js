@@ -31,6 +31,11 @@ const ACTIONS = {
     title: 'Asignación de ayudas',
     verb: 'asignó ayudas al caso de',
   },
+  // R-10: an internal user is assigned to a case
+  assign_case_collaborator: {
+    title: 'Asignación de colaboradora',
+    verb: 'asignó una colaboradora al caso de',
+  },
   // G-08: an external or internal user deactivates her own account
   deactivate_account: {
     title: 'Baja de cuenta',

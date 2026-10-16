@@ -40,4 +40,12 @@ router.patch(
   caseController.closeCase
 );
 
+// Assign an internal user to a case (R-10)
+router.post(
+  '/cases/:caseId/assignments',
+  authMiddleware,
+  adminInternalOnly,
+  caseController.assignCollaborator
+);
+
 export default router;
