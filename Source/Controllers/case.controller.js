@@ -5,6 +5,8 @@ import GetAllCasesFromUser from '../../Domain/UseCases/getAllCasesFromUser.useca
 import CaseSummaryDTO from '../DTOs/getAllCases.dto.js';
 import CloseCaseUseCase from '../../Domain/UseCases/closeCase.usecase.js';
 import LogActivityUseCase from '../../Domain/UseCases/logActivity.usecase.js';
+import ListAssignedCasesUseCase from '../../Domain/UseCases/listAssignedCases.usecase.js';
+import AssignedCasesQueryValidator from '../../Data/Validators/assignedCasesQuery.validator.js';
 import AssignCaseCollaboratorUseCase from '../../Domain/UseCases/assignCaseCollaborator.usecase.js';
 
 const listCasesUseCase = new ListCasesUseCase();
@@ -12,6 +14,7 @@ const getCaseByIdUseCase = new GetCaseByIdUseCase();
 const getAllCasesFromUser = new GetAllCasesFromUser();
 const closeCaseUseCase = new CloseCaseUseCase();
 const logActivityUseCase = new LogActivityUseCase();
+const listAssignedCasesUseCase = new ListAssignedCasesUseCase();
 const assignCaseCollaboratorUseCase = new AssignCaseCollaboratorUseCase();
 
 class CaseController {
@@ -95,6 +98,43 @@ class CaseController {
       return res.status(500).json({
         success: false,
         error: 'Unable to retrieve cases.',
+      });
+    }
+  }
+
+  // V-12: The collaborator consults her assigned cases (open and closed).
+  // The userId comes from the token, never from the URL
+  async listAssignedCases(req, res) {
+    try {
+      const filters = AssignedCasesQueryValidator.validateQuery(req.query);
+      const result = await listAssignedCasesUseCase.execute(
+        req.user.user_id,
+        filters
+      );
+      // Same response shape as GET /api/cases
+      const payload = new CaseListDTO(result).toJSON();
+
+      return res.status(200).json({
+        success: true,
+        data: payload,
+      });
+    } catch (error) {
+      const status = error.status ?? 500;
+
+      if (status >= 500) {
+        // Keep database details in server logs instead of exposing them to clients
+        console.error('Failed to list assigned cases:', error);
+
+        return res.status(500).json({
+          success: false,
+          error: 'Unable to retrieve cases.',
+        });
+      }
+
+      return res.status(status).json({
+        success: false,
+        error: error.message,
+        errors: error.details ?? null,
       });
     }
   }

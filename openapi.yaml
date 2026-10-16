@@ -1163,6 +1163,37 @@ paths:
         '400': { $ref: '#/components/responses/BadRequest' }
         '500': { $ref: '#/components/responses/InternalServerError' }
 
+  /api/cases/assigned:
+    get:
+      tags: [Cases]
+      summary: List the cases assigned to the logged-in collaborator (V-12)
+      description: Internal and admin only. The user comes from the token. Includes closed cases. Open cases come first, ordered by severity (highest first), then closed cases, most recently updated first.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          description: all returns every case, open excludes closed cases, closed returns only closed cases.
+          schema:
+            type: string
+            enum: [all, open, closed]
+            default: all
+        - $ref: '#/components/parameters/Search'
+        - $ref: '#/components/parameters/Urgency'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Assigned cases retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CaseListResponse'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+
   /api/cases/{caseId}:
     parameters:
       - $ref: '#/components/parameters/CaseId'
