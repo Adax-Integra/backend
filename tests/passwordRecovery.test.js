@@ -61,7 +61,7 @@ describe('resetPassword', () => {
     const result = await useCase.resetPassword(
       'usuaria@example.com',
       '123456',
-      'newPassword123'
+      'newPassword123!'
     );
 
     expect(updatePassword).toHaveBeenCalledTimes(1);
@@ -71,7 +71,7 @@ describe('resetPassword', () => {
 
   it('rejects a code that is not 6 digits', async () => {
     await expect(
-      useCase.resetPassword('usuaria@example.com', 'abc', 'newPassword123')
+      useCase.resetPassword('usuaria@example.com', 'abc', 'newPassword123!')
     ).rejects.toMatchObject({ status: 400, code: 'CODE_INVALID' });
   });
 
@@ -85,7 +85,7 @@ describe('resetPassword', () => {
     const updatePassword = jest.spyOn(UserModel, 'updatePassword');
 
     await expect(
-      useCase.resetPassword('usuaria@example.com', '123456', 'newPassword123')
+      useCase.resetPassword('usuaria@example.com', '123456', 'newPassword123!')
     ).rejects.toMatchObject({ code: 'CODE_INVALID' });
 
     expect(updatePassword).not.toHaveBeenCalled();

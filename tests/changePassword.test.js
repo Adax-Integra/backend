@@ -10,7 +10,7 @@ process.env.JWT_SECRET ||= 'test-jwt-secret';
 
 const userId = 'f5e392c4-2c3d-4c50-9e9f-3d4ac269f2c5';
 const currentPassword = 'currentPassword123';
-const newPassword = 'newPassword123';
+const newPassword = 'newPassword123!';
 const authToken = jwt.sign(
   { user_id: userId, roles: ['external'] },
   process.env.JWT_SECRET
