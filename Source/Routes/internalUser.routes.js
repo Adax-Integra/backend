@@ -97,4 +97,12 @@ router.get(
   internalUserController.getCollaboratorCases
 );
 
+// G-04 Admin activates or deactivates a collaborator account
+router.patch(
+  '/internal-users/:userId/status',
+  authMiddleware,
+  adminOnly,
+  internalUserController.updateCollaboratorStatus
+);
+
 export default router;
