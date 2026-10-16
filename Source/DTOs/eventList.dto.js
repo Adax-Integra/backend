@@ -17,6 +17,7 @@ class EventListDTO {
       id: this.event.event_id,
       title: this.event.title,
       description: this.event.description,
+      notes: this.event.notes ?? null,
       startsAt: this.event.starts_at,
       endsAt: this.event.ends_at,
       modality: this.event.modality,
