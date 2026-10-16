@@ -26,6 +26,11 @@ const ACTIONS = {
     title: 'Registro de caso',
     verb: 'registró el caso',
   },
+  //V-13: an internal user views the documents of an external user
+  view_external_documents: {
+    title: 'Consulta de documentos',
+    verb: 'consultó los documentos',
+  },
   // G-08: an external or internal user deactivates her own account
   deactivate_account: {
     title: 'Baja de cuenta',
