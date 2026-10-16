@@ -230,7 +230,7 @@ describe('Unit tests for the active events HU', () => {
           .set('Authorization', `Bearer ${adminToken}`);
 
         const event = findByTitle(response.body.data, events.upcoming.title);
-        // Elimina las líneas repetidas de 'notes'
+        // Remove the repeated lines of 'notes'
         expect(event).not.toHaveProperty('phone');
         expect(event).not.toHaveProperty('link');
         expect(event).not.toHaveProperty('deleted_at');
