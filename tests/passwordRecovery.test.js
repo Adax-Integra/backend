@@ -48,6 +48,30 @@ describe('forgotPassword', () => {
 
 //password update and invalidating code
 describe('resetPassword', () => {
+  it('rejects a password without a special character without updating it or consuming the code', async () => {
+    jest.spyOn(UserModel, 'findByEmail').mockResolvedValue(user);
+    jest.spyOn(EmailCodeService, 'validateCode').mockResolvedValue();
+
+    const updatePassword = jest
+      .spyOn(UserModel, 'updatePassword')
+      .mockResolvedValue(user);
+
+    const removeCode = jest
+      .spyOn(EmailCodeService, 'removeCode')
+      .mockResolvedValue();
+
+    await expect(
+      useCase.resetPassword('user@example.com', '123456', 'newPassword123')
+    ).rejects.toMatchObject({
+      status: 400,
+      code: 'VALIDATION_ERROR',
+      message: 'La contraseña debe contener al menos un carácter especial.',
+    });
+
+    expect(updatePassword).not.toHaveBeenCalled();
+    expect(removeCode).not.toHaveBeenCalled();
+  });
+
   it('updates the password and removes the code when the code is valid', async () => {
     jest.spyOn(UserModel, 'findByEmail').mockResolvedValue(user);
     jest.spyOn(EmailCodeService, 'validateCode').mockResolvedValue();
