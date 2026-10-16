@@ -28,4 +28,12 @@ router.patch(
   profileController.updateProfile
 );
 
+// The user can only deactivate her own account, so the id must match the token (G-08)
+router.patch(
+  '/profile/:userId/deactivate',
+  authMiddleware,
+  ownDataOnly,
+  profileController.deactivateAccount
+);
+
 export default router;
