@@ -2,9 +2,12 @@ import UserUseCase from '../../Domain/UseCases/user.usecase.js';
 import ChangePasswordUseCase from '../../Domain/UseCases/changePassword.usecase.js';
 import VerifyEmailUseCase from '../../Domain/UseCases/verifyEmail.usecase.js';
 import ResendVerificationUseCase from '../../Domain/UseCases/resendVerification.usecase.js';
+import LogoutUseCase from '../../Domain/UseCases/logout.usecase.js';
 
 const verifyEmailUseCase = new VerifyEmailUseCase();
 const resendVerificationUseCase = new ResendVerificationUseCase();
+
+const logoutUseCase = new LogoutUseCase();
 
 // Creates a UserUseCase instance so we can use the login() method in this controller
 const userUseCase = new UserUseCase();
@@ -117,6 +120,23 @@ class AuthController {
         success: false,
         code: 'SERVER_ERROR',
         error: 'Unable to send verification code.',
+      });
+    }
+  }
+
+  // Uses the identity and token hash validated by the middleware.
+  async logout(req, res) {
+    try {
+      await logoutUseCase.execute(req.user.user_id, req.tokenHash);
+
+      return res.status(200).json({
+        success: true,
+        data: { message: 'Logged out successfully.' },
+      });
+    } catch {
+      return res.status(500).json({
+        success: false,
+        error: 'Unable to log out. Please try again.',
       });
     }
   }
