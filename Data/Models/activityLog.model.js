@@ -124,7 +124,8 @@ class ActivityLogModel {
       action,
       entity,
       entity_id: entityId,
-      details,
+      // The column does not accept null, so actions without extra data save an empty object
+      details: details ?? {},
     });
 
     if (error) {

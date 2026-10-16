@@ -20,6 +20,8 @@ import CreateCaseUseCase from '../../Domain/UseCases/createCase.usecase.js';
 import CreateCaseDTO from '../DTOs/createCase.dto.js';
 import UpdateCollaboratorStatusUseCase from '../../Domain/UseCases/updateCollaboratorStatus.usecase.js';
 import CollaboratorStatusDTO from '../DTOs/collaboratorStatus.dto.js';
+import ListExternalUsersUseCase from '../../Domain/UseCases/listExternalUsers.usecase.js';
+import ExternalUserListDTO from '../DTOs/externalUserList.dto.js';
 
 const listCollaboratorsUseCase = new ListCollaboratorsUseCase();
 const getAllCasesFromUser = new GetAllCasesFromUser();
@@ -33,6 +35,7 @@ const listCollaboratorCasesUseCase = new ListCollaboratorCasesUseCase();
 const logActivityUseCase = new LogActivityUseCase();
 const createCaseUseCase = new CreateCaseUseCase();
 const updateCollaboratorStatusUseCase = new UpdateCollaboratorStatusUseCase();
+const listExternalUsersUseCase = new ListExternalUsersUseCase();
 
 class InternalUserController {
   getAllCasesFromUser = async (req, res) => {
@@ -401,6 +404,36 @@ class InternalUserController {
       return res.status(status).json({
         success: false,
         error: error.message,
+      });
+    }
+  };
+
+  // G-16: Admin gets the list of external accounts
+  listExternalUsers = async (req, res) => {
+    try {
+      const result = await listExternalUsersUseCase.execute(req.query);
+      const payload = new ExternalUserListDTO(result).toJSON();
+
+      return res.status(200).json({
+        success: true,
+        data: payload,
+      });
+    } catch (error) {
+      const status = error.status ?? 500;
+
+      if (status >= 500) {
+        console.error('Failed to list external users: ', error);
+
+        return res.status(500).json({
+          success: false,
+          error: 'Unable to retrieve external users',
+        });
+      }
+
+      return res.status(status).json({
+        success: false,
+        error: error.message,
+        errors: error.details ?? null,
       });
     }
   };

@@ -25,6 +25,14 @@ router.patch(
   eventController.disableEvent
 );
 
+// Update an event's details, internal/admin only
+router.put(
+  '/events/:eventId',
+  authMiddleware,
+  adminInternalOnly,
+  eventController.updateEvent
+);
+
 // Upload or replace the event image, internal/admin only
 router.patch(
   '/events/:eventId/image',
