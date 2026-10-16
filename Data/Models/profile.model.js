@@ -8,6 +8,7 @@ const PROFILE_COLUMNS = `
     email,
     birth_date,
     phone,
+    verification_status,
     created_at
 `;
 
