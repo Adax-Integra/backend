@@ -26,6 +26,11 @@ const ACTIONS = {
     title: 'Registro de caso',
     verb: 'registró el caso',
   },
+  // R-08: an internal user assigns help types to a case
+  assign_case_help: {
+    title: 'Asignación de ayudas',
+    verb: 'asignó ayudas al caso de',
+  },
 };
 
 const UNKNOWN_ACTOR = 'Usuaria no disponible';
