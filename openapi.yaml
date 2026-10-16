@@ -216,9 +216,7 @@ paths:
     get:
       tags: [Profile]
       summary: Get the authenticated user's profile (G-13)
-      description: |
-        Returns the profile of the user in the token. The userId path parameter must match the token.
-        External users also get their address, admin and internal users do not.
+      description: Returns the profile of the user in the token. The userId path parameter is currently ignored.
       security:
         - BearerAuth: []
       responses:
@@ -229,27 +227,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/UserProfileSuccessResponse'
         '400':
-          description: The query failed
+          description: The user was not found or the query failed
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '401': { $ref: '#/components/responses/Unauthorized' }
-        '403':
-          description: The userId does not match the token
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              example:
-                success: false
-                error: You do not have permission
-        '404':
-          description: The user was not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
     patch:
       tags: [Profile]
       summary: Update the authenticated user's profile (R-04)
@@ -258,7 +241,7 @@ paths:
         - **admin / internal**: name, last_name, phone
         - **external**: name, last_name, phone, country, state, municipality
 
-        The response only confirms the update, use GET /api/profile/{userId} to get the updated data.
+        The response only confirms the update, use GET /api/profile/{userId}/edit to get the updated data.
 
         The email cannot be changed by any role.
       security:
@@ -321,6 +304,47 @@ paths:
                 success: false
                 error: user not found
                 errors: null
+
+  /api/profile/{userId}/edit:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+    get:
+      tags: [Profile]
+      summary: Get the profile fields the user can edit (R-04)
+      description: |
+        Returns the same fields PATCH /api/profile/{userId} can edit. The userId path parameter must match the token.
+        External users also get their address, admin and internal users do not.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Profile retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EditableProfileSuccessResponse'
+        '400':
+          description: The query failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403':
+          description: The userId does not match the token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                error: You do not have permission
+        '404':
+          description: The user was not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /api/external-user/register:
     post:
@@ -1560,6 +1584,24 @@ components:
         user_id: { type: string, format: uuid }
         name: { type: string }
         last_name: { type: string }
+        email: { type: string, format: email }
+        birth_date: { type: string, format: date, nullable: true }
+        phone: { type: string, nullable: true }
+        created_at: { type: string, format: date-time }
+
+    UserProfileSuccessResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success: { type: boolean, example: true }
+        data: { $ref: '#/components/schemas/UserProfile' }
+
+    EditableProfile:
+      type: object
+      properties:
+        user_id: { type: string, format: uuid }
+        name: { type: string }
+        last_name: { type: string }
         phone: { type: string, nullable: true }
         address:
           type: object
@@ -1570,12 +1612,12 @@ components:
             state: { type: string }
             municipality: { type: string }
 
-    UserProfileSuccessResponse:
+    EditableProfileSuccessResponse:
       type: object
       required: [success, data]
       properties:
         success: { type: boolean, example: true }
-        data: { $ref: '#/components/schemas/UserProfile' }
+        data: { $ref: '#/components/schemas/EditableProfile' }
 
     UpdateProfileRequest:
       type: object
