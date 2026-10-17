@@ -140,6 +140,60 @@ class InternalUserModel {
     // Returns the user with its new status
     return data;
   }
+
+  static async findEditableProfileById(userId) {
+    const { data, error } = await supabase
+      .from('user')
+      .select('user_id, name, last_name, email')
+      .eq('user_id', userId)
+      .is('deleted_at', null)
+      .maybeSingle();
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return data ?? null;
+  }
+
+  static async findByEmail(email) {
+    const { data, error } = await supabase
+      .from('user')
+      .select('user_id')
+      .eq('email', email)
+      .is('deleted_at', null)
+      .maybeSingle();
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return data ?? null;
+  }
+
+  static async updateProfileWithLog({ userId, actorId, profile, changes }) {
+    const { data, error } = await supabase.rpc(
+      'update_internal_profile_with_log',
+      {
+        p_user_id: userId,
+        p_actor_id: actorId,
+        p_profile: profile,
+        p_changes: changes,
+      }
+    );
+
+    if (error) {
+      if (error.code === '23505') {
+        const conflict = new Error('This email is already registered');
+        conflict.status = 409;
+        throw conflict;
+      }
+
+      throw new Error(error.message);
+    }
+
+    return Array.isArray(data) ? data[0] : data;
+  }
 }
 
 export default InternalUserModel;
