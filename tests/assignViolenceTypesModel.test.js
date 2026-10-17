@@ -17,7 +17,9 @@ const violenceId = '223e4567-e89b-42d3-a456-426614174001';
 // Simulate database queries used by R-07.
 const mockDatabase = ({
   caseFound = true,
+  caseState = 'Open',
   activeIds = [violenceId],
+  severity = 8,
   existing = [],
   upsertError = null,
 } = {}) => {
@@ -26,7 +28,7 @@ const mockDatabase = ({
     eq: jest.fn().mockReturnThis(),
     is: jest.fn().mockReturnThis(),
     maybeSingle: jest.fn().mockResolvedValue({
-      data: caseFound ? { case_id: caseId } : null,
+      data: caseFound ? { case_id: caseId, state: caseState } : null,
       error: null,
     }),
   };
@@ -35,7 +37,7 @@ const mockDatabase = ({
     select: jest.fn().mockReturnThis(),
     in: jest.fn().mockReturnThis(),
     is: jest.fn().mockResolvedValue({
-      data: activeIds.map((id) => ({ violence_id: id })),
+      data: activeIds.map((id) => ({ violence_id: id, severity })),
       error: null,
     }),
   };
@@ -87,6 +89,8 @@ describe('R-07: violence types persistence', () => {
     expect(result).toEqual({
       caseId,
       violenceIds: [violenceId],
+      severity: 8,
+      urgency: 'Alta',
     });
   });
 
@@ -159,6 +163,8 @@ describe('R-07: violence types persistence', () => {
     expect(result).toEqual({
       caseId,
       violenceIds: [violenceId],
+      severity: 8,
+      urgency: 'Alta',
     });
   });
 
@@ -198,5 +204,53 @@ describe('R-07: violence types persistence', () => {
     ).rejects.toThrow('Database update failed.');
 
     expect(relationsQuery.upsert).toHaveBeenCalledTimes(1);
+  });
+
+  it('should reject a closed case', async () => {
+    const { relationsQuery, typesQuery } = mockDatabase({
+      caseState: 'Closed',
+    });
+
+    await expect(
+      CaseModel.assignViolenceTypes(caseId, [violenceId])
+    ).rejects.toMatchObject({ status: 409, code: 'CASE_CLOSED' });
+
+    expect(typesQuery.select).not.toHaveBeenCalled();
+    expect(relationsQuery.upsert).not.toHaveBeenCalled();
+  });
+
+  it('should return Media urgency for a severity between 4 and 7', async () => {
+    mockDatabase({ severity: 6 });
+
+    const result = await CaseModel.assignViolenceTypes(caseId, [violenceId]);
+
+    expect(result).toMatchObject({ severity: 6, urgency: 'Media' });
+  });
+
+  it('should return Sin evaluar when every violence type is removed', async () => {
+    mockDatabase();
+
+    const result = await CaseModel.assignViolenceTypes(caseId, []);
+
+    expect(result).toEqual({
+      caseId,
+      violenceIds: [],
+      severity: null,
+      urgency: 'Sin evaluar',
+    });
+  });
+
+  it('should send error codes for a missing case and unknown types', async () => {
+    mockDatabase({ caseFound: false });
+
+    await expect(
+      CaseModel.assignViolenceTypes(caseId, [violenceId])
+    ).rejects.toMatchObject({ status: 404, code: 'CASE_NOT_FOUND' });
+
+    mockDatabase({ activeIds: [] });
+
+    await expect(
+      CaseModel.assignViolenceTypes(caseId, [violenceId])
+    ).rejects.toMatchObject({ status: 400, code: 'INVALID_VIOLENCE_TYPE' });
   });
 });
