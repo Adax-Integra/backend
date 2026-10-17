@@ -25,6 +25,9 @@ afterAll(() => {
 
 // Mock the controller to prevent real database or storage operations.
 const controllerMock = {
+  getDocuments: jest.fn((req, res) =>
+    res.status(200).json({ success: true, data: {} })
+  ),
   uploadDocuments: jest.fn((req, res) =>
     res.status(200).json({
       success: true,
@@ -42,6 +45,13 @@ jest.unstable_mockModule(
   })
 );
 
+// G-14: the auth middleware checks the token in the database, every token here is active
+const isActiveMock = jest.fn();
+
+jest.unstable_mockModule('../Data/Models/authToken.model.js', () => ({
+  default: { isActive: isActiveMock },
+}));
+
 // Import the real R-06 router with its existing middlewares.
 const { default: uploadDocumentsRoutes } =
   await import('../Source/Routes/uploadDocuments.routes.js');
@@ -56,6 +66,7 @@ const otherUserId = '987e6543-e21b-42d3-a456-426614174000';
 describe('R-06: document upload HTTP security', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    isActiveMock.mockResolvedValue(true);
   });
 
   // TEST 1: Reject unauthenticated requests.
@@ -252,5 +263,47 @@ describe('R-06: document upload HTTP security', () => {
 
     expect(response.statusCode).toBe(200);
     expect(controllerMock.uploadDocuments).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('R-06: own documents HTTP security', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    isActiveMock.mockResolvedValue(true);
+  });
+
+  function tokenFor(id) {
+    return jwt.sign(
+      { user_id: id, roles: ['external'] },
+      process.env.JWT_SECRET
+    );
+  }
+
+  it('should return 401 when no token is provided', async () => {
+    const response = await request(app).get(
+      `/api/external-users/${userId}/documents`
+    );
+
+    expect(response.statusCode).toBe(401);
+    expect(controllerMock.getDocuments).not.toHaveBeenCalled();
+  });
+
+  it('should return 403 when reading another user documents', async () => {
+    const response = await request(app)
+      .get(`/api/external-users/${userId}/documents`)
+      .set('Authorization', `Bearer ${tokenFor(otherUserId)}`);
+
+    expect(response.statusCode).toBe(403);
+    expect(controllerMock.getDocuments).not.toHaveBeenCalled();
+  });
+
+  it('should allow the owner to read their documents', async () => {
+    const response = await request(app)
+      .get(`/api/external-users/${userId}/documents`)
+      .set('Authorization', `Bearer ${tokenFor(userId)}`);
+
+    expect(response.statusCode).toBe(200);
+    expect(controllerMock.getDocuments).toHaveBeenCalledTimes(1);
+    expect(controllerMock.uploadDocuments).not.toHaveBeenCalled();
   });
 });
