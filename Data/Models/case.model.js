@@ -406,7 +406,7 @@ class CaseModel {
     if (violenceIds.length > 0) {
       const { data: types, error: typesError } = await supabase
         .from('violence_types')
-        .select('violence_id')
+        .select('violence_id, severity')
         .in('violence_id', violenceIds)
         .is('deleted_at', null);
 
