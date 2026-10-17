@@ -983,7 +983,7 @@ paths:
               profile:
                 phone: '+524424567890'
               address:
-                neighborhood: Jurica
+                municipality: Corregidora
               reason: La usuaria se mudó y cambió de número
               consentConfirmed: true
       responses:
@@ -2045,6 +2045,22 @@ components:
         email: { type: string, format: email }
         birth_date: { type: string, format: date, nullable: true }
         phone: { type: string, nullable: true }
+    
+    ExternalProfileAddress:
+      type: object
+      nullable: true
+      properties:
+        country: { type: string, example: México }
+        state: { type: string, example: Querétaro }
+        municipality: { type: string, example: Corregidora }
+    
+    ExternalProfileAddressUpdate:
+      type: object
+      description: Only the fields that change. Each one must be a non-empty string.
+      properties:
+        country: { type: string }
+        state: { type: string }
+        municipality: { type: string }
 
     ExternalProfileData:
       type: object
@@ -2052,7 +2068,7 @@ components:
       properties:
         user_id: { type: string, format: uuid }
         profile: { $ref: '#/components/schemas/ExternalProfile' }
-        address: { $ref: '#/components/schemas/Address' }
+        address: { $ref: '#/components/schemas/ExternalProfileAddress' }
     
     ExternalProfileSuccessResponse:
       type: object
@@ -2073,7 +2089,7 @@ components:
             phone:
               type: string
               description: Country code followed by 10 digits, for example +524424567890.
-        address: { $ref: '#/components/schemas/AddressUpdate' }
+        address: { $ref: '#/components/schemas/ExternalProfileAddressUpdate' }
         reason:
           type: string
           minLength: 1
