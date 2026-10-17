@@ -465,6 +465,44 @@ paths:
   /api/external-users/{userId}/documents:
     parameters:
       - $ref: '#/components/parameters/UserId'
+    get:
+      tags: [External Users]
+      summary: View own documents (R-06)
+      description: |
+        Allows an authenticated external user to see which of their
+        documents are already uploaded. Same response as V-13, but only
+        for the owner and without an activity log entry.
+
+        Storage paths are never returned, only signed URLs that expire after
+        15 minutes and the kind of file. A document is null when it was not
+        uploaded yet.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Documents retrieved (null when not uploaded yet)
+          headers:
+            Cache-Control:
+              schema: { type: string, example: no-store }
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [success, data]
+                properties:
+                  success: { type: boolean, example: true }
+                  data:
+                    $ref: '#/components/schemas/RecordDocuments'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404':
+          description: The user is not an external user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500': { $ref: '#/components/responses/InternalServerError' }
     patch:
       tags: [External Users]
       summary: Upload or replace external user documents (R-06)
