@@ -1,21 +1,15 @@
 /* G-07: Only the admin can change the text data of an external user.
 Name, last name and birth date were used to create the account, so the 
 associate asked to keep them fixed. Documents are out of this user story.
+The address only keeps the country, the state and the municipality
 */
 import EmailValidator from './email.validator.js';
 import PhoneValidator from './phone.validator.js';
 import RequiredStringValidator from './requiredString.validator.js';
 
 const LOCKED_PROFILE_KEYS = ['name', 'last_name', 'birth_date'];
-const ADDRESS_KEYS = [
-  'address_line_1',
-  'address_line_2',
-  'neighborhood',
-  'zip_code',
-  'country',
-  'state',
-  'city',
-];
+const ADDRESS_KEYS = ['country', 'state', 'municipality'];
+
 // Enough for a short explanation without filling the log with long texts
 const MAX_REASON_LENGTH = 500;
 
@@ -82,20 +76,6 @@ class UpdateExternalProfileValidator {
           if (value === undefined) {
             continue;
           }
-
-          // address_line_2 is optional and can be cleared with null
-          if (key === 'address_line_2') {
-            if (value === null) {
-              address[key] = null;
-            } else if (typeof value !== 'string') {
-              errors['address.address_line_2'] =
-                'address.address_line_2 must be a string or null';
-            } else {
-              address[key] = value.trim();
-            }
-            continue;
-          }
-
           try {
             address[key] = RequiredStringValidator.validateRequiredString(
               value,
