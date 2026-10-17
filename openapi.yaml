@@ -462,61 +462,6 @@ paths:
                 $ref: '#/components/schemas/CreateAccountSuccessResponse'
         '400': { $ref: '#/components/responses/BadRequest' }
 
-  /api/external-users/{userId}/pre-submission:
-    parameters:
-      - $ref: '#/components/parameters/UserId'
-    get:
-      tags: [External Users]
-      summary: Get external user pre-submission data
-      description: Returns the user's profile (name, last name, birth date, phone), full address, and documents. Document URLs are signed links. Only the owner of this userId may call it.
-      security:
-        - BearerAuth: []
-      responses:
-        '200':
-          description: Pre-submission data retrieved
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PreSubmissionSuccessResponse'
-        '400': { $ref: '#/components/responses/BadRequest' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-    put:
-      tags: [External Users]
-      summary: Update external user pre-submission data
-      description: |
-        At least one field in profile, address, or documents is required. Only the owner of this userId may call it.
-
-        Two request formats are accepted:
-        - **multipart/form-data**: upload the documents as files (PDF, JPEG or PNG, max 5 MB each). Files are stored under "{userId}/identity/" or "{userId}/address/" and replace any path sent for the same document. profile and address must be sent as JSON strings.
-        - **application/json**: document values are storage paths that start with the user ID, contain no empty, ".", or ".." segments, and must already exist in storage.
-      security:
-        - BearerAuth: []
-      requestBody:
-        required: true
-        content:
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/PreSubmissionMultipartRequest'
-            encoding:
-              profile: { contentType: application/json }
-              address: { contentType: application/json }
-              identity_document: { contentType: 'application/pdf, image/jpeg, image/png' }
-              proof_of_address: { contentType: 'application/pdf, image/jpeg, image/png' }
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PreSubmissionUpdateRequest'
-      responses:
-        '200':
-          description: Pre-submission data updated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PreSubmissionSuccessResponse'
-        '400': { $ref: '#/components/responses/BadRequest' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-
   /api/external-users/{userId}/documents:
     parameters:
       - $ref: '#/components/parameters/UserId'
@@ -1952,15 +1897,6 @@ components:
         state: { type: string, description: external only }
         municipality: { type: string, description: external only }
 
-    Profile:
-      type: object
-      nullable: true
-      properties:
-        name: { type: string }
-        last_name: { type: string }
-        birth_date: { type: string, format: date }
-        phone: { type: string }
-
     Address:
       type: object
       nullable: true
@@ -2014,31 +1950,6 @@ components:
         proof_of_address:
           $ref: '#/components/schemas/RecordDocument'
 
-    PreSubmissionData:
-      type: object
-      required: [user_id, profile, address, documents]
-      properties:
-        user_id: { type: string, format: uuid }
-        profile: { $ref: '#/components/schemas/Profile' }
-        address: { $ref: '#/components/schemas/Address' }
-        documents: { $ref: '#/components/schemas/Documents' }
-
-    PreSubmissionSuccessResponse:
-      type: object
-      required: [success, data]
-      properties:
-        success: { type: boolean, example: true }
-        data: { $ref: '#/components/schemas/PreSubmissionData' }
-
-    ProfileUpdate:
-      type: object
-      properties:
-        name: { type: string }
-        last_name: { type: string }
-        email: { type: string, format: email }
-        birth_date: { type: string, format: date }
-        phone: { type: string }
-
     AddressUpdate:
       type: object
       properties:
@@ -2049,45 +1960,6 @@ components:
         country: { type: string }
         state: { type: string }
         city: { type: string }
-
-    DocumentsUpdate:
-      type: object
-      properties:
-        identity_document:
-          type: string
-          description: Storage path that starts with "{userId}/", has no empty, ".", or ".." segments, and already exists in storage.
-        proof_of_address:
-          type: string
-          description: Storage path that starts with "{userId}/", has no empty, ".", or ".." segments, and already exists in storage.
-
-    PreSubmissionUpdateRequest:
-      type: object
-      minProperties: 1
-      properties:
-        profile: { $ref: '#/components/schemas/ProfileUpdate' }
-        address: { $ref: '#/components/schemas/AddressUpdate' }
-        documents: { $ref: '#/components/schemas/DocumentsUpdate' }
-
-    PreSubmissionMultipartRequest:
-      type: object
-      minProperties: 1
-      properties:
-        profile:
-          type: string
-          description: JSON string of ProfileUpdate.
-          example: '{"name":"Ana","phone":"5512345678"}'
-        address:
-          type: string
-          description: JSON string of AddressUpdate.
-          example: '{"city":"Monterrey"}'
-        identity_document:
-          type: string
-          format: binary
-          description: PDF, JPEG or PNG, max 5 MB.
-        proof_of_address:
-          type: string
-          format: binary
-          description: PDF, JPEG or PNG, max 5 MB.
 
     CreateAccountRequest:
       type: object
