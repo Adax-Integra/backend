@@ -1177,6 +1177,46 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
         '500': { $ref: '#/components/responses/InternalServerError' }
 
+  /api/violence-types:
+    get:
+      tags: [Cases]
+      summary: List active violence types (R-07)
+      description: Returns the active violence types sorted by name. Internal and admin only.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Violence types retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        violenceId:
+                          type: string
+                          format: uuid
+                        description:
+                          type: string
+                          example: Física
+                        severity:
+                          type: integer
+                          minimum: 1
+                          maximum: 10
+                          example: 8
+        '401':
+          description: Authentication required
+        '403':
+          description: Internal or admin role required
+        '500': { $ref: '#/components/responses/InternalServerError' }
+
   /api/cases/{caseId}:
     parameters:
       - $ref: '#/components/parameters/CaseId'
@@ -1376,6 +1416,69 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CaseHelpErrorResponse'
+
+  /api/cases/{caseId}/violence-types:
+    parameters:
+      - $ref: '#/components/parameters/CaseId'
+    patch:
+      tags: [Cases]
+      summary: Assign violence types to a case (R-07)
+      description: |
+        Replaces the active violence types of an open case with the given list.
+        An empty list removes every violence type. The urgency is not saved; it is
+        calculated from the most severe violence type (8 to 10 Alta, 4 to 7 Media,
+        1 to 3 Baja, none Sin evaluar). Internal and admin only.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [violenceIds]
+              properties:
+                violenceIds:
+                  type: array
+                  maxItems: 20
+                  uniqueItems: true
+                  items:
+                    type: string
+                    format: uuid
+            example:
+              violenceIds:
+                - 3fa85f64-5717-4562-b3fc-2c963f66afa6
+      responses:
+        '200':
+          description: Violence types assigned successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [success, data]
+                properties:
+                  success: { type: boolean, example: true }
+                  data:
+                    type: object
+                    properties:
+                      caseId: { type: string, format: uuid }
+                      violenceIds:
+                        type: array
+                        items: { type: string, format: uuid }
+                      urgency:
+                        type: string
+                        enum: [Alta, Media, Baja, Sin evaluar]
+                        example: Alta
+        '400':
+          description: Invalid case id or violenceIds (VALIDATION_ERROR), or violence types that do not exist or are inactive (INVALID_VIOLENCE_TYPE)
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404':
+          description: Case not found (CASE_NOT_FOUND)
+        '409':
+          description: The case is closed (CASE_CLOSED)
+        '500':
+          description: Unable to assign violence types (SERVER_ERROR)
 
   /api/users/{userId}/cases:
     parameters:

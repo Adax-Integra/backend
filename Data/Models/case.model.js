@@ -1,4 +1,5 @@
 import { supabase } from '../Config/supabase.js';
+import { calculateCaseUrgency } from '../Services/caseUrgency.helper.js';
 
 // Retrieves card information while keeping cases without assignments.
 const CASE_COLUMNS = `
@@ -271,6 +272,8 @@ class CaseModel {
       .is('record.deleted_at', null)
       .is('record.user.deleted_at', null)
       .is('case_steps.deleted_at', null)
+      .is('case_violence.deleted_at', null)
+      .is('case_violence.violence_types.deleted_at', null)
       // R-08: Helps remove form the case are soft deleted
       .is('case_help.deleted_at', null)
       //order the steps to show progress correctly
@@ -355,6 +358,126 @@ class CaseModel {
     }
 
     return count ?? 0;
+  }
+  // Retrieves active violence types for R-07
+  static async getActiveViolenceTypes() {
+    const { data, error } = await supabase
+      .from('violence_types')
+      .select('violence_id, description, severity')
+      .is('deleted_at', null)
+      .order('description', { ascending: true });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return data ?? [];
+  }
+  // Assigns the selected violence types to a case (R-07)
+  static async assignViolenceTypes(caseId, violenceIds) {
+    const { data: caseData, error: caseError } = await supabase
+      .from('case')
+      .select('case_id')
+      .eq('case_id', caseId)
+      .is('deleted_at', null)
+      .maybeSingle();
+
+    if (caseError) {
+      throw new Error(caseError.message);
+    }
+
+    if (!caseData) {
+      const error = new Error('Case not found.');
+      error.status = 404;
+      error.code = 'CASE_NOT_FOUND';
+      throw error;
+    }
+
+    // A closed case can not be edited
+    if (caseData.state === 'Closed') {
+      const error = new Error('Case with ID ${caseId} is closed');
+      error.status = 409;
+      error.code = 'CASE_CLOSED';
+      throw error;
+    }
+
+    let selectedTypes = [];
+
+    if (violenceIds.length > 0) {
+      const { data: types, error: typesError } = await supabase
+        .from('violence_types')
+        .select('violence_id, severity')
+        .in('violence_id', violenceIds)
+        .is('deleted_at', null);
+
+      if (typesError) {
+        throw new Error(typesError.message);
+      }
+
+      if (types?.length !== violenceIds.length) {
+        const error = new Error('Unknown or inactive violence type.');
+        error.status = 400;
+        error.code = 'INVALID_VIOLENCE_TYPE';
+        throw error;
+      }
+
+      selectedTypes = types;
+    }
+
+    const { data: current, error: currentError } = await supabase
+      .from('case_violence')
+      .select('violence_id, deleted_at')
+      .eq('case_id', caseId);
+
+    if (currentError) {
+      throw new Error(currentError.message);
+    }
+
+    const selected = new Set(violenceIds);
+    const existing = current ?? [];
+    const existingById = new Map(
+      existing.map((item) => [item.violence_id, item.deleted_at])
+    );
+
+    const now = new Date().toISOString();
+
+    const changes = [
+      ...violenceIds
+        .filter((id) => !existingById.has(id) || existingById.get(id) !== null)
+        .map((violenceId) => ({
+          case_id: caseId,
+          violence_id: violenceId,
+          deleted_at: null,
+          updated_at: now,
+        })),
+      ...existing
+        .filter(
+          (item) => item.deleted_at === null && !selected.has(item.violence_id)
+        )
+        .map((item) => ({
+          case_id: caseId,
+          violence_id: item.violence_id,
+          deleted_at: now,
+          updated_at: now,
+        })),
+    ];
+
+    if (changes.length > 0) {
+      const { error } = await supabase
+        .from('case_violence')
+        .upsert(changes, { onConflict: 'case_id,violence_id' });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+    }
+    const { severity, urgency } = calculateCaseUrgency(
+      selectedTypes.map((type) => ({
+        violence_types: { severity: type.severity },
+      }))
+    );
+
+    return { caseId, violenceIds, severity, urgency };
   }
 }
 

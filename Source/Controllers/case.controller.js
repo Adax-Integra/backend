@@ -4,15 +4,20 @@ import CaseListDTO from '../DTOs/caseList.dto.js';
 import GetAllCasesFromUser from '../../Domain/UseCases/getAllCasesFromUser.usecase.js';
 import CaseSummaryDTO from '../DTOs/getAllCases.dto.js';
 import CloseCaseUseCase from '../../Domain/UseCases/closeCase.usecase.js';
+import AssignViolenceTypesUseCase from '../../Domain/UseCases/assignViolenceTypes.usecase.js';
+import ListViolenceTypesUseCase from '../../Domain/UseCases/listViolenceTypes.usecase.js';
 import LogActivityUseCase from '../../Domain/UseCases/logActivity.usecase.js';
 import ListAssignedCasesUseCase from '../../Domain/UseCases/listAssignedCases.usecase.js';
 import AssignedCasesQueryValidator from '../../Data/Validators/assignedCasesQuery.validator.js';
 import AssignCaseCollaboratorUseCase from '../../Domain/UseCases/assignCaseCollaborator.usecase.js';
+import CaseViolenceTypesDTO from '../DTOs/caseViolenceTypes.dto.js';
 
 const listCasesUseCase = new ListCasesUseCase();
 const getCaseByIdUseCase = new GetCaseByIdUseCase();
 const getAllCasesFromUser = new GetAllCasesFromUser();
 const closeCaseUseCase = new CloseCaseUseCase();
+const assignViolenceTypesUseCase = new AssignViolenceTypesUseCase();
+const listViolenceTypesUseCase = new ListViolenceTypesUseCase();
 const logActivityUseCase = new LogActivityUseCase();
 const listAssignedCasesUseCase = new ListAssignedCasesUseCase();
 const assignCaseCollaboratorUseCase = new AssignCaseCollaboratorUseCase();
@@ -203,6 +208,61 @@ class CaseController {
       return res.status(500).json({
         success: false,
         error: 'Unable to close case.',
+      });
+    }
+  }
+
+  // Retrieves active violence types (R-07)
+  async listViolenceTypes(_req, res) {
+    try {
+      const violenceTypes = await listViolenceTypesUseCase.execute();
+
+      return res.status(200).json({
+        success: true,
+        data: CaseViolenceTypesDTO.fromViolenceTypes(violenceTypes),
+      });
+    } catch (error) {
+      console.error('Failed to list violence types:', error);
+
+      return res.status(500).json({
+        success: false,
+        code: 'SERVER_ERROR',
+        error: 'Unable to retrieve violence types.',
+      });
+    }
+  }
+  // Assigns violence types to a case (R-07)
+  async assignViolenceTypes(req, res) {
+    try {
+      const { violenceIds } = req.body ?? {};
+
+      const result = await assignViolenceTypesUseCase.execute(
+        req.params.caseId,
+        violenceIds
+      );
+
+      return res.status(200).json({
+        success: true,
+        data: CaseViolenceTypesDTO.fromAssignment(result),
+      });
+    } catch (error) {
+      const status = error.status ?? 500;
+
+      if (error.status >= 500) {
+        // Keeps teh data base details insted of exposing them to the client
+        console.error('Failed to assign violence types:', error);
+        return res.status(error.status).json({
+          success: false,
+          code: 'SEVER_ERROR',
+          error: error.message,
+        });
+      }
+
+      return res.status(status).json({
+        success: false,
+        code: error.code ?? 'VALIDATION_ERROR',
+        error: error.message,
+        errors: error.details ?? null,
       });
     }
   }
