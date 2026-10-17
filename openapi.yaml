@@ -475,7 +475,7 @@ paths:
         At least one document must be provided.
         Documents not included in the request remain unchanged.
 
-        Accepted formats: PDF, JPEG and PNG.
+        Accepted formats: JPEG and PNG.
         Maximum file size: 5 MB per document.
 
         Replaced documents are removed from storage after
@@ -495,11 +495,11 @@ paths:
                 identity_document:
                   type: string
                   format: binary
-                  description: Identity document. PDF, JPEG or PNG, max 5 MB.
+                  description: Identity document. JPEG or PNG, max 5 MB.
                 proof_of_address:
                   type: string
                   format: binary
-                  description: Proof of address. PDF, JPEG or PNG, max 5 MB.
+                  description: Proof of address. JPEG or PNG, max 5 MB.
       responses:
         '200':
           description: Documents uploaded or replaced successfully

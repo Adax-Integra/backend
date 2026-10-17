@@ -11,7 +11,6 @@ const DOCUMENT_FOLDERS = {
   proof_of_address: 'address',
 };
 const FILE_EXTENSIONS = {
-  'application/pdf': 'pdf',
   'image/jpeg': 'jpg',
   'image/png': 'png',
 };
