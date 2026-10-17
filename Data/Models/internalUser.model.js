@@ -112,6 +112,88 @@ class InternalUserModel {
 
     return data;
   }
+
+  // G-04: Activates or deactivates an internal account
+  static async updateStatus(userId, isActive) {
+    // If the account is activated, the deleted date is null
+    let deletedAt = null;
+
+    // Save today's date if the account is deactivated.
+    if (isActive === false) {
+      deletedAt = new Date().toISOString();
+      // toISOString() returns a string in the format YYYY-MM-DDTHH:mm:ss.sssZ, which is compatible with Supabase timestamp columns
+    }
+
+    // Save the change in the user table
+    const { data, error } = await supabase
+      .from('user')
+      .update({ deleted_at: deletedAt })
+      .eq('user_id', userId)
+      .select('user_id, deleted_at')
+      .single();
+
+    // If Supabase fails, report the error
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    // Returns the user with its new status
+    return data;
+  }
+
+  static async findEditableProfileById(userId) {
+    const { data, error } = await supabase
+      .from('user')
+      .select('user_id, name, last_name, email')
+      .eq('user_id', userId)
+      .is('deleted_at', null)
+      .maybeSingle();
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return data ?? null;
+  }
+
+  static async findByEmail(email) {
+    const { data, error } = await supabase
+      .from('user')
+      .select('user_id')
+      .eq('email', email)
+      .is('deleted_at', null)
+      .maybeSingle();
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return data ?? null;
+  }
+
+  static async updateProfileWithLog({ userId, actorId, profile, changes }) {
+    const { data, error } = await supabase.rpc(
+      'update_internal_profile_with_log',
+      {
+        p_user_id: userId,
+        p_actor_id: actorId,
+        p_profile: profile,
+        p_changes: changes,
+      }
+    );
+
+    if (error) {
+      if (error.code === '23505') {
+        const conflict = new Error('This email is already registered');
+        conflict.status = 409;
+        throw conflict;
+      }
+
+      throw new Error(error.message);
+    }
+
+    return Array.isArray(data) ? data[0] : data;
+  }
 }
 
 export default InternalUserModel;

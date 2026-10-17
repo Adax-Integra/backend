@@ -94,7 +94,45 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '500': { $ref: '#/components/responses/InternalServerError' }
-
+  /api/auth/logout:
+    post:
+      tags: [Authentication]
+      summary: Log out the current session
+      description: |
+        Revokes the token sent in the Authorization header.
+        Sessions on other devices remain active.
+        No request body is required.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Current session logged out successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageSuccessResponse'
+              example:
+                success: true
+                data:
+                  message: Logged out successfully.
+        '401':
+          description: Token is missing, invalid, expired, or already revoked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Unable to revoke the token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: Unable to check whether the session is active
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /api/auth/change-password:
     post:
       tags: [Authentication]
@@ -216,9 +254,7 @@ paths:
     get:
       tags: [Profile]
       summary: Get the authenticated user's profile (G-13)
-      description: |
-        Returns the profile of the user in the token. The userId path parameter must match the token.
-        External users also get their address, admin and internal users do not.
+      description: Returns the profile of the user in the token. The userId path parameter is currently ignored.
       security:
         - BearerAuth: []
       responses:
@@ -229,27 +265,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/UserProfileSuccessResponse'
         '400':
-          description: The query failed
+          description: The user was not found or the query failed
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '401': { $ref: '#/components/responses/Unauthorized' }
-        '403':
-          description: The userId does not match the token
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              example:
-                success: false
-                error: You do not have permission
-        '404':
-          description: The user was not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
     patch:
       tags: [Profile]
       summary: Update the authenticated user's profile (R-04)
@@ -258,7 +279,7 @@ paths:
         - **admin / internal**: name, last_name, phone
         - **external**: name, last_name, phone, country, state, municipality
 
-        The response only confirms the update, use GET /api/profile/{userId} to get the updated data.
+        The response only confirms the update, use GET /api/profile/{userId}/edit to get the updated data.
 
         The email cannot be changed by any role.
       security:
@@ -322,6 +343,99 @@ paths:
                 error: user not found
                 errors: null
 
+  /api/profile/{userId}/deactivate:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+    patch:
+      tags: [Profile]
+      summary: Deactivate the authenticated user's account (G-08)
+      description: |
+        An external or internal user deactivates her own account. The userId path parameter must match the token.
+        The account is hidden with deleted_at instead of being deleted, so it can no longer log in and its records, cases and log entries are kept.
+        Admin accounts cannot be deactivated. The action is saved in the activity log as deactivate_account.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Account deactivated
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [success, data]
+                properties:
+                  success: { type: boolean, example: true }
+                  data:
+                    type: object
+                    required: [userId, deactivatedAt]
+                    properties:
+                      userId: { type: string, format: uuid }
+                      deactivatedAt: { type: string, format: date-time }
+              example:
+                success: true
+                data:
+                  userId: 0b7a1c1e-6f0a-4b55-9a4e-2f1d7f5c9a10
+                  deactivatedAt: '2026-10-15T18:30:00.000Z'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403':
+          description: The userId does not match the token, the account is an admin, or the user has no external or internal role
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+              example:
+                success: false
+                error: An admin account cannot be deactivated
+        '409':
+          description: The account is already deactivated or does not exist
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+              example:
+                success: false
+                error: The account is already deactivated or does not exist.
+        '500': { $ref: '#/components/responses/InternalServerError' }
+
+  /api/profile/{userId}/edit:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+    get:
+      tags: [Profile]
+      summary: Get the profile fields the user can edit (R-04)
+      description: |
+        Returns the same fields PATCH /api/profile/{userId} can edit. The userId path parameter must match the token.
+        External users also get their address, admin and internal users do not.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Profile retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EditableProfileSuccessResponse'
+        '400':
+          description: The query failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403':
+          description: The userId does not match the token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                error: You do not have permission
+        '404':
+          description: The user was not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /api/external-user/register:
     post:
       tags: [External Users]
@@ -348,61 +462,6 @@ paths:
                 $ref: '#/components/schemas/CreateAccountSuccessResponse'
         '400': { $ref: '#/components/responses/BadRequest' }
 
-  /api/external-users/{userId}/pre-submission:
-    parameters:
-      - $ref: '#/components/parameters/UserId'
-    get:
-      tags: [External Users]
-      summary: Get external user pre-submission data
-      description: Returns the user's profile (name, last name, birth date, phone), full address, and documents. Document URLs are signed links. Only the owner of this userId may call it.
-      security:
-        - BearerAuth: []
-      responses:
-        '200':
-          description: Pre-submission data retrieved
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PreSubmissionSuccessResponse'
-        '400': { $ref: '#/components/responses/BadRequest' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-    put:
-      tags: [External Users]
-      summary: Update external user pre-submission data
-      description: |
-        At least one field in profile, address, or documents is required. Only the owner of this userId may call it.
-
-        Two request formats are accepted:
-        - **multipart/form-data**: upload the documents as files (PDF, JPEG or PNG, max 5 MB each). Files are stored under "{userId}/identity/" or "{userId}/address/" and replace any path sent for the same document. profile and address must be sent as JSON strings.
-        - **application/json**: document values are storage paths that start with the user ID, contain no empty, ".", or ".." segments, and must already exist in storage.
-      security:
-        - BearerAuth: []
-      requestBody:
-        required: true
-        content:
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/PreSubmissionMultipartRequest'
-            encoding:
-              profile: { contentType: application/json }
-              address: { contentType: application/json }
-              identity_document: { contentType: 'application/pdf, image/jpeg, image/png' }
-              proof_of_address: { contentType: 'application/pdf, image/jpeg, image/png' }
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PreSubmissionUpdateRequest'
-      responses:
-        '200':
-          description: Pre-submission data updated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PreSubmissionSuccessResponse'
-        '400': { $ref: '#/components/responses/BadRequest' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-
   /api/external-users/{userId}/documents:
     parameters:
       - $ref: '#/components/parameters/UserId'
@@ -416,7 +475,7 @@ paths:
         At least one document must be provided.
         Documents not included in the request remain unchanged.
 
-        Accepted formats: PDF, JPEG and PNG.
+        Accepted formats: JPEG and PNG.
         Maximum file size: 5 MB per document.
 
         Replaced documents are removed from storage after
@@ -436,11 +495,11 @@ paths:
                 identity_document:
                   type: string
                   format: binary
-                  description: Identity document. PDF, JPEG or PNG, max 5 MB.
+                  description: Identity document. JPEG or PNG, max 5 MB.
                 proof_of_address:
                   type: string
                   format: binary
-                  description: Proof of address. PDF, JPEG or PNG, max 5 MB.
+                  description: Proof of address. JPEG or PNG, max 5 MB.
       responses:
         '200':
           description: Documents uploaded or replaced successfully
@@ -686,7 +745,7 @@ paths:
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
-
+        
   /api/internal-users/{userId}:
     parameters:
       - $ref: '#/components/parameters/UserId'
@@ -982,7 +1041,52 @@ paths:
                 success: false
                 error: This email is already registered
                 errors: null
-        '500': { $ref: '#/components/responses/InternalServerError' } 
+        '500': { $ref: '#/components/responses/InternalServerError' }
+
+  /api/internal-users/external-users/{userId}/documents:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+    get:
+      tags: [Internal Users]
+      summary: View the documents of an external user's record (V-13)
+      description: |
+        Internal users and admins open the identity document (INE) and the
+        proof of address that the external user uploaded in R-06.
+
+        Storage paths are never returned, only signed URLs that expire after
+        15 minutes and the kind of file. Accounts that are not external users
+        return 404. Each consultation is saved in the activity log as
+        view_external_documents.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Documents retrieved (null when not uploaded yet)
+          headers:
+            Cache-Control:
+              schema: { type: string, example: no-store }
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [success, data]
+                properties:
+                  success: { type: boolean, example: true }
+                  data:
+                    $ref: '#/components/schemas/RecordDocuments'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404':
+          description: The user does not exist or is not an external user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                error: External user not found
+        '500': { $ref: '#/components/responses/InternalServerError' }
 
   /api/cases:
     get:
@@ -1002,6 +1106,37 @@ paths:
               schema:
                 $ref: '#/components/schemas/CaseListResponse'
         '400': { $ref: '#/components/responses/BadRequest' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+
+  /api/cases/assigned:
+    get:
+      tags: [Cases]
+      summary: List the cases assigned to the logged-in collaborator (V-12)
+      description: Internal and admin only. The user comes from the token. Includes closed cases. Open cases come first, ordered by severity (highest first), then closed cases, most recently updated first.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          description: all returns every case, open excludes closed cases, closed returns only closed cases.
+          schema:
+            type: string
+            enum: [all, open, closed]
+            default: all
+        - $ref: '#/components/parameters/Search'
+        - $ref: '#/components/parameters/Urgency'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Assigned cases retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CaseListResponse'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
         '500': { $ref: '#/components/responses/InternalServerError' }
 
   /api/violence-types:
@@ -1093,6 +1228,154 @@ paths:
                 success: false
                 error: Case with ID 3fa85f64-5717-4562-b3fc-2c963f66afa6 is already closed or does not exist.
         '500': { $ref: '#/components/responses/InternalServerError' }
+
+  /api/cases/{caseId}/assignments:
+    parameters:
+      - $ref: '#/components/parameters/CaseId'
+    post:
+      tags: [Cases]
+      summary: Assign an internal user to a case (R-10)
+      description: Assigns an active internal account to an open case. A case can have several collaborators. Assigning a user that is already assigned succeeds again, and a removed assignment is restored. The action is saved in the activity log. Internal and admin only.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignCaseCollaboratorRequest'
+      responses:
+        '200':
+          description: Collaborator assigned to the case
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssignCaseCollaboratorSuccessResponse'
+              example:
+                success: true
+        '400':
+          description: caseId or userId is missing or is not a UUID (VALIDATION_ERROR)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CaseAssignmentErrorResponse'
+              example:
+                success: false
+                code: VALIDATION_ERROR
+                error: userId must be a valid UUID
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404':
+          description: The case does not exist (CASE_NOT_FOUND) or the user is not an internal account (COLLABORATOR_NOT_FOUND)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CaseAssignmentErrorResponse'
+              example:
+                success: false
+                code: COLLABORATOR_NOT_FOUND
+                error: Collaborator with ID 7c9e6679-7425-40de-944b-e07fc1f90ae7 not found.
+        '409':
+          description: The case is closed (CASE_CLOSED) or the internal account is deactivated (COLLABORATOR_INACTIVE)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CaseAssignmentErrorResponse'
+              example:
+                success: false
+                code: CASE_CLOSED
+                error: Case with ID 3fa85f64-5717-4562-b3fc-2c963f66afa6 is closed.
+        '500':
+          description: Unable to assign the collaborator
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CaseAssignmentErrorResponse'
+              example:
+                success: false
+                code: SERVER_ERROR
+                error: Unable to assign the collaborator.
+
+  /api/help-types:
+    get:
+      tags: [Case helps]
+      summary: List the help types catalog (R-08)
+      description: Returns the active help types an internal user can assign to a case. Internal and admin only.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Help types catalog
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HelpTypeListResponse'
+        '401':
+          description: Missing or invalid token
+        '403':
+          description: The user is not internal or admin
+        '500':
+          description: Unable to retrieve help types
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CaseHelpErrorResponse'
+
+  /api/cases/{caseId}/helps:
+    put:
+      tags: [Case helps]
+      summary: Assign the required helps to a case (R-08)
+      description: Replaces the helps of a case with the given list. An empty list removes every help. Internal and admin only.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: caseId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignCaseHelpsRequest'
+      responses:
+        '200':
+          description: Helps assigned to the case
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssignCaseHelpsSuccessResponse'
+        '400':
+          description: Invalid case id, invalid helpIds (VALIDATION_ERROR) or help types that do not exist (INVALID_HELP_TYPE)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CaseHelpErrorResponse'
+        '401':
+          description: Missing or invalid token
+        '403':
+          description: The user is not internal or admin
+        '404':
+          description: Case not found (CASE_NOT_FOUND)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CaseHelpErrorResponse'
+        '409':
+          description: The case is closed (CASE_CLOSED)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CaseHelpErrorResponse'
+        '500':
+          description: Unable to assign case helps
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CaseHelpErrorResponse'
 
   /api/cases/{caseId}/violence-types:
     parameters:
@@ -1533,7 +1816,10 @@ components:
       type: http
       scheme: bearer 
       bearerFormat: JWT
-      description: Token returned by /api/auth/login. It expires after 120 hours
+      description: |
+        Token returned after authentication. Access requires a valid,
+        unexpired JWT whose hash remains registered in the database.
+        Logging out revokes only the token used for that request.
 
   responses:
     BadRequest:
@@ -1655,6 +1941,24 @@ components:
         user_id: { type: string, format: uuid }
         name: { type: string }
         last_name: { type: string }
+        email: { type: string, format: email }
+        birth_date: { type: string, format: date, nullable: true }
+        phone: { type: string, nullable: true }
+        created_at: { type: string, format: date-time }
+
+    UserProfileSuccessResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success: { type: boolean, example: true }
+        data: { $ref: '#/components/schemas/UserProfile' }
+
+    EditableProfile:
+      type: object
+      properties:
+        user_id: { type: string, format: uuid }
+        name: { type: string }
+        last_name: { type: string }
         phone: { type: string, nullable: true }
         address:
           type: object
@@ -1665,12 +1969,12 @@ components:
             state: { type: string }
             municipality: { type: string }
 
-    UserProfileSuccessResponse:
+    EditableProfileSuccessResponse:
       type: object
       required: [success, data]
       properties:
         success: { type: boolean, example: true }
-        data: { $ref: '#/components/schemas/UserProfile' }
+        data: { $ref: '#/components/schemas/EditableProfile' }
 
     UpdateProfileRequest:
       type: object
@@ -1687,15 +1991,6 @@ components:
         country: { type: string, description: external only }
         state: { type: string, description: external only }
         municipality: { type: string, description: external only }
-
-    Profile:
-      type: object
-      nullable: true
-      properties:
-        name: { type: string }
-        last_name: { type: string }
-        birth_date: { type: string, format: date }
-        phone: { type: string }
 
     Address:
       type: object
@@ -1725,30 +2020,30 @@ components:
           nullable: true
           description: Signed URL that expires after 15 minutes.
 
-    PreSubmissionData:
+    RecordDocument:
       type: object
-      required: [user_id, profile, address, documents]
+      nullable: true
+      description: Null when the external user has not uploaded this document.
+      required: [url, file_type]
+      properties:
+        url:
+          type: string
+          format: uri
+          nullable: true
+          description: Signed URL that expires after 15 minutes. Null when storage could not sign it.
+        file_type:
+          type: string
+          enum: [pdf, image]
+
+    RecordDocuments:
+      type: object
+      required: [user_id, identity_document, proof_of_address]
       properties:
         user_id: { type: string, format: uuid }
-        profile: { $ref: '#/components/schemas/Profile' }
-        address: { $ref: '#/components/schemas/Address' }
-        documents: { $ref: '#/components/schemas/Documents' }
-
-    PreSubmissionSuccessResponse:
-      type: object
-      required: [success, data]
-      properties:
-        success: { type: boolean, example: true }
-        data: { $ref: '#/components/schemas/PreSubmissionData' }
-
-    ProfileUpdate:
-      type: object
-      properties:
-        name: { type: string }
-        last_name: { type: string }
-        email: { type: string, format: email }
-        birth_date: { type: string, format: date }
-        phone: { type: string }
+        identity_document:
+          $ref: '#/components/schemas/RecordDocument'
+        proof_of_address:
+          $ref: '#/components/schemas/RecordDocument'
 
     AddressUpdate:
       type: object
@@ -1760,45 +2055,6 @@ components:
         country: { type: string }
         state: { type: string }
         city: { type: string }
-
-    DocumentsUpdate:
-      type: object
-      properties:
-        identity_document:
-          type: string
-          description: Storage path that starts with "{userId}/", has no empty, ".", or ".." segments, and already exists in storage.
-        proof_of_address:
-          type: string
-          description: Storage path that starts with "{userId}/", has no empty, ".", or ".." segments, and already exists in storage.
-
-    PreSubmissionUpdateRequest:
-      type: object
-      minProperties: 1
-      properties:
-        profile: { $ref: '#/components/schemas/ProfileUpdate' }
-        address: { $ref: '#/components/schemas/AddressUpdate' }
-        documents: { $ref: '#/components/schemas/DocumentsUpdate' }
-
-    PreSubmissionMultipartRequest:
-      type: object
-      minProperties: 1
-      properties:
-        profile:
-          type: string
-          description: JSON string of ProfileUpdate.
-          example: '{"name":"Ana","phone":"5512345678"}'
-        address:
-          type: string
-          description: JSON string of AddressUpdate.
-          example: '{"city":"Monterrey"}'
-        identity_document:
-          type: string
-          format: binary
-          description: PDF, JPEG or PNG, max 5 MB.
-        proof_of_address:
-          type: string
-          format: binary
-          description: PDF, JPEG or PNG, max 5 MB.
 
     CreateAccountRequest:
       type: object
@@ -2113,6 +2369,81 @@ components:
       properties:
         success: { type: boolean, example: true }
         data: { $ref: '#/components/schemas/CloseCaseData' }
+
+    HelpType:
+      type: object
+      properties:
+        helpId: { type: string, format: uuid }
+        description: { type: string, example: Asesoría legal }
+
+    HelpTypeListResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success: { type: boolean, example: true }
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/HelpType' }
+
+    AssignCaseHelpsRequest:
+      type: object
+      required: [helpIds]
+      properties:
+        helpIds:
+          type: array
+          maxItems: 20
+          description: Final list of help types for the case. An empty list removes every help.
+          items: { type: string, format: uuid }
+
+    AssignCaseHelpsSuccessResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success: { type: boolean, example: true }
+        data:
+          type: object
+          properties:
+            caseId: { type: string, format: uuid }
+            helps:
+              type: array
+              items: { $ref: '#/components/schemas/HelpType' }
+
+    CaseHelpErrorResponse:
+      type: object
+      required: [success, error]
+      properties:
+        success: { type: boolean, example: false }
+        code: { type: string, example: CASE_CLOSED }
+        error: { type: string }
+        errors:
+          type: object
+          nullable: true
+          additionalProperties: { type: string }
+
+    AssignCaseCollaboratorRequest:
+      type: object
+      required: [userId]
+      properties:
+        userId:
+          type: string
+          format: uuid
+          description: Id of the active internal account to assign to the case
+
+    AssignCaseCollaboratorSuccessResponse:
+      type: object
+      required: [success]
+      properties:
+        success: { type: boolean, example: true }
+
+    CaseAssignmentErrorResponse:
+      type: object
+      required: [success, code, error]
+      properties:
+        success: { type: boolean, example: false }
+        code:
+          type: string
+          enum: [VALIDATION_ERROR, CASE_NOT_FOUND, CASE_CLOSED, COLLABORATOR_NOT_FOUND, COLLABORATOR_INACTIVE, SERVER_ERROR]
+        error: { type: string }
 
     CaseDetail:
       type: object

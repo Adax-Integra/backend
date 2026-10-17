@@ -20,6 +20,7 @@ import locationRoutes from '../Source/Routes/location.routes.js';
 import reportRoutes from '../Source/Routes/report.routes.js';
 import passwordRecoveryRoutes from '../Source/Routes/passwordRecovery.routes.js';
 import eventRoutes from '../Source/Routes/event.routes.js';
+import caseHelpRoutes from '../Source/Routes/caseHelp.routes.js';
 
 // R-06: Document upload and replacement routes
 import uploadDocumentsRoutes from '../Source/Routes/uploadDocuments.routes.js';
@@ -72,6 +73,7 @@ app.use('/api', locationRoutes);
 app.use('/api', reportRoutes);
 app.use('/api/password-recovery', passwordRecoveryRoutes);
 app.use('/api', eventRoutes);
+app.use('/api', caseHelpRoutes);
 
 // R-06: Register document upload and replacement endpoints
 app.use('/api', uploadDocumentsRoutes);

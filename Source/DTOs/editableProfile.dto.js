@@ -1,8 +1,8 @@
-/* 
-G-13 / R-04: profile returned by GET /profile/:userId, with the same fields
+/*
+R-04: profile returned by GET /profile/:userId/edit, with the same fields
 PATCH can edit, so columns like the password hash never leave the server
 */
-class ProfileDTO {
+class EditableProfileDTO {
   constructor({ profile, address }) {
     this.user_id = profile.user_id;
     this.name = profile.name;
@@ -34,4 +34,4 @@ class ProfileDTO {
   }
 }
 
-export default ProfileDTO;
+export default EditableProfileDTO;

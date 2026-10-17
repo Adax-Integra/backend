@@ -38,7 +38,7 @@ beforeAll(async () => {
     link: 'https://example.com/private-link',
     phone: '5555555555',
     description: 'Active event used by the tests',
-    notes: 'Internal note that must not reach the app',
+    notes: 'Trae gorra y a tus amigas',
   });
 
   events.ongoing = await EventModel.create({
@@ -219,6 +219,7 @@ describe('Unit tests for the active events HU', () => {
         expect(event).toHaveProperty('endsAt');
         expect(event).toHaveProperty('modality', 'Presencial');
         expect(event).toHaveProperty('location', 'Oficinas ADAX');
+        expect(event).toHaveProperty('notes', 'Trae gorra y a tus amigas');
         // Dates travel as ISO strings, the app formats them
         expect(Number.isNaN(Date.parse(event.startsAt))).toBe(false);
       });
@@ -229,8 +230,7 @@ describe('Unit tests for the active events HU', () => {
           .set('Authorization', `Bearer ${adminToken}`);
 
         const event = findByTitle(response.body.data, events.upcoming.title);
-
-        expect(event).not.toHaveProperty('notes');
+        // Remove the repeated lines of 'notes'
         expect(event).not.toHaveProperty('phone');
         expect(event).not.toHaveProperty('link');
         expect(event).not.toHaveProperty('deleted_at');

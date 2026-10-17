@@ -58,6 +58,14 @@ router.patch(
   internalUserController.updateExternalProfile
 );
 
+// V-13 Internal users view the documents of an external user's record
+router.get(
+  '/internal-users/external-users/:userId/documents',
+  authMiddleware,
+  adminInternalOnly,
+  internalUserController.getExternalUserDocuments
+);
+
 // G-03 Admin creates a new collaborator (internal user) account
 router.post(
   '/internal-users',
@@ -81,13 +89,6 @@ router.get(
   adminOnly,
   internalUserController.listCollaborators
 );
-// G-10 Admin and ONLY ADMIN  consults the detail of a internal user
-router.get(
-  '/internal-users/:userId',
-  authMiddleware,
-  adminOnly,
-  internalUserController.getCollaboratorDetail
-);
 
 // G-10 Admin and ONLY ADMIN consults the detail of a collaborator
 router.get(
@@ -97,12 +98,28 @@ router.get(
   internalUserController.getCollaboratorDetail
 );
 
+// G-18 Admin edits the name, last name or email of a collaborator
+router.patch(
+  '/internal-users/:userId',
+  authMiddleware,
+  adminOnly,
+  internalUserController.updateCollaboratorProfile
+);
+
 // G-10 Admin consults the cases assigned to a collaborator
 router.get(
   '/internal-users/:userId/assigned-cases',
   authMiddleware,
   adminOnly,
   internalUserController.getCollaboratorCases
+);
+
+// G-04 Admin activates or deactivates a collaborator account
+router.patch(
+  '/internal-users/:userId/status',
+  authMiddleware,
+  adminOnly,
+  internalUserController.updateCollaboratorStatus
 );
 
 export default router;

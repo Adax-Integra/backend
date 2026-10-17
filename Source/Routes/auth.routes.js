@@ -19,4 +19,7 @@ router.post(
 
 router.post('/change-password', authMiddleware, authController.changePassword);
 
+// Requires an active token before revoking it.
+router.post('/logout', authMiddleware, authController.logout);
+
 export default router;

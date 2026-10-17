@@ -100,19 +100,21 @@ describe('R-06: document upload HTTP security', () => {
       process.env.JWT_SECRET
     );
 
+    const jpegHeader = Buffer.from([0xff, 0xd8, 0xff, 0xe0]);
+
     const response = await request(app)
       .patch(`/api/external-users/${userId}/documents`)
       .set('Authorization', `Bearer ${token}`)
-      .attach('identity_document', Buffer.from('test document'), {
-        filename: 'identity.pdf',
-        contentType: 'application/pdf',
+      .attach('identity_document', jpegHeader, {
+        filename: 'identity.jpg',
+        contentType: 'image/jpeg',
       });
 
     expect(response.statusCode).toBe(200);
     expect(response.body.success).toBe(true);
 
     // Verify that the middleware received the uploaded file.
-    expect(response.body.data.receivedFile).toBe('identity.pdf');
+    expect(response.body.data.receivedFile).toBe('identity.jpg');
 
     // Verify that the request reached the mocked controller.
     expect(controllerMock.uploadDocuments).toHaveBeenCalledTimes(1);
@@ -159,8 +161,8 @@ describe('R-06: document upload HTTP security', () => {
       .patch(`/api/external-users/${userId}/documents`)
       .set('Authorization', `Bearer ${token}`)
       .attach('identity_document', oversizedFile, {
-        filename: 'oversized.pdf',
-        contentType: 'application/pdf',
+        filename: 'oversized.png',
+        contentType: 'image/png',
       });
 
     expect(response.statusCode).toBe(400);
@@ -169,5 +171,86 @@ describe('R-06: document upload HTTP security', () => {
 
     // Oversized files must not reach the controller.
     expect(controllerMock.uploadDocuments).not.toHaveBeenCalled();
+  });
+
+  // TEST 6: Reject files whose content does not match the declared type.
+  it('should reject a file declared as JPEG that is not a JPEG', async () => {
+    const token = jwt.sign(
+      {
+        user_id: userId,
+        roles: ['external'],
+      },
+      process.env.JWT_SECRET
+    );
+
+    const response = await request(app)
+      .patch(`/api/external-users/${userId}/documents`)
+      .set('Authorization', `Bearer ${token}`)
+      .attach('identity_document', Buffer.from('not really a jpeg'), {
+        filename: 'identity.jpg',
+        contentType: 'image/jpeg',
+      });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.body.success).toBe(false);
+    expect(response.body.error).toBe(
+      'identity_document: only JPEG or PNG allowed.'
+    );
+
+    // Disguised files must not reach the controller.
+    expect(controllerMock.uploadDocuments).not.toHaveBeenCalled();
+  });
+
+  // TEST 7: Reject PDFs, documents only accept pictures.
+  it('should reject a PDF file', async () => {
+    const token = jwt.sign(
+      {
+        user_id: userId,
+        roles: ['external'],
+      },
+      process.env.JWT_SECRET
+    );
+
+    const response = await request(app)
+      .patch(`/api/external-users/${userId}/documents`)
+      .set('Authorization', `Bearer ${token}`)
+      .attach('identity_document', Buffer.from('%PDF-1.4 test document'), {
+        filename: 'identity.pdf',
+        contentType: 'application/pdf',
+      });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.body.success).toBe(false);
+    expect(response.body.error).toBe(
+      'identity_document: only JPEG or PNG allowed.'
+    );
+
+    expect(controllerMock.uploadDocuments).not.toHaveBeenCalled();
+  });
+
+  // TEST 8: Accept a real PNG.
+  it('should accept a file whose content matches its declared type', async () => {
+    const token = jwt.sign(
+      {
+        user_id: userId,
+        roles: ['external'],
+      },
+      process.env.JWT_SECRET
+    );
+
+    const pngHeader = Buffer.from([
+      0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
+    ]);
+
+    const response = await request(app)
+      .patch(`/api/external-users/${userId}/documents`)
+      .set('Authorization', `Bearer ${token}`)
+      .attach('proof_of_address', pngHeader, {
+        filename: 'address.png',
+        contentType: 'image/png',
+      });
+
+    expect(response.statusCode).toBe(200);
+    expect(controllerMock.uploadDocuments).toHaveBeenCalledTimes(1);
   });
 });

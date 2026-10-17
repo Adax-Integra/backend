@@ -19,6 +19,15 @@ router.get(
   caseController.listCases
 );
 
+// V-12: Cases assigned to the logged-in collaborator, open and closed.
+// Must stay before /cases/:caseId so "assigned" is not read as a caseId
+router.get(
+  '/cases/assigned',
+  authMiddleware,
+  adminInternalOnly,
+  caseController.listAssignedCases
+);
+
 //Case details: any authenticated user (the owner sees it in V-07,
 // staff can see any case). A per-case ownership check is a recommended
 // follow-up, for now, a valid token is enough
@@ -54,6 +63,13 @@ router.patch(
   authMiddleware,
   adminInternalOnly,
   caseController.assignViolenceTypes
+);
+// Assign an internal user to a case (R-10)
+router.post(
+  '/cases/:caseId/assignments',
+  authMiddleware,
+  adminInternalOnly,
+  caseController.assignCollaborator
 );
 
 export default router;

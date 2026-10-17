@@ -16,6 +16,16 @@ jest.unstable_mockModule(
   })
 );
 
+// The use case reads the verification status when both documents exist.
+const userModelMock = {
+  getVerificationStatus: jest.fn(),
+  updateVerificationStatus: jest.fn(),
+};
+
+jest.unstable_mockModule('../Data/Models/user.model.js', () => ({
+  default: userModelMock,
+}));
+
 const { default: UploadDocumentsUseCase } =
   await import('../Domain/UseCases/uploadDocuments.usecase.js');
 
@@ -140,5 +150,48 @@ describe('R-06: upload documents', () => {
 
     // No signed URLs should be generated after the failure.
     expect(documentsModelMock.attachSignedUrls).not.toHaveBeenCalled();
+  });
+
+  it('should keep the new file if signing URLs fails after the database update', async () => {
+    jest.resetAllMocks();
+
+    const userId = '123e4567-e89b-42d3-a456-426614174000';
+
+    const oldPath = `${userId}/identity/old.pdf`;
+    const newPath = `${userId}/identity/new.pdf`;
+
+    const file = {
+      mimetype: 'application/pdf',
+      buffer: Buffer.from('%PDF-1.4 test document'),
+    };
+
+    documentsModelMock.findByUserId.mockResolvedValue({
+      identity_document: oldPath,
+    });
+    documentsModelMock.uploadFile.mockResolvedValue(newPath);
+
+    // The database already points to the new file.
+    documentsModelMock.updateByUserId.mockResolvedValue({
+      identity_document: newPath,
+    });
+    documentsModelMock.removeFiles.mockResolvedValue();
+
+    // Simulate a storage failure while creating the signed URLs.
+    documentsModelMock.attachSignedUrls.mockRejectedValue(
+      new Error('Signed URL failed.')
+    );
+
+    const useCase = new UploadDocumentsUseCase();
+
+    await expect(
+      useCase.execute(userId, {
+        identity_document: [file],
+      })
+    ).rejects.toThrow('Signed URL failed.');
+
+    // Only the replaced file is removed, the new one stays in storage.
+    expect(documentsModelMock.removeFiles).toHaveBeenCalledTimes(1);
+    expect(documentsModelMock.removeFiles).toHaveBeenCalledWith([oldPath]);
+    expect(documentsModelMock.removeFiles).not.toHaveBeenCalledWith([newPath]);
   });
 });
