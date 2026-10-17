@@ -93,4 +93,38 @@ describe('R-07: assign violence types', () => {
       violenceIds: [violenceId],
     });
   });
+
+  it('should reject more than 20 violence types', async () => {
+    const useCase = new AssignViolenceTypesUseCase();
+    const manyIds = Array.from(
+      { length: 21 },
+      (_, index) =>
+        `223e4567-e89b-42d3-a456-4266141740${String(index).padStart(2, '0')}`
+    );
+
+    await expect(useCase.execute(caseId, manyIds)).rejects.toMatchObject({
+      status: 400,
+      code: 'VALIDATION_ERROR',
+    });
+
+    expect(caseModelMock.assignViolenceTypes).not.toHaveBeenCalled();
+  });
+
+  it('should answer invalid ids with VALIDATION_ERROR', async () => {
+    const useCase = new AssignViolenceTypesUseCase();
+
+    await expect(useCase.execute('invalid-id', [])).rejects.toMatchObject({
+      status: 400,
+      code: 'VALIDATION_ERROR',
+    });
+
+    await expect(useCase.execute(caseId, ['invalid-id'])).rejects.toMatchObject(
+      {
+        status: 400,
+        code: 'VALIDATION_ERROR',
+      }
+    );
+
+    expect(caseModelMock.assignViolenceTypes).not.toHaveBeenCalled();
+  });
 });
