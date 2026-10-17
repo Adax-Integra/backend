@@ -24,7 +24,7 @@ class ExternalUserDocumentsDTO {
     return {
       user_id: this.user_id,
       identity_document: this.identity_document,
-      proof_of_addres: this.proof_of_address,
+      proof_of_address: this.proof_of_address,
     };
   }
 }
