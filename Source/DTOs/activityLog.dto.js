@@ -36,6 +36,11 @@ const ACTIONS = {
     title: 'Asignación de ayudas',
     verb: 'asignó ayudas al caso de',
   },
+  // R-07: an internal user assigns violence types to a case
+  assign_violence_types: {
+    title: 'Asignación de tipos de violencia',
+    verb: 'asignó tipos de violencia al caso de',
+  },
   // R-10: an internal user is assigned to a case
   assign_case_collaborator: {
     title: 'Asignación de colaboradora',
