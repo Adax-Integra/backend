@@ -2,11 +2,10 @@ import multer from 'multer';
 
 // 5 MB
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
-const ALLOWED_MIME_TYPES = ['application/pdf', 'image/jpeg', 'image/png'];
+const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png'];
 
 // The client sets the mimetype, so the first bytes confirm the real file type
 const FILE_SIGNATURES = {
-  'application/pdf': [0x25, 0x50, 0x44, 0x46],
   'image/jpeg': [0xff, 0xd8, 0xff],
   'image/png': [0x89, 0x50, 0x4e, 0x47],
 };
@@ -29,7 +28,7 @@ const upload = multer({
   limits: { fileSize: MAX_FILE_SIZE, files: 2 },
   fileFilter: (req, file, cb) => {
     if (!ALLOWED_MIME_TYPES.includes(file.mimetype)) {
-      return cb(new Error(`${file.fieldname}: only PDF, JPEG or PNG allowed.`));
+      return cb(new Error(`${file.fieldname}: only JPEG or PNG allowed.`));
     }
     cb(null, true);
   },
@@ -52,7 +51,7 @@ function preSubmissionUploadMiddleware(req, res, next) {
       if (invalidFile) {
         return res.status(400).json({
           success: false,
-          error: `${invalidFile.fieldname}: only PDF, JPEG or PNG allowed.`,
+          error: `${invalidFile.fieldname}: only JPEG or PNG allowed.`,
         });
       }
       return next();
