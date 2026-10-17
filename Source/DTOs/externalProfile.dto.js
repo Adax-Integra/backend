@@ -10,15 +10,12 @@ class ExternalProfileDTO {
           phone: profile.phone,
         }
       : null;
+    // G-07: the address only keeps the country, the state and the municipality
     this.address = address
       ? {
-          address_line_1: address.address_line_1,
-          address_line_2: address.address_line_2,
-          neighborhood: address.neighborhood,
-          zip_code: address.zip_code,
           country: address.country,
           state: address.state,
-          city: address.city,
+          municipality: address.municipality,
         }
       : null;
   }
