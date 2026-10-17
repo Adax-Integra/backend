@@ -1,4 +1,5 @@
 import { supabase } from '../Config/supabase.js';
+import { calculateCaseUrgency } from '../Services/caseUrgency.helper.js';
 
 // Retrieves card information while keeping cases without assignments.
 const CASE_COLUMNS = `
@@ -388,8 +389,19 @@ class CaseModel {
     if (!caseData) {
       const error = new Error('Case not found.');
       error.status = 404;
+      error.code = 'CASE_NOT_FOUND';
       throw error;
     }
+
+    // A closed case can not be edited
+    if (caseData.state === 'Closed') {
+      const error = new Error('Case with ID ${caseId} is closed');
+      error.status = 409;
+      error.code = 'CASE_CLOSED';
+      throw error;
+    }
+
+    let selectedTypes = [];
 
     if (violenceIds.length > 0) {
       const { data: types, error: typesError } = await supabase
@@ -405,8 +417,11 @@ class CaseModel {
       if (types?.length !== violenceIds.length) {
         const error = new Error('Unknown or inactive violence type.');
         error.status = 400;
+        error.code = 'INVALID_VIOLENCE_TYPE';
         throw error;
       }
+
+      selectedTypes = types;
     }
 
     const { data: current, error: currentError } = await supabase
@@ -456,8 +471,13 @@ class CaseModel {
         throw new Error(error.message);
       }
     }
+    const { severity, urgency } = calculateCaseUrgency(
+      selectedTypes.map((type) => ({
+        violence_types: { severity: type.severity },
+      }))
+    );
 
-    return { caseId, violenceIds };
+    return { caseId, violenceIds, severity, urgency };
   }
 }
 
