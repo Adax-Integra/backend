@@ -1004,6 +1004,44 @@ paths:
         '400': { $ref: '#/components/responses/BadRequest' }
         '500': { $ref: '#/components/responses/InternalServerError' }
 
+  /api/violence-types:
+    get:
+      tags: [Cases]
+      summary: List active violence types (R-07)
+      description: Returns active violence types for internal users and admins.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Violence types retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        violence_id:
+                          type: string
+                          format: uuid
+                        description:
+                          type: string
+                        severity:
+                          type: integer
+                          minimum: 1
+                          maximum: 10
+        '401':
+          description: Authentication required
+        '403':
+          description: Internal or admin role required
+        '500': { $ref: '#/components/responses/InternalServerError' }
+
   /api/cases/{caseId}:
     parameters:
       - $ref: '#/components/parameters/CaseId'
@@ -1054,6 +1092,63 @@ paths:
               example:
                 success: false
                 error: Case with ID 3fa85f64-5717-4562-b3fc-2c963f66afa6 is already closed or does not exist.
+        '500': { $ref: '#/components/responses/InternalServerError' }
+
+  /api/cases/{caseId}/violence-types:
+    parameters:
+      - $ref: '#/components/parameters/CaseId'
+    patch:
+      tags: [Cases]
+      summary: Assign violence types to a case (R-07)
+      description: |
+        Allows internal users and admins to assign multiple violence types
+        to an existing case. Replaces the current active assignments.
+        An empty array removes all active assignments.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [violenceIds]
+              properties:
+                violenceIds:
+                  type: array
+                  uniqueItems: true
+                  items:
+                    type: string
+                    format: uuid
+            example:
+              violenceIds:
+                - 3fa85f64-5717-4562-b3fc-2c963f66afa6
+      responses:
+        '200':
+          description: Violence types assigned successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [success, data]
+                properties:
+                  success: { type: boolean, example: true }
+                  data:
+                    type: object
+                    properties:
+                      caseId: { type: string, format: uuid }
+                      violenceIds:
+                        type: array
+                        items: { type: string, format: uuid }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404':
+          description: Case not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '500': { $ref: '#/components/responses/InternalServerError' }
 
   /api/users/{userId}/cases:
