@@ -58,6 +58,14 @@ router.patch(
   internalUserController.updateExternalProfile
 );
 
+// B-02 Admin or internal staff reviews an external user's identity verification
+router.patch(
+  '/internal-users/external-users/:userId/verification',
+  authMiddleware,
+  adminInternalOnly,
+  internalUserController.reviewExternalVerification
+);
+
 // V-13 Internal users view the documents of an external user's record
 router.get(
   '/internal-users/external-users/:userId/documents',
