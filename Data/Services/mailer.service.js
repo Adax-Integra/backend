@@ -100,6 +100,48 @@ class MailerService {
         'Si no reconoces este cambio, siéntete libre de comunicarte con Adax por sus medios oficiales.',
     });
   }
+
+  // B-02: tells the external user their account was verified by staff
+  static async sendAccountVerifiedNotice(email) {
+    if (!transporter) {
+      console.warn(
+        `[mailer] SMTP not configured. Account verified notice for ${email} was not emailed.`
+      );
+      return;
+    }
+
+    await transporter.sendMail({
+      from: MAIL_FROM ?? MAIL_USER,
+      to: email,
+      subject: 'Tu cuenta de Adax fue verificada',
+      text:
+        'Buenas noticias: el equipo de Adax revisó tus documentos y tu cuenta quedó verificada.\n\n' +
+        'Ya tienes acceso completo a la plataforma. Si no reconoces este cambio, comunícate con Adax por sus medios oficiales.',
+    });
+  }
+
+  // B-02: tells the external user their documents were rejected and need to be sent again
+  static async sendVerificationRejectedNotice(email, reason) {
+    if (!transporter) {
+      console.warn(
+        `[mailer] SMTP not configured. Verification rejected notice for ${email} was not emailed.`
+      );
+      return;
+    }
+
+    const reasonLine = reason ? `\n\nMotivo: ${reason}` : '';
+
+    await transporter.sendMail({
+      from: MAIL_FROM ?? MAIL_USER,
+      to: email,
+      subject: 'Revisión de tus documentos en Adax',
+      text:
+        'El equipo de Adax revisó tus documentos y necesitamos que los vuelvas a enviar.' +
+        reasonLine +
+        '\n\nIngresa a la aplicación y sube de nuevo tu comprobante de identidad y tu comprobante de domicilio. ' +
+        'Si tienes dudas, comunícate con Adax por sus medios oficiales.',
+    });
+  }
 }
 
 export default MailerService;

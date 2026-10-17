@@ -76,7 +76,7 @@ class UserModel {
   static async getVerificationStatus(userId) {
     const { data, error } = await supabase
       .from(UserModel.TABLE)
-      .select('user_id, verification_status')
+      .select('user_id, verification_status, email')
       .eq('user_id', userId)
       .is('deleted_at', null)
       .maybeSingle();
@@ -102,6 +102,28 @@ class UserModel {
     }
 
     return data;
+  }
+
+  static async updateVerificationStatusWithLog({
+    userId,
+    actorId,
+    status,
+    reason,
+  }) {
+    const { data, error } = await supabase.rpc(
+      'update_verification_status_with_log',
+      {
+        p_user_id: userId,
+        p_actor_id: actorId,
+        p_status: status,
+        p_reason: reason ?? null,
+      }
+    );
+
+    if (error) {
+      throw new Error(error.message);
+    }
+    return Array.isArray(data) ? data[0] : data;
   }
 
   // G-08: the account is marked with deleted_at instead of being deleted,

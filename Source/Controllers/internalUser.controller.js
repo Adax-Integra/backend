@@ -25,6 +25,7 @@ import ExternalUserListDTO from '../DTOs/externalUserList.dto.js';
 import UpdateCollaboratorProfileUseCase from '../../Domain/UseCases/updateCollaboratorProfile.usecase.js';
 import GetExternalUserDocumentsUseCase from '../../Domain/UseCases/getExternalUserDocuments.usecase.js';
 import ExternalUserDocumentsDTO from '../DTOs/externalUserDocuments.dto.js';
+import ReviewVerificationUseCase from '../../Domain/UseCases/reviewVerification.usecase.js';
 
 const listCollaboratorsUseCase = new ListCollaboratorsUseCase();
 const getAllCasesFromUser = new GetAllCasesFromUser();
@@ -41,6 +42,7 @@ const updateCollaboratorStatusUseCase = new UpdateCollaboratorStatusUseCase();
 const listExternalUsersUseCase = new ListExternalUsersUseCase();
 const updateCollaboratorProfileUseCase = new UpdateCollaboratorProfileUseCase();
 const getExternalUserDocumentsUseCase = new GetExternalUserDocumentsUseCase();
+const reviewVerificationUseCase = new ReviewVerificationUseCase();
 
 class InternalUserController {
   getAllCasesFromUser = async (req, res) => {
@@ -199,6 +201,41 @@ class InternalUserController {
         success: false,
         error: error.message,
         errors: error.details ?? null,
+      });
+    }
+  };
+
+  // B-02: Admin or internal staff approves or rejects an external user's verification
+  reviewExternalVerification = async (req, res) => {
+    try {
+      const updated = await reviewVerificationUseCase.execute(
+        req.user.user_id,
+        req.params.userId,
+        req.body
+      );
+
+      return res.status(200).json({
+        success: true,
+        data: {
+          user_id: updated.user_id,
+          verification_status: updated.verification_status,
+        },
+      });
+    } catch (error) {
+      const status = error.status ?? 500;
+
+      if (status >= 500) {
+        console.error('Failed to review verification: ', error);
+
+        return res.status(500).json({
+          success: false,
+          error: 'Unable to review the verification',
+        });
+      }
+
+      return res.status(status).json({
+        success: false,
+        error: error.message,
       });
     }
   };
