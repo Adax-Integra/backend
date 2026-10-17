@@ -1,6 +1,7 @@
 class ExternalProfileDTO {
   constructor({ profile, address }) {
     this.user_id = profile?.user_id ?? null;
+    this.verification_status = profile?.verification_status ?? null;
     this.profile = profile
       ? {
           name: profile.name,
@@ -23,6 +24,7 @@ class ExternalProfileDTO {
   toJSON() {
     return {
       user_id: this.user_id,
+      verification_status: this.verification_status,
       profile: this.profile,
       address: this.address,
     };

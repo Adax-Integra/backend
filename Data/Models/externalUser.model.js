@@ -168,7 +168,9 @@ class ExternalUserModel {
   static async findEditableProfileById(userId) {
     const { data, error } = await supabase
       .from('user')
-      .select('user_id, name, last_name, email, birth_date, phone')
+      .select(
+        'user_id, name, last_name, email, birth_date, phone, verification_status'
+      )
       .eq('user_id', userId)
       .is('deleted_at', null)
       .maybeSingle();
