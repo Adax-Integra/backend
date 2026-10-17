@@ -1143,7 +1143,7 @@ paths:
     get:
       tags: [Cases]
       summary: List active violence types (R-07)
-      description: Returns active violence types for internal users and admins.
+      description: Returns the active violence types sorted by name. Internal and admin only.
       security:
         - BearerAuth: []
       responses:
@@ -1162,15 +1162,17 @@ paths:
                     items:
                       type: object
                       properties:
-                        violence_id:
+                        violenceId:
                           type: string
                           format: uuid
                         description:
                           type: string
+                          example: Física
                         severity:
                           type: integer
                           minimum: 1
                           maximum: 10
+                          example: 8
         '401':
           description: Authentication required
         '403':
@@ -1384,9 +1386,10 @@ paths:
       tags: [Cases]
       summary: Assign violence types to a case (R-07)
       description: |
-        Allows internal users and admins to assign multiple violence types
-        to an existing case. Replaces the current active assignments.
-        An empty array removes all active assignments.
+        Replaces the active violence types of an open case with the given list.
+        An empty list removes every violence type. The urgency is not saved; it is
+        calculated from the most severe violence type (8 to 10 Alta, 4 to 7 Media,
+        1 to 3 Baja, none Sin evaluar). Internal and admin only.
       security:
         - BearerAuth: []
       requestBody:
@@ -1399,6 +1402,7 @@ paths:
               properties:
                 violenceIds:
                   type: array
+                  maxItems: 20
                   uniqueItems: true
                   items:
                     type: string
@@ -1423,16 +1427,20 @@ paths:
                       violenceIds:
                         type: array
                         items: { type: string, format: uuid }
-        '400': { $ref: '#/components/responses/BadRequest' }
+                      urgency:
+                        type: string
+                        enum: [Alta, Media, Baja, Sin evaluar]
+                        example: Alta
+        '400':
+          description: Invalid case id or violenceIds (VALIDATION_ERROR), or violence types that do not exist or are inactive (INVALID_VIOLENCE_TYPE)
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404':
-          description: Case not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500': { $ref: '#/components/responses/InternalServerError' }
+          description: Case not found (CASE_NOT_FOUND)
+        '409':
+          description: The case is closed (CASE_CLOSED)
+        '500':
+          description: Unable to assign violence types (SERVER_ERROR)
 
   /api/users/{userId}/cases:
     parameters:
