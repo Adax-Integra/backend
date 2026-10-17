@@ -23,6 +23,8 @@ class EventListDTO {
       modality: this.event.modality,
       location: this.event.location,
       imageUrl: buildImageUrl(this.event.image_path),
+      link: this.event.link ?? null,
+      phone: this.event.phone ?? null,
     };
   }
 }
