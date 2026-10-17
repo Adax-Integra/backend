@@ -6,6 +6,14 @@ import preSubmissionUpload from '../Middlewares/upload.middleware.js';
 
 const router = express.Router();
 
+// R-06: The owner sees which documents are already uploaded.
+router.get(
+  '/external-users/:userId/documents',
+  authMiddleware,
+  ownDataOnly,
+  uploadDocumentsController.getDocuments
+);
+
 // R-06: Upload or replace identity documents for the authenticated owner.
 router.patch(
   '/external-users/:userId/documents',
