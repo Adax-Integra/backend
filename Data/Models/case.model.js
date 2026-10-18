@@ -244,16 +244,18 @@ class CaseModel {
   }
 
   /*
-  R-10: Assigns an internal to a case.
+  R-10: Assigns several internals or admins to a case in a single upsert,
+  so either every assignment is saved or none is.
   */
-  static async assignUser(caseId, userId) {
+  static async assignUsers(caseId, userIds) {
+    const updatedAt = new Date().toISOString();
     const { error } = await supabase.from('case_assignment').upsert(
-      {
+      userIds.map((userId) => ({
         case_id: caseId,
         user_id: userId,
         deleted_at: null,
-        updated_at: new Date().toISOString(),
-      },
+        updated_at: updatedAt,
+      })),
       { onConflict: 'case_id,user_id' }
     );
 
