@@ -2,7 +2,7 @@
 import crypto from 'node:crypto';
 import { supabase } from '../Config/supabase.js';
 import DocumentEncryptionService from '../Services/documentEncryption.service.js';
-import DocumentLinkService from '../Services/documentLink.service.js';
+import DocumentLinkService from '../Services/documentLink.services.js';
 
 const USER_DOCUMENTS_BUCKET = 'user-documents';
 // The bucket only holds encrypted bytes, the real type comes from the path

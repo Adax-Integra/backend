@@ -1,5 +1,5 @@
 import ExternalUserDocumentsModel from '../../Data/Models/externalUserDocuments.model.js';
-import DocumentLinkService from '../../Data/Services/documentLink.service.js';
+import DocumentLinkService from '../../Data/Services/documentLink.services.js';
 
 function notFoundError() {
   const error = new Error('Document not found.');
