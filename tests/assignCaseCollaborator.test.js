@@ -19,6 +19,8 @@ const missingId = '2b1f7c3e-8d4a-4f6b-9c2d-1e3f5a7b9c0d';
 
 let externalUserId;
 let openCaseId;
+// Used by the several-collaborators tests, so it starts with no assignments
+let secondOpenCaseId;
 let closedCaseId;
 let collaboratorId;
 let inactiveCollaboratorId;
@@ -129,6 +131,7 @@ beforeAll(async () => {
   if (record.error) throw new Error(record.error.message);
 
   openCaseId = await createCase(record.data.record_id, 'Open');
+  secondOpenCaseId = await createCase(record.data.record_id, 'Open');
   closedCaseId = await createCase(record.data.record_id, 'Closed');
   collaboratorId = await createInternalUser();
   inactiveCollaboratorId = await createInternalUser(new Date().toISOString());
@@ -137,7 +140,7 @@ beforeAll(async () => {
 
 // The tests write to the shared tables, so everything created is removed at the end
 afterAll(async () => {
-  const caseIds = [openCaseId, closedCaseId].filter(Boolean);
+  const caseIds = [openCaseId, secondOpenCaseId, closedCaseId].filter(Boolean);
   const userIds = [
     externalUserId,
     collaboratorId,
@@ -228,7 +231,7 @@ describe('Integration tests for R-10', () => {
       it('Should respond with code 401', async () => {
         const response = await request(app)
           .post(`/api/cases/${openCaseId}/assignments`)
-          .send({ userId: collaboratorId });
+          .send({ userIds: [collaboratorId] });
 
         expect(response.statusCode).toBe(401);
         expect(response.body.error).toBe('Token is required.');
@@ -239,7 +242,7 @@ describe('Integration tests for R-10', () => {
       it('Should respond with code 403', async () => {
         const response = await postAssignment(
           openCaseId,
-          { userId: collaboratorId },
+          { userIds: [collaboratorId] },
           ['external']
         );
 
@@ -251,7 +254,7 @@ describe('Integration tests for R-10', () => {
     describe('It contains an invalid case id', () => {
       it('Should respond with code 400', async () => {
         const response = await postAssignment('abc', {
-          userId: collaboratorId,
+          userIds: [collaboratorId],
         });
 
         expect(response.statusCode).toBe(400);
@@ -260,30 +263,40 @@ describe('Integration tests for R-10', () => {
       });
     });
 
-    describe('It contains no userId', () => {
+    describe('It contains no userIds', () => {
       it('Should respond with code 400', async () => {
         const response = await postAssignment(openCaseId, {});
 
         expect(response.statusCode).toBe(400);
         expect(response.body.code).toBe('VALIDATION_ERROR');
-        expect(response.body.error).toBe('userId must be a non-empty string.');
+        expect(response.body.error).toBe('userIds must be a non-empty array.');
+      });
+    });
+
+    describe('It contains an empty userIds array', () => {
+      it('Should respond with code 400', async () => {
+        const response = await postAssignment(openCaseId, { userIds: [] });
+
+        expect(response.statusCode).toBe(400);
+        expect(response.body.code).toBe('VALIDATION_ERROR');
+        expect(response.body.error).toBe('userIds must be a non-empty array.');
       });
     });
 
     describe('It contains an invalid userId', () => {
       it('Should respond with code 400', async () => {
-        const response = await postAssignment(openCaseId, { userId: 'abc' });
+        const response = await postAssignment(openCaseId, { userIds: ['abc'] });
 
         expect(response.statusCode).toBe(400);
         expect(response.body.code).toBe('VALIDATION_ERROR');
-        expect(response.body.error).toBe('userId must be a valid UUID');
+        expect(response.body.error).toBe('userIds[0] must be a valid UUID');
       });
     });
 
     describe('It contains a case that does not exist', () => {
       it('Should respond with code 404', async () => {
         const response = await postAssignment(missingId, {
-          userId: collaboratorId,
+          userIds: [collaboratorId],
         });
 
         expect(response.statusCode).toBe(404);
@@ -294,7 +307,7 @@ describe('Integration tests for R-10', () => {
     describe('It contains a closed case', () => {
       it('Should respond with code 409', async () => {
         const response = await postAssignment(closedCaseId, {
-          userId: collaboratorId,
+          userIds: [collaboratorId],
         });
 
         expect(response.statusCode).toBe(409);
@@ -306,7 +319,7 @@ describe('Integration tests for R-10', () => {
     describe('It contains a user that does not exist', () => {
       it('Should respond with code 404', async () => {
         const response = await postAssignment(openCaseId, {
-          userId: missingId,
+          userIds: [missingId],
         });
 
         expect(response.statusCode).toBe(404);
@@ -317,7 +330,7 @@ describe('Integration tests for R-10', () => {
     describe('It contains an external user', () => {
       it('Should respond with code 404', async () => {
         const response = await postAssignment(openCaseId, {
-          userId: externalUserId,
+          userIds: [externalUserId],
         });
 
         expect(response.statusCode).toBe(404);
@@ -328,7 +341,7 @@ describe('Integration tests for R-10', () => {
     describe('It contains an inactive collaborator', () => {
       it('Should respond with code 409', async () => {
         const response = await postAssignment(openCaseId, {
-          userId: inactiveCollaboratorId,
+          userIds: [inactiveCollaboratorId],
         });
 
         expect(response.statusCode).toBe(409);
@@ -339,7 +352,7 @@ describe('Integration tests for R-10', () => {
     describe('It assigns an active collaborator to an open case', () => {
       it('Should respond with code 200 and save the assignment and the log', async () => {
         const response = await postAssignment(openCaseId, {
-          userId: collaboratorId,
+          userIds: [collaboratorId],
         });
 
         expect(response.statusCode).toBe(200);
@@ -369,7 +382,7 @@ describe('Integration tests for R-10', () => {
     describe('It assigns the same collaborator again', () => {
       it('Should respond with code 200 and keep a single assignment', async () => {
         const response = await postAssignment(openCaseId, {
-          userId: collaboratorId,
+          userIds: [collaboratorId],
         });
 
         expect(response.statusCode).toBe(200);
@@ -388,7 +401,7 @@ describe('Integration tests for R-10', () => {
           .eq('user_id', collaboratorId);
 
         const response = await postAssignment(openCaseId, {
-          userId: collaboratorId,
+          userIds: [collaboratorId],
         });
 
         expect(response.statusCode).toBe(200);
@@ -402,12 +415,64 @@ describe('Integration tests for R-10', () => {
 
     describe('It assigns an active admin to an open case', () => {
       it('Should respond with code 200 and save the assignment', async () => {
-        const response = await postAssignment(openCaseId, { userId: adminId });
+        const response = await postAssignment(openCaseId, {
+          userIds: [adminId],
+        });
 
         expect(response.statusCode).toBe(200);
 
         const assignments = await getAssignments(openCaseId);
         expect(assignments.map((row) => row.user_id)).toContain(adminId);
+      });
+    });
+
+    describe('It contains a valid collaborator and one that does not exist', () => {
+      it('Should respond with code 404 and save nothing', async () => {
+        const response = await postAssignment(secondOpenCaseId, {
+          userIds: [collaboratorId, missingId],
+        });
+
+        expect(response.statusCode).toBe(404);
+        expect(response.body.code).toBe('COLLABORATOR_NOT_FOUND');
+        expect(await getAssignments(secondOpenCaseId)).toHaveLength(0);
+      });
+    });
+
+    describe('It contains a valid collaborator and an inactive one', () => {
+      it('Should respond with code 409 and save nothing', async () => {
+        const response = await postAssignment(secondOpenCaseId, {
+          userIds: [collaboratorId, inactiveCollaboratorId],
+        });
+
+        expect(response.statusCode).toBe(409);
+        expect(response.body.code).toBe('COLLABORATOR_INACTIVE');
+        expect(await getAssignments(secondOpenCaseId)).toHaveLength(0);
+      });
+    });
+
+    describe('It assigns several collaborators in one call', () => {
+      it('Should respond with code 200, count repeated ids once and log each collaborator', async () => {
+        const response = await postAssignment(secondOpenCaseId, {
+          userIds: [collaboratorId, adminId, collaboratorId],
+        });
+
+        expect(response.statusCode).toBe(200);
+        expect(response.body).toEqual({ success: true });
+
+        const assignments = await getAssignments(secondOpenCaseId);
+        expect(assignments.map((row) => row.user_id).sort()).toEqual(
+          [collaboratorId, adminId].sort()
+        );
+
+        const { data: logs } = await supabase
+          .from('activity_log')
+          .select('details')
+          .eq('actor_user_id', collaboratorId)
+          .eq('action', 'assign_case_collaborator')
+          .eq('entity_id', secondOpenCaseId);
+        expect(logs.map((log) => log.details.userId).sort()).toEqual(
+          [collaboratorId, adminId].sort()
+        );
       });
     });
   });
