@@ -145,11 +145,12 @@ class InternalUserModel {
   }
 
   /*
-  R-10: Checks the userId sent to POST /cases/:caseId/assignments before it
-  is saved in case_assignment. 
-  It works like G-10's findById but also accepts admins.
+  R-10: Checks the userIds sent to POST /cases/:caseId/assignments before they
+  are saved in case_assignment.
+  It works like G-10's findById but also accepts admins, ids that are not
+  internal or admin accounts are simply missing from the result.
   */
-  static async findAssignableById(userId) {
+  static async findAssignableByIds(userIds) {
     const { data, error } = await supabase
       .from('user')
       .select(
@@ -161,16 +162,15 @@ class InternalUserModel {
         )
       `
       )
-      .eq('user_id', userId)
+      .in('user_id', userIds)
       .in('user_role.role.description', ['internal', 'admin'])
-      .is('user_role.deleted_at', null)
-      .maybeSingle();
+      .is('user_role.deleted_at', null);
 
     if (error) {
       throw new Error(error.message);
     }
 
-    return data;
+    return data ?? [];
   }
 
   // G-04: Activates or deactivates an internal account
