@@ -46,6 +46,21 @@ const ACTIONS = {
     title: 'Baja de cuenta',
     verb: 'desactivó la cuenta de',
   },
+  // G-04: the admin deactivates a collaborator account
+  deactivate_collaborator: {
+    title: 'Desactivación de colaboradora',
+    verb: 'desactivó la cuenta de',
+  },
+  // G-04: the admin reactivates a collaborator account
+  reactivate_collaborator: {
+    title: 'Reactivación de colaboradora',
+    verb: 'reactivó la cuenta de',
+  },
+  // G-04: entries saved before the action was split in two
+  update_collaborator_status: {
+    title: 'Cambio de estatus de colaboradora',
+    verb: 'cambió el estatus de',
+  },
 };
 
 const UNKNOWN_ACTOR = 'Usuaria no disponible';
