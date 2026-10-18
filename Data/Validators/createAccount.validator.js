@@ -1,5 +1,6 @@
 import EmailValidator from './email.validator.js';
 import RequiredStringValidator from './requiredString.validator.js';
+import PasswordValidator from './password.validator.js';
 
 const MIN_PASSWORD_LENGTH = 8;
 
@@ -41,6 +42,10 @@ class CreateAccountValidator {
       body.password.length < MIN_PASSWORD_LENGTH
     ) {
       throw new Error('password must contain at least 8 characters.');
+    }
+
+    if (!PasswordValidator.hasSpecialCharacter(body.password)) {
+      throw new Error('password must contain at least one special character.');
     }
 
     // makes sure the user entered the same password twice

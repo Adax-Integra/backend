@@ -1,3 +1,5 @@
+import PasswordValidator from './password.validator.js';
+
 const MIN_PASSWORD_LENGTH = 8;
 
 function createError(message, status) {
@@ -31,6 +33,13 @@ class ChangePasswordValidator {
     if (new_password.length < MIN_PASSWORD_LENGTH) {
       throw createError(
         'new_password must contain at least 8 characters.',
+        400
+      );
+    }
+
+    if (!PasswordValidator.hasSpecialCharacter(new_password)) {
+      throw createError(
+        'new_password must contain at least one special character.',
         400
       );
     }

@@ -6,6 +6,7 @@ the mobile app
 import EmailValidator from './email.validator.js';
 import PhoneValidator from './phone.validator.js';
 import RequiredStringValidator from './requiredString.validator.js';
+import PasswordValidator from './password.validator.js';
 
 const MIN_PASSWORD_LENGTH = 8;
 const MAX_NAME_LENGTH = 50;
@@ -77,6 +78,8 @@ class CreateCollaboratorValidator {
       errors.password = `password must be at least ${MIN_PASSWORD_LENGTH} characters long.`;
     } else if (body.password.length > MAX_PASSWORD_LENGTH) {
       errors.password = `password must be at most ${MAX_PASSWORD_LENGTH} characters.`;
+    } else if (!PasswordValidator.hasSpecialCharacter(body.password)) {
+      errors.password = 'password must contain at least one special character.';
     } else {
       collaborator.password = body.password;
     }
