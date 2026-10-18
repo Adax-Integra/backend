@@ -458,12 +458,19 @@ class InternalUserController {
       // Prepares the data for the app
       const payload = new CollaboratorStatusDTO(updatedCollaborator).toJSON();
 
-      // V-06: saves the change in the activity log
+      // V-06: saves the change in the activity log.
+      // Each status has its own action so the log can say what happened
+      let action = 'deactivate_collaborator';
+      if (payload.is_active) {
+        action = 'reactivate_collaborator';
+      }
+
       await logActivityUseCase.execute({
         actorId: req.user.user_id,
-        action: 'update_collaborator_status',
+        action,
         entity: 'user',
         entityId: payload.user_id,
+        details: { is_active: payload.is_active },
       });
 
       return res.status(200).json({
