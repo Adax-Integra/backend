@@ -10,6 +10,7 @@
     "test:coverage": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
+    "documents:encrypt": "node scripts/encryptDocuments.js",
     "prepare": "husky"
   },
   "keywords": [],
