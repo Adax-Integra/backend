@@ -1,12 +1,15 @@
 import { afterAll, beforeAll, describe, expect, it } from '@jest/globals';
+import { randomUUID } from 'node:crypto';
 import jwt from 'jsonwebtoken';
 import request from 'supertest';
 
 import app from '../Source/app.js';
 import { supabase } from '../Data/Config/supabase.js';
+import AuthTokenModel from '../Data/Models/authToken.model.js';
+import SessionService from '../Domain/Services/session.service.js';
 
 /*
-R-10 integration tests that assign internal users to cases.
+R-10 integration tests that list and assign internal or admin users to cases.
 */
 
 const EXTERNAL_ROLE_ID = '8dfdf505-3d8d-423f-8c59-377c4f4c6477';
@@ -19,18 +22,36 @@ let openCaseId;
 let closedCaseId;
 let collaboratorId;
 let inactiveCollaboratorId;
+let adminId;
 
-// The active collaborator is also who assigns, so the activity log has a real actor
-const authHeader = (roles) =>
-  `Bearer ${jwt.sign({ user_id: collaboratorId, roles }, process.env.JWT_SECRET)}`;
+// The active collaborator is also who assigns, so the activity log has a real actor.
+// The auth middleware only accepts stored sessions, so each token is saved first
+async function authHeader(roles) {
+  const token = jwt.sign(
+    { user_id: collaboratorId, roles },
+    process.env.JWT_SECRET,
+    { expiresIn: '1h', jwtid: randomUUID() }
+  );
+  await AuthTokenModel.create(
+    collaboratorId,
+    SessionService.hashToken(token),
+    new Date(Date.now() + 60 * 60 * 1000).toISOString()
+  );
+  return `Bearer ${token}`;
+}
 
-const postAssignment = (caseId, body, roles = ['internal']) =>
+const postAssignment = async (caseId, body, roles = ['internal']) =>
   request(app)
     .post(`/api/cases/${caseId}/assignments`)
-    .set('Authorization', authHeader(roles))
+    .set('Authorization', await authHeader(roles))
     .send(body);
 
-async function createInternalUser(deletedAt = null) {
+const getCollaborators = async (roles = ['internal']) =>
+  request(app)
+    .get('/api/cases/collaborators')
+    .set('Authorization', await authHeader(roles));
+
+async function createInternalUser(deletedAt = null, roleName = 'internal') {
   const { data: user, error } = await supabase
     .from('user')
     .insert({
@@ -47,7 +68,7 @@ async function createInternalUser(deletedAt = null) {
   const { data: role, error: roleError } = await supabase
     .from('role')
     .select('role_id')
-    .eq('description', 'internal')
+    .eq('description', roleName)
     .single();
   if (roleError) throw new Error(roleError.message);
 
@@ -111,6 +132,7 @@ beforeAll(async () => {
   closedCaseId = await createCase(record.data.record_id, 'Closed');
   collaboratorId = await createInternalUser();
   inactiveCollaboratorId = await createInternalUser(new Date().toISOString());
+  adminId = await createInternalUser(null, 'admin');
 });
 
 // The tests write to the shared tables, so everything created is removed at the end
@@ -120,6 +142,7 @@ afterAll(async () => {
     externalUserId,
     collaboratorId,
     inactiveCollaboratorId,
+    adminId,
   ].filter(Boolean);
 
   // activity_log does not cascade, its entries go before the actor
@@ -141,12 +164,65 @@ afterAll(async () => {
   }
 
   if (userIds.length > 0) {
+    await supabase.from('auth_tokens').delete().in('user_id', userIds);
     await supabase.from('user_role').delete().in('user_id', userIds);
     await supabase.from('user').delete().in('user_id', userIds);
   }
 });
 
 describe('Integration tests for R-10', () => {
+  describe('GET /api/cases/collaborators - list the accounts that can take a case', () => {
+    describe('It contains no authorization token', () => {
+      it('Should respond with code 401', async () => {
+        const response = await request(app).get('/api/cases/collaborators');
+
+        expect(response.statusCode).toBe(401);
+        expect(response.body.error).toBe('Token is required.');
+      });
+    });
+
+    describe('The token belongs to an external user', () => {
+      it('Should respond with code 403', async () => {
+        const response = await getCollaborators(['external']);
+
+        expect(response.statusCode).toBe(403);
+        expect(response.body.error).toBe('You do not have permission');
+      });
+    });
+
+    describe('The token belongs to an internal user', () => {
+      it('Should respond with code 200 and only the basic data', async () => {
+        const response = await getCollaborators(['internal']);
+
+        expect(response.statusCode).toBe(200);
+        expect(response.body.success).toBe(true);
+
+        const collaborator = response.body.data.find(
+          (user) => user.userId === collaboratorId
+        );
+        expect(collaborator).toEqual({
+          userId: collaboratorId,
+          name: 'Prueba',
+          lastName: 'R-10',
+        });
+      });
+    });
+
+    describe('The token belongs to an admin', () => {
+      it('Should respond with code 200 and include admins but not inactive or external accounts', async () => {
+        const response = await getCollaborators(['admin']);
+
+        expect(response.statusCode).toBe(200);
+
+        const ids = response.body.data.map((user) => user.userId);
+        expect(ids).toContain(collaboratorId);
+        expect(ids).toContain(adminId);
+        expect(ids).not.toContain(inactiveCollaboratorId);
+        expect(ids).not.toContain(externalUserId);
+      });
+    });
+  });
+
   describe('POST /api/cases/:caseId/assignments - assign a collaborator to a case', () => {
     describe('It contains no authorization token', () => {
       it('Should respond with code 401', async () => {
@@ -321,6 +397,17 @@ describe('Integration tests for R-10', () => {
         expect(assignments).toHaveLength(1);
         expect(assignments[0].deleted_at).toBeNull();
         expect(assignments[0].created_at).toBe(before.created_at);
+      });
+    });
+
+    describe('It assigns an active admin to an open case', () => {
+      it('Should respond with code 200 and save the assignment', async () => {
+        const response = await postAssignment(openCaseId, { userId: adminId });
+
+        expect(response.statusCode).toBe(200);
+
+        const assignments = await getAssignments(openCaseId);
+        expect(assignments.map((row) => row.user_id)).toContain(adminId);
       });
     });
   });
