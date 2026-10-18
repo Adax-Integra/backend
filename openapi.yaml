@@ -473,9 +473,9 @@ paths:
         documents are already uploaded. Same response as V-13, but only
         for the owner and without an activity log entry.
 
-        Storage paths are never returned, only signed URLs that expire after
-        15 minutes and the kind of file. A document is null when it was not
-        uploaded yet.
+        Storage paths are never returned, only signed links to
+        GET /api/documents/files/{token} that expire after 5 minutes and the
+        kind of file. A document is null when it was not uploaded yet.
       security:
         - BearerAuth: []
       responses:
@@ -519,7 +519,9 @@ paths:
         Replaced documents are removed from storage after
         the database update succeeds.
 
-        Returned document URLs are signed and expire after 15 minutes.
+        Files are encrypted with AES-256-GCM before they are saved in
+        storage. Returned document URLs are signed links to
+        GET /api/documents/files/{token} and expire after 5 minutes.
       security:
         - BearerAuth: []
       requestBody:
@@ -561,6 +563,56 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '500': { $ref: '#/components/responses/InternalServerError' }
 
+  /api/documents/files/{token}:
+    parameters:
+      - in: path
+        name: token
+        required: true
+        schema: { type: string }
+        description: Signed link token from a document url (R-06 or V-13).
+    get:
+      tags: [External Users]
+      summary: Download a document decrypted (R-06 / V-13)
+      description: |
+        Opens the url returned by the R-06 and V-13 document endpoints.
+        Documents are stored encrypted (AES-256-GCM, one data key per
+        file wrapped with DOCUMENTS_MASTER_KEY); this endpoint decrypts
+        them and returns the original image.
+
+        It does not use the session token: the link token is the
+        permission. It expires after 5 minutes and stops working as soon
+        as the document is replaced.
+      security: []
+      responses:
+        '200':
+          description: The decrypted document
+          headers:
+            Cache-Control:
+              schema: { type: string, example: no-store }
+          content:
+            image/jpeg:
+              schema: { type: string, format: binary }
+            image/png:
+              schema: { type: string, format: binary }
+        '403':
+          description: The link is invalid or expired
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                error: The link is invalid or expired.
+        '404':
+          description: The document was replaced or deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                error: Document not found.
+        '500': { $ref: '#/components/responses/InternalServerError' }
 
   /api/records:
     get:
@@ -1091,8 +1143,9 @@ paths:
         Internal users and admins open the identity document (INE) and the
         proof of address that the external user uploaded in R-06.
 
-        Storage paths are never returned, only signed URLs that expire after
-        15 minutes and the kind of file. Accounts that are not external users
+        Storage paths are never returned, only signed links to
+        GET /api/documents/files/{token} that expire after 5 minutes and the
+        kind of file. Accounts that are not external users
         return 404. Each consultation is saved in the activity log as
         view_external_documents.
       security:
@@ -2059,7 +2112,7 @@ components:
           type: string
           format: uri
           nullable: true
-          description: Signed URL that expires after 15 minutes.
+          description: Signed link to GET /api/documents/files/{token}, expires after 5 minutes.
         proof_of_address_url:
           type: string
           format: uri
@@ -2076,7 +2129,7 @@ components:
           type: string
           format: uri
           nullable: true
-          description: Signed URL that expires after 15 minutes. Null when storage could not sign it.
+          description: Signed link to GET /api/documents/files/{token}, expires after 5 minutes. Null when the link could not be created.
         file_type:
           type: string
           enum: [pdf, image]

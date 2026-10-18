@@ -23,6 +23,12 @@ afterAll(() => {
   }
 });
 
+// The router loads models that create a Supabase client, it is never called here.
+jest.unstable_mockModule('../Data/Config/supabase.js', () => ({
+  supabase: {},
+  default: {},
+}));
+
 // Mock the controller to prevent real database or storage operations.
 const controllerMock = {
   getDocuments: jest.fn((req, res) =>
@@ -36,6 +42,8 @@ const controllerMock = {
       },
     })
   ),
+
+  getDocumentFile: jest.fn((req, res) => res.status(200).send('')),
 };
 
 jest.unstable_mockModule(

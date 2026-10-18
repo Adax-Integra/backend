@@ -21,7 +21,7 @@ function fileTypeFromPath(path) {
 }
 
 //A document without a saved path was never uploaded (null)
-//A saved path without URL means storage could not sign it
+//A saved path without URL means the link could not be created
 function buildDocument(path, url) {
   const fileType = fileTypeFromPath(path);
 
@@ -34,7 +34,7 @@ function buildDocument(path, url) {
 
 //V-13: an internal user opens the documents of an external user's record
 class GetExternalUserDocumentsUseCase {
-  async execute(userId) {
+  async execute(userId, baseUrl) {
     const validUserId = UserIdValidator.validateUserId(userId);
 
     //Only external users have identity documents in their record
@@ -47,7 +47,10 @@ class GetExternalUserDocumentsUseCase {
       await ExternalUserDocumentsModel.findByUserId(validUserId);
 
     //Without a row the record simply has no documents yet
-    const signed = await ExternalUserDocumentsModel.attachSignedUrls(documents);
+    const signed = await ExternalUserDocumentsModel.attachSignedUrls(
+      documents,
+      baseUrl
+    );
 
     return {
       user_id: validUserId,
