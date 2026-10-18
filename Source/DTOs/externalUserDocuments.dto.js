@@ -1,4 +1,4 @@
-//V-13: only the signed URL and the kind of file are exposed, never the storage path
+//V-13: only the signed link and the kind of file are exposed, never the storage path
 class ExternalUserDocumentsDTO {
   constructor({ user_id, identity_document = null, proof_of_address = null }) {
     this.user_id = user_id ?? null;
@@ -14,7 +14,7 @@ class ExternalUserDocumentsDTO {
     }
 
     return {
-      //Signed URL that expires after 15 minutes
+      //Link to the backend that expires after 5 minutes (R-06 encryption)
       url: document.url ?? null,
       file_type: document.file_type,
     };

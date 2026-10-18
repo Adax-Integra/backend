@@ -23,4 +23,11 @@ router.patch(
   uploadDocumentsController.uploadDocuments
 );
 
+//R-06 / V-13: download a document decrypted. The token is a signed link
+//that expires after 5 minutes, created by the two routes above or by V-13.
+router.get(
+  '/documents/files/:token',
+  uploadDocumentsController.getDocumentFile
+);
+
 export default router;

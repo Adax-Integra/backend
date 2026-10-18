@@ -5,7 +5,7 @@ import UserModel from '../../Data/Models/user.model.js';
 const DOCUMENT_KEYS = ['identity_document', 'proof_of_address'];
 
 class UploadDocumentsUseCase {
-  async execute(userId, files = {}) {
+  async execute(userId, files = {}, baseUrl) {
     const validUserId = validIdValidator.validateId(userId);
 
     const hasFiles = DOCUMENT_KEYS.some((key) => files[key]?.[0]);
@@ -93,7 +93,10 @@ class UploadDocumentsUseCase {
       // Keep the upload successful even if the status flip fails.
     }
 
-    return ExternalUserDocumentsModel.attachSignedUrls(updatedDocuments);
+    return ExternalUserDocumentsModel.attachSignedUrls(
+      updatedDocuments,
+      baseUrl
+    );
   }
 }
 

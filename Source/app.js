@@ -27,6 +27,8 @@ import uploadDocumentsRoutes from '../Source/Routes/uploadDocuments.routes.js';
 
 import { apiLimiter } from '../Source/Middlewares/rateLimit.middleware.js';
 
+import DocumentEncryptionService from '../Data/Services/documentEncryption.service.js';
+
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const swaggerDocument = parseYaml(
   readFileSync(join(__dirname, '..', 'openapi.yaml'), 'utf8')
@@ -40,6 +42,9 @@ if (
 ) {
   throw new Error('JWT_SECRET must be a strong random value (>= 32 chars)');
 }
+
+// R-06: without the master key no document can be uploaded or opened
+DocumentEncryptionService.assertConfigured();
 
 const app = express();
 
