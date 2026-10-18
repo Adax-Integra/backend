@@ -1177,6 +1177,39 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
         '500': { $ref: '#/components/responses/InternalServerError' }
 
+  /api/cases/collaborators:
+    get:
+      tags: [Cases]
+      summary: List the accounts that can be assigned to a case (R-10)
+      description: Internal and admin only. Returns the active internal and admin accounts sorted by name, with only the data needed to pick one and send its userId to POST /api/cases/{caseId}/assignments. Deactivated accounts are not returned. The full collaborator list stays in GET /api/internal-users (G-06, admin only).
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Assignable accounts retrieved. If there are none, data is an empty array.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssignableCollaboratorListResponse'
+              example:
+                success: true
+                data:
+                  - userId: 7c9e6679-7425-40de-944b-e07fc1f90ae7
+                    name: Ana
+                    lastName: López
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '500':
+          description: Unable to retrieve collaborators
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CaseAssignmentErrorResponse'
+              example:
+                success: false
+                code: SERVER_ERROR
+                error: Unable to retrieve collaborators.
+
   /api/violence-types:
     get:
       tags: [Cases]
@@ -1274,8 +1307,8 @@ paths:
       - $ref: '#/components/parameters/CaseId'
     post:
       tags: [Cases]
-      summary: Assign an internal user to a case (R-10)
-      description: Assigns an active internal account to an open case. A case can have several collaborators. Assigning a user that is already assigned succeeds again, and a removed assignment is restored. The action is saved in the activity log. Internal and admin only.
+      summary: Assign an internal or admin user to a case (R-10)
+      description: Assigns an active internal or admin account to an open case. GET /api/cases/collaborators lists the accounts that can be assigned. A case can have several collaborators. Assigning a user that is already assigned succeeds again, and a removed assignment is restored. The action is saved in the activity log. Internal and admin only.
       security:
         - BearerAuth: []
       requestBody:
@@ -1306,7 +1339,7 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404':
-          description: The case does not exist (CASE_NOT_FOUND) or the user is not an internal account (COLLABORATOR_NOT_FOUND)
+          description: The case does not exist (CASE_NOT_FOUND) or the user is not an internal or admin account (COLLABORATOR_NOT_FOUND)
           content:
             application/json:
               schema:
@@ -1316,7 +1349,7 @@ paths:
                 code: COLLABORATOR_NOT_FOUND
                 error: Collaborator with ID 7c9e6679-7425-40de-944b-e07fc1f90ae7 not found.
         '409':
-          description: The case is closed (CASE_CLOSED) or the internal account is deactivated (COLLABORATOR_INACTIVE)
+          description: The case is closed (CASE_CLOSED) or the account is deactivated (COLLABORATOR_INACTIVE)
           content:
             application/json:
               schema:
@@ -2489,7 +2522,22 @@ components:
         userId:
           type: string
           format: uuid
-          description: Id of the active internal account to assign to the case
+          description: Id of the active internal or admin account to assign to the case
+
+    AssignableCollaboratorListResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success: { type: boolean, example: true }
+        data:
+          type: array
+          items:
+            type: object
+            required: [userId, name, lastName]
+            properties:
+              userId: { type: string, format: uuid }
+              name: { type: string, example: Ana }
+              lastName: { type: string, example: López }
 
     AssignCaseCollaboratorSuccessResponse:
       type: object
