@@ -1181,7 +1181,7 @@ paths:
     get:
       tags: [Cases]
       summary: List the accounts that can be assigned to a case (R-10)
-      description: Internal and admin only. Returns the active internal and admin accounts sorted by name, with only the data needed to pick one and send its userId to POST /api/cases/{caseId}/assignments. Deactivated accounts are not returned. The full collaborator list stays in GET /api/internal-users (G-06, admin only).
+      description: Internal and admin only. Returns the active internal and admin accounts sorted by name, with only the data needed to pick them and send their userIds to POST /api/cases/{caseId}/assignments. Deactivated accounts are not returned. The full collaborator list stays in GET /api/internal-users (G-06, admin only).
       security:
         - BearerAuth: []
       responses:
@@ -1307,8 +1307,8 @@ paths:
       - $ref: '#/components/parameters/CaseId'
     post:
       tags: [Cases]
-      summary: Assign an internal or admin user to a case (R-10)
-      description: Assigns an active internal or admin account to an open case. GET /api/cases/collaborators lists the accounts that can be assigned. A case can have several collaborators. Assigning a user that is already assigned succeeds again, and a removed assignment is restored. The action is saved in the activity log. Internal and admin only.
+      summary: Assign one or more internal or admin users to a case (R-10)
+      description: Assigns one or more active internal or admin accounts to an open case in a single call. GET /api/cases/collaborators lists the accounts that can be assigned. A case can have several collaborators. Every id is checked first, so if one is invalid, missing or deactivated nothing is saved. Repeated ids are counted once. Assigning a user that is already assigned succeeds again, and a removed assignment is restored. Each assigned user is saved as its own entry in the activity log. Internal and admin only.
       security:
         - BearerAuth: []
       requestBody:
@@ -1319,7 +1319,7 @@ paths:
               $ref: '#/components/schemas/AssignCaseCollaboratorRequest'
       responses:
         '200':
-          description: Collaborator assigned to the case
+          description: Collaborators assigned to the case
           content:
             application/json:
               schema:
@@ -1327,7 +1327,7 @@ paths:
               example:
                 success: true
         '400':
-          description: caseId or userId is missing or is not a UUID (VALIDATION_ERROR)
+          description: caseId is not a UUID, userIds is missing or empty, or one of its ids is not a UUID (VALIDATION_ERROR)
           content:
             application/json:
               schema:
@@ -1335,11 +1335,11 @@ paths:
               example:
                 success: false
                 code: VALIDATION_ERROR
-                error: userId must be a valid UUID
+                error: userIds[0] must be a valid UUID
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404':
-          description: The case does not exist (CASE_NOT_FOUND) or the user is not an internal or admin account (COLLABORATOR_NOT_FOUND)
+          description: The case does not exist (CASE_NOT_FOUND) or one of the users is not an internal or admin account (COLLABORATOR_NOT_FOUND)
           content:
             application/json:
               schema:
@@ -1349,7 +1349,7 @@ paths:
                 code: COLLABORATOR_NOT_FOUND
                 error: Collaborator with ID 7c9e6679-7425-40de-944b-e07fc1f90ae7 not found.
         '409':
-          description: The case is closed (CASE_CLOSED) or the account is deactivated (COLLABORATOR_INACTIVE)
+          description: The case is closed (CASE_CLOSED) or one of the accounts is deactivated (COLLABORATOR_INACTIVE)
           content:
             application/json:
               schema:
@@ -2517,12 +2517,18 @@ components:
 
     AssignCaseCollaboratorRequest:
       type: object
-      required: [userId]
+      required: [userIds]
       properties:
-        userId:
-          type: string
-          format: uuid
-          description: Id of the active internal or admin account to assign to the case
+        userIds:
+          type: array
+          minItems: 1
+          items:
+            type: string
+            format: uuid
+          description: Ids of the active internal or admin accounts to assign to the case
+          example:
+            - 7c9e6679-7425-40de-944b-e07fc1f90ae7
+            - 3fa85f64-5717-4562-b3fc-2c963f66afa6
 
     AssignableCollaboratorListResponse:
       type: object
