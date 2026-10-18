@@ -21,6 +21,8 @@ let externalUserId;
 let openCaseId;
 // Used by the several-collaborators tests, so it starts with no assignments
 let secondOpenCaseId;
+// Used by the replace (PUT) tests
+let replaceCaseId;
 let closedCaseId;
 let collaboratorId;
 let inactiveCollaboratorId;
@@ -47,6 +49,19 @@ const postAssignment = async (caseId, body, roles = ['internal']) =>
     .post(`/api/cases/${caseId}/assignments`)
     .set('Authorization', await authHeader(roles))
     .send(body);
+
+const putAssignments = async (caseId, body, roles = ['internal']) =>
+  request(app)
+    .put(`/api/cases/${caseId}/assignments`)
+    .set('Authorization', await authHeader(roles))
+    .send(body);
+
+// Only the assignments that were not removed
+const getActiveUserIds = async (caseId) =>
+  (await getAssignments(caseId))
+    .filter((row) => row.deleted_at === null)
+    .map((row) => row.user_id)
+    .sort();
 
 const getCollaborators = async (roles = ['internal']) =>
   request(app)
@@ -132,6 +147,7 @@ beforeAll(async () => {
 
   openCaseId = await createCase(record.data.record_id, 'Open');
   secondOpenCaseId = await createCase(record.data.record_id, 'Open');
+  replaceCaseId = await createCase(record.data.record_id, 'Open');
   closedCaseId = await createCase(record.data.record_id, 'Closed');
   collaboratorId = await createInternalUser();
   inactiveCollaboratorId = await createInternalUser(new Date().toISOString());
@@ -140,7 +156,12 @@ beforeAll(async () => {
 
 // The tests write to the shared tables, so everything created is removed at the end
 afterAll(async () => {
-  const caseIds = [openCaseId, secondOpenCaseId, closedCaseId].filter(Boolean);
+  const caseIds = [
+    openCaseId,
+    secondOpenCaseId,
+    replaceCaseId,
+    closedCaseId,
+  ].filter(Boolean);
   const userIds = [
     externalUserId,
     collaboratorId,
@@ -473,6 +494,170 @@ describe('Integration tests for R-10', () => {
         expect(logs.map((log) => log.details.userId).sort()).toEqual(
           [collaboratorId, adminId].sort()
         );
+      });
+    });
+  });
+
+  describe('PUT /api/cases/:caseId/assignments - replace the collaborators of a case', () => {
+    describe('It contains no authorization token', () => {
+      it('Should respond with code 401', async () => {
+        const response = await request(app)
+          .put(`/api/cases/${replaceCaseId}/assignments`)
+          .send({ userIds: [collaboratorId] });
+
+        expect(response.statusCode).toBe(401);
+        expect(response.body.error).toBe('Token is required.');
+      });
+    });
+
+    describe('The token belongs to an external user', () => {
+      it('Should respond with code 403', async () => {
+        const response = await putAssignments(
+          replaceCaseId,
+          { userIds: [collaboratorId] },
+          ['external']
+        );
+
+        expect(response.statusCode).toBe(403);
+        expect(response.body.error).toBe('You do not have permission');
+      });
+    });
+
+    describe('It contains no userIds', () => {
+      it('Should respond with code 400', async () => {
+        const response = await putAssignments(replaceCaseId, {});
+
+        expect(response.statusCode).toBe(400);
+        expect(response.body.code).toBe('VALIDATION_ERROR');
+        expect(response.body.error).toBe('userIds must be an array.');
+      });
+    });
+
+    describe('It contains an invalid userId', () => {
+      it('Should respond with code 400', async () => {
+        const response = await putAssignments(replaceCaseId, {
+          userIds: ['abc'],
+        });
+
+        expect(response.statusCode).toBe(400);
+        expect(response.body.code).toBe('VALIDATION_ERROR');
+        expect(response.body.error).toBe('userIds[0] must be a valid UUID');
+      });
+    });
+
+    describe('It contains a closed case', () => {
+      it('Should respond with code 409', async () => {
+        const response = await putAssignments(closedCaseId, {
+          userIds: [collaboratorId],
+        });
+
+        expect(response.statusCode).toBe(409);
+        expect(response.body.code).toBe('CASE_CLOSED');
+      });
+    });
+
+    describe('It contains a valid collaborator and one that does not exist', () => {
+      it('Should respond with code 404 and change nothing', async () => {
+        const response = await putAssignments(replaceCaseId, {
+          userIds: [collaboratorId, missingId],
+        });
+
+        expect(response.statusCode).toBe(404);
+        expect(response.body.code).toBe('COLLABORATOR_NOT_FOUND');
+        expect(await getActiveUserIds(replaceCaseId)).toEqual([]);
+      });
+    });
+
+    describe('It contains an inactive collaborator', () => {
+      it('Should respond with code 409 and change nothing', async () => {
+        const response = await putAssignments(replaceCaseId, {
+          userIds: [collaboratorId, inactiveCollaboratorId],
+        });
+
+        expect(response.statusCode).toBe(409);
+        expect(response.body.code).toBe('COLLABORATOR_INACTIVE');
+        expect(await getActiveUserIds(replaceCaseId)).toEqual([]);
+      });
+    });
+
+    describe('It sends the first list of collaborators', () => {
+      it('Should respond with code 200 and assign every user of the list', async () => {
+        const response = await putAssignments(replaceCaseId, {
+          userIds: [collaboratorId, adminId, collaboratorId],
+        });
+
+        expect(response.statusCode).toBe(200);
+        expect(response.body.success).toBe(true);
+        expect(response.body.data.caseId).toBe(replaceCaseId);
+        expect([...response.body.data.userIds].sort()).toEqual(
+          [collaboratorId, adminId].sort()
+        );
+        expect(await getActiveUserIds(replaceCaseId)).toEqual(
+          [collaboratorId, adminId].sort()
+        );
+      });
+    });
+
+    describe('It sends a list without one of the collaborators', () => {
+      it('Should respond with code 200, remove her and log the removal', async () => {
+        const response = await putAssignments(replaceCaseId, {
+          userIds: [adminId],
+        });
+
+        expect(response.statusCode).toBe(200);
+        expect(await getActiveUserIds(replaceCaseId)).toEqual([adminId]);
+
+        const { data: logs } = await supabase
+          .from('activity_log')
+          .select('details')
+          .eq('actor_user_id', collaboratorId)
+          .eq('action', 'unassign_case_collaborator')
+          .eq('entity_id', replaceCaseId);
+        expect(logs).toEqual([{ details: { userId: collaboratorId } }]);
+      });
+    });
+
+    describe('It consults the case detail', () => {
+      it('Should only return the collaborators that are still assigned', async () => {
+        const response = await request(app)
+          .get(`/api/cases/${replaceCaseId}`)
+          .set('Authorization', await authHeader(['internal']));
+
+        expect(response.statusCode).toBe(200);
+        expect(response.body.data.case_assignment).toEqual([
+          { user_id: adminId },
+        ]);
+      });
+    });
+
+    describe('It sends the same list again', () => {
+      it('Should respond with code 200 and not log anything new', async () => {
+        const countLogs = async () => {
+          const { count } = await supabase
+            .from('activity_log')
+            .select('log_id', { count: 'exact', head: true })
+            .eq('actor_user_id', collaboratorId)
+            .eq('entity_id', replaceCaseId);
+          return count;
+        };
+        const before = await countLogs();
+
+        const response = await putAssignments(replaceCaseId, {
+          userIds: [adminId],
+        });
+
+        expect(response.statusCode).toBe(200);
+        expect(await countLogs()).toBe(before);
+      });
+    });
+
+    describe('It sends an empty list', () => {
+      it('Should respond with code 200 and remove every collaborator', async () => {
+        const response = await putAssignments(replaceCaseId, { userIds: [] });
+
+        expect(response.statusCode).toBe(200);
+        expect(response.body.data.userIds).toEqual([]);
+        expect(await getActiveUserIds(replaceCaseId)).toEqual([]);
       });
     });
   });
