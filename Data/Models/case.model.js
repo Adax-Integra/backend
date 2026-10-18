@@ -77,6 +77,9 @@ const CASE_DETAIL_COLUMNS = `
       help_id,
       description
     )
+  ),
+  case_assignment (
+    user_id
   )
 `;
 
@@ -264,6 +267,39 @@ class CaseModel {
     }
   }
 
+  // R-10: ids of the users currently assigned to a case, removed assignments are left out
+  static async findAssignedUserIds(caseId) {
+    const { data, error } = await supabase
+      .from('case_assignment')
+      .select('user_id')
+      .eq('case_id', caseId)
+      .is('deleted_at', null);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return (data ?? []).map((row) => row.user_id);
+  }
+
+  /*
+  R-10: Removes users from a case with a soft delete, the row is kept
+  so assigning the same user again restores it.
+  */
+  static async removeUsers(caseId, userIds) {
+    const now = new Date().toISOString();
+    const { error } = await supabase
+      .from('case_assignment')
+      .update({ deleted_at: now, updated_at: now })
+      .eq('case_id', caseId)
+      .in('user_id', userIds)
+      .is('deleted_at', null);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+  }
+
   //case will be retrieved by caseId to display correct information of progress to external user (V-07)
   static async findById(caseId) {
     const { data, error } = await supabase
@@ -278,6 +314,8 @@ class CaseModel {
       .is('case_violence.violence_types.deleted_at', null)
       // R-08: Helps remove form the case are soft deleted
       .is('case_help.deleted_at', null)
+      // R-10: only the collaborators that are still assigned
+      .is('case_assignment.deleted_at', null)
       //order the steps to show progress correctly
       .order('step_number', {
         foreignTable: 'case_steps',
