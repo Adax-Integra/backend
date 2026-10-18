@@ -26,6 +26,7 @@ import UpdateCollaboratorProfileUseCase from '../../Domain/UseCases/updateCollab
 import GetExternalUserDocumentsUseCase from '../../Domain/UseCases/getExternalUserDocuments.usecase.js';
 import ExternalUserDocumentsDTO from '../DTOs/externalUserDocuments.dto.js';
 import ReviewVerificationUseCase from '../../Domain/UseCases/reviewVerification.usecase.js';
+import publicBaseUrl from '../../Data/Services/publicBaseUrl.helper.js';
 
 const listCollaboratorsUseCase = new ListCollaboratorsUseCase();
 const getAllCasesFromUser = new GetAllCasesFromUser();
@@ -244,7 +245,8 @@ class InternalUserController {
   getExternalUserDocuments = async (req, res) => {
     try {
       const documents = await getExternalUserDocumentsUseCase.execute(
-        req.params.userId
+        req.params.userId,
+        publicBaseUrl(req)
       );
       const payload = new ExternalUserDocumentsDTO(documents).toJSON();
 
@@ -256,7 +258,7 @@ class InternalUserController {
         entityId: payload.user_id,
       });
 
-      //The response carries signed URLs, it must not be cached
+      //The response carries signed links, it must not be cached
       res.set('Cache-Control', 'no-store');
 
       return res.status(200).json({
