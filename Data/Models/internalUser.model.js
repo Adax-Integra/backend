@@ -114,6 +114,65 @@ class InternalUserModel {
     return data;
   }
 
+  // R-10: Gets the active internal and admin accounts that can take a case
+  static async findAssignable() {
+    const { data, error } = await supabase
+      .from('user')
+      // Only what the app needs to pick someone, G-06 keeps the full list
+      .select(
+        `
+        user_id,
+        name,
+        last_name,
+        user_role!inner (
+          role!inner (description)
+        )
+      `
+      )
+      .in('user_role.role.description', ['internal', 'admin'])
+      // Ignores roles that were removed from the user
+      .is('user_role.deleted_at', null)
+      // Deactivated accounts cannot take new cases
+      .is('deleted_at', null)
+      .order('name', { ascending: true })
+      .order('last_name', { ascending: true });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return data;
+  }
+
+  /*
+  R-10: Checks the userId sent to POST /cases/:caseId/assignments before it
+  is saved in case_assignment. 
+  It works like G-10's findById but also accepts admins.
+  */
+  static async findAssignableById(userId) {
+    const { data, error } = await supabase
+      .from('user')
+      .select(
+        `
+        user_id,
+        deleted_at,
+        user_role!inner (
+          role!inner (description)
+        )
+      `
+      )
+      .eq('user_id', userId)
+      .in('user_role.role.description', ['internal', 'admin'])
+      .is('user_role.deleted_at', null)
+      .maybeSingle();
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return data;
+  }
+
   // G-04: Activates or deactivates an internal account
   static async updateStatus(userId, isActive) {
     // If the account is activated, the deleted date is null

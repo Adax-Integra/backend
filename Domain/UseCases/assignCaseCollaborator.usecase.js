@@ -10,7 +10,7 @@ function assignmentError(message, status, code) {
   return error;
 }
 
-// R-10: the admin or internal user assigns an internal user to a case
+// R-10: the admin or internal user assigns an internal or admin user to a case
 class AssignCaseCollaboratorUseCase {
   async execute(caseId, body) {
     let validCaseId;
@@ -41,8 +41,9 @@ class AssignCaseCollaboratorUseCase {
       );
     }
 
-    // Only internal accounts can be assigned, the model returns null otherwise
-    const collaborator = await InternalUserModel.findById(validUserId);
+    // Only internal and admin accounts can be assigned, the model returns null otherwise
+    const collaborator =
+      await InternalUserModel.findAssignableById(validUserId);
     if (!collaborator) {
       throw assignmentError(
         `Collaborator with ID ${validUserId} not found.`,
