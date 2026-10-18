@@ -11,6 +11,8 @@ import ListAssignedCasesUseCase from '../../Domain/UseCases/listAssignedCases.us
 import AssignedCasesQueryValidator from '../../Data/Validators/assignedCasesQuery.validator.js';
 import AssignCaseCollaboratorUseCase from '../../Domain/UseCases/assignCaseCollaborator.usecase.js';
 import CaseViolenceTypesDTO from '../DTOs/caseViolenceTypes.dto.js';
+import ListAssignableCollaboratorsUseCase from '../../Domain/UseCases/listAssignableCollaborators.usecase.js';
+import AssignableCollaboratorsDTO from '../DTOs/assignableCollaborators.dto.js';
 
 const listCasesUseCase = new ListCasesUseCase();
 const getCaseByIdUseCase = new GetCaseByIdUseCase();
@@ -21,6 +23,8 @@ const listViolenceTypesUseCase = new ListViolenceTypesUseCase();
 const logActivityUseCase = new LogActivityUseCase();
 const listAssignedCasesUseCase = new ListAssignedCasesUseCase();
 const assignCaseCollaboratorUseCase = new AssignCaseCollaboratorUseCase();
+const listAssignableCollaboratorsUseCase =
+  new ListAssignableCollaboratorsUseCase();
 
 class CaseController {
   async listCases(req, res) {
@@ -267,8 +271,28 @@ class CaseController {
     }
   }
 
+  // R-10: lists the active internal and admin accounts that can take a case
+  async listAssignableCollaborators(_req, res) {
+    try {
+      const collaborators = await listAssignableCollaboratorsUseCase.execute();
+
+      return res.status(200).json({
+        success: true,
+        data: AssignableCollaboratorsDTO.fromRows(collaborators),
+      });
+    } catch (error) {
+      console.error('Failed to list assignable collaborators:', error);
+
+      return res.status(500).json({
+        success: false,
+        code: 'SERVER_ERROR',
+        error: 'Unable to retrieve collaborators.',
+      });
+    }
+  }
+
   /*
-  R-10: assigns an internal user to a case, 
+  R-10: assigns an internal or admin user to a case,
   assigning the same user again returns the same assignment
   */
   async assignCollaborator(req, res) {
