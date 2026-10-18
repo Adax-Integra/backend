@@ -38,7 +38,7 @@ router.post(
 router.get(
   '/internal-users/external-users',
   authMiddleware,
-  adminOnly,
+  adminInternalOnly,
   internalUserController.listExternalUsers
 );
 
@@ -46,7 +46,7 @@ router.get(
 router.get(
   '/internal-users/external-users/:userId',
   authMiddleware,
-  adminOnly,
+  adminInternalOnly,
   internalUserController.getExternalProfile
 );
 
