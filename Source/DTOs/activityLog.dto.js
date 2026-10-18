@@ -41,6 +41,11 @@ const ACTIONS = {
     title: 'Asignación de colaboradora',
     verb: 'asignó una colaboradora al caso de',
   },
+  // R-10: an internal user is removed from a case
+  unassign_case_collaborator: {
+    title: 'Remoción de colaboradora',
+    verb: 'quitó una colaboradora del caso de',
+  },
   // G-08: an external or internal user deactivates her own account
   deactivate_account: {
     title: 'Baja de cuenta',
