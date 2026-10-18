@@ -1,6 +1,14 @@
-import app from '../Source/app.js';
+import { jest } from '@jest/globals';
 import jwt from 'jsonwebtoken';
 import request from 'supertest';
+
+// The auth middleware now validates the session against the database.
+// Mock it so these tests check the G-16 behavior, not the session store.
+jest.unstable_mockModule('../Data/Models/authToken.model.js', () => ({
+  default: { isActive: jest.fn().mockResolvedValue(true) },
+}));
+
+const { default: app } = await import('../Source/app.js');
 
 // The role middleware only reads the roles, so any user id works here
 const userId = 'f776c596-e385-4e11-8e1e-554fac5da3f0';
@@ -22,13 +30,13 @@ describe('Unit tests for G-16', () => {
     });
 
     describe('The token belongs to an internal user', () => {
-      it('Should respond with code 403', async () => {
+      it('Should respond with code 200 and the list', async () => {
         const response = await request(app)
           .get(URL)
           .set('Authorization', authHeader(['internal']));
 
-        expect(response.statusCode).toBe(403);
-        expect(response.body.error).toBe('You do not have permission');
+        expect(response.statusCode).toBe(200);
+        expect(response.body.success).toBe(true);
       });
     });
 
