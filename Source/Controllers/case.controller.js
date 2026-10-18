@@ -292,24 +292,28 @@ class CaseController {
   }
 
   /*
-  R-10: assigns an internal or admin user to a case,
+  R-10: assigns one or more internal or admin users to a case in one call,
   assigning the same user again returns the same assignment
   */
   async assignCollaborator(req, res) {
     try {
-      const { caseId, userId } = await assignCaseCollaboratorUseCase.execute(
+      const { caseId, userIds } = await assignCaseCollaboratorUseCase.execute(
         req.params.caseId,
         req.body
       );
 
-      // V-06: who assigned the collaborator appears in the activity log
-      await logActivityUseCase.execute({
-        actorId: req.user.user_id,
-        action: 'assign_case_collaborator',
-        entity: 'case',
-        entityId: caseId,
-        details: { userId },
-      });
+      // V-06: who assigned each collaborator appears in the activity log, one entry per collaborator
+      await Promise.all(
+        userIds.map((userId) =>
+          logActivityUseCase.execute({
+            actorId: req.user.user_id,
+            action: 'assign_case_collaborator',
+            entity: 'case',
+            entityId: caseId,
+            details: { userId },
+          })
+        )
+      );
 
       // It is only an action, the app already has the ids it sent
       return res.status(200).json({ success: true });

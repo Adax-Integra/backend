@@ -10,14 +10,29 @@ function assignmentError(message, status, code) {
   return error;
 }
 
-// R-10: the admin or internal user assigns an internal or admin user to a case
+/*
+userIds must be a non-empty array of UUIDs.
+Repeated ids would make the upsert fail, so each one is kept once
+*/
+function validateUserIds(userIds) {
+  if (!Array.isArray(userIds) || userIds.length === 0) {
+    throw new Error('userIds must be a non-empty array.');
+  }
+
+  const ids = userIds.map((userId, index) =>
+    ValidIdValidator.validateId(userId, `userIds[${index}]`).toLowerCase()
+  );
+  return [...new Set(ids)];
+}
+
+// R-10: the admin or internal user assigns one or more internal or admin users to a case
 class AssignCaseCollaboratorUseCase {
   async execute(caseId, body) {
     let validCaseId;
-    let validUserId;
+    let validUserIds;
     try {
       validCaseId = ValidIdValidator.validateId(caseId, 'caseId');
-      validUserId = ValidIdValidator.validateId(body?.userId, 'userId');
+      validUserIds = validateUserIds(body?.userIds);
     } catch (error) {
       throw assignmentError(error.message, 400, 'VALIDATION_ERROR');
     }
@@ -41,30 +56,39 @@ class AssignCaseCollaboratorUseCase {
       );
     }
 
-    // Only internal and admin accounts can be assigned, the model returns null otherwise
-    const collaborator =
-      await InternalUserModel.findAssignableById(validUserId);
-    if (!collaborator) {
+    // Every id is checked before saving, so one bad id rejects the whole request
+    const collaborators =
+      await InternalUserModel.findAssignableByIds(validUserIds);
+    const foundById = new Map(
+      collaborators.map((collaborator) => [collaborator.user_id, collaborator])
+    );
+
+    // Only internal and admin accounts can be assigned, the model leaves the rest out
+    const missingId = validUserIds.find((userId) => !foundById.has(userId));
+    if (missingId) {
       throw assignmentError(
-        `Collaborator with ID ${validUserId} not found.`,
+        `Collaborator with ID ${missingId} not found.`,
         404,
         'COLLABORATOR_NOT_FOUND'
       );
     }
 
     // The model also returns deactivated accounts, they cannot take new cases
-    if (collaborator.deleted_at) {
+    const inactiveId = validUserIds.find(
+      (userId) => foundById.get(userId).deleted_at
+    );
+    if (inactiveId) {
       throw assignmentError(
-        `Collaborator with ID ${validUserId} is inactive.`,
+        `Collaborator with ID ${inactiveId} is inactive.`,
         409,
         'COLLABORATOR_INACTIVE'
       );
     }
 
-    await CaseModel.assignUser(validCaseId, validUserId);
+    await CaseModel.assignUsers(validCaseId, validUserIds);
 
     // The validated ids are returned so the controller can write the activity log
-    return { caseId: validCaseId, userId: validUserId };
+    return { caseId: validCaseId, userIds: validUserIds };
   }
 }
 
