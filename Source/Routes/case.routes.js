@@ -28,6 +28,16 @@ router.get(
   caseController.listAssignedCases
 );
 
+/* 
+R-10: Accounts that can be assigned to a case, internal/admin only.
+*/
+router.get(
+  '/cases/collaborators',
+  authMiddleware,
+  adminInternalOnly,
+  caseController.listAssignableCollaborators
+);
+
 //Case details: any authenticated user (the owner sees it in V-07,
 // staff can see any case). A per-case ownership check is a recommended
 // follow-up, for now, a valid token is enough
@@ -64,7 +74,7 @@ router.patch(
   adminInternalOnly,
   caseController.assignViolenceTypes
 );
-// Assign an internal user to a case (R-10)
+// Assign an internal or admin user to a case (R-10)
 router.post(
   '/cases/:caseId/assignments',
   authMiddleware,
