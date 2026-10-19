@@ -417,7 +417,7 @@ class CaseModel {
   static async assignViolenceTypes(caseId, violenceIds) {
     const { data: caseData, error: caseError } = await supabase
       .from('case')
-      .select('case_id')
+      .select('case_id', 'state')
       .eq('case_id', caseId)
       .is('deleted_at', null)
       .maybeSingle();
@@ -435,7 +435,7 @@ class CaseModel {
 
     // A closed case can not be edited
     if (caseData.state === 'Closed') {
-      const error = new Error('Case with ID ${caseId} is closed');
+      const error = new Error(`Case with ID ${caseId} is closed`);
       error.status = 409;
       error.code = 'CASE_CLOSED';
       throw error;
@@ -510,7 +510,18 @@ class CaseModel {
       if (error) {
         throw new Error(error.message);
       }
+
+      //update timestamp
+      const { error: updateCaseError } = await supabase
+        .from('case')
+        .update({ updated_at: now })
+        .eq('case_id', caseId);
+
+      if (updateCaseError) {
+        throw new Error(updateCaseError.message);
+      }
     }
+
     const { severity, urgency } = calculateCaseUrgency(
       selectedTypes.map((type) => ({
         violence_types: { severity: type.severity },
