@@ -1,4 +1,11 @@
-// DTO to format and clean raw DB output to JSON for US V-11
+function toUtcIso(value) {
+  if (!value) {
+    return null;
+  }
+  const text = String(value);
+  const hasZone = /(Z|[+-]\d{2}:?\d{2})$/.test(text);
+  return new Date(hasZone ? text : `${text}Z`).toISOString();
+}
 
 class CaseDetailDTO {
   constructor(data = {}) {
@@ -16,6 +23,7 @@ class CaseDetailDTO {
       case_steps = [],
       case_help = [],
       case_violence = [],
+      case_assignment = [],
     } = data || {};
 
     // Base Case Attributes
@@ -26,8 +34,11 @@ class CaseDetailDTO {
     this.hasLawyer = Boolean(has_lawyer);
     this.state = state ?? null;
     this.recordId = record_id ?? null;
-    this.createdAt = created_at ? new Date(created_at) : null;
-    this.updatedAt = updated_at ? new Date(updated_at) : null;
+    // Record number is shown instead of the UUID
+    this.recordNumber = record?.record_number ?? null;
+    // Dates are always returned in UTC (ending in Z) so the app can show the local time
+    this.createdAt = toUtcIso(created_at);
+    this.updatedAt = toUtcIso(updated_at);
 
     this.user = {
       userId: record?.user?.user_id ?? null,
@@ -51,6 +62,11 @@ class CaseDetailDTO {
       description: violence.violence_types?.description ?? null,
       severity: violence.violence_types?.severity ?? null,
     }));
+
+    // R-10: collaborators currently assigned, removed ones are already filtered by the model
+    this.assignedUserIds = (case_assignment || [])
+      .map((assignment) => assignment.user_id)
+      .filter(Boolean);
   }
 
   toJSON() {
@@ -62,12 +78,14 @@ class CaseDetailDTO {
       hasLawyer: this.hasLawyer,
       state: this.state,
       recordId: this.recordId,
+      recordNumber: this.recordNumber,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
       user: this.user,
       steps: this.steps,
       helps: this.helps,
       violenceTypes: this.violenceTypes,
+      assignedUserIds: this.assignedUserIds,
     };
   }
 }
