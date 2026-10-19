@@ -34,17 +34,29 @@ const swaggerDocument = parseYaml(
   readFileSync(join(__dirname, '..', 'openapi.yaml'), 'utf8')
 );
 
-const JWT_SECRET = process.env.JWT_SECRET;
-if (
-  !JWT_SECRET ||
-  JWT_SECRET.length < 32 ||
-  JWT_SECRET === 'change_me_to_a_long_random_text'
-) {
-  throw new Error('JWT_SECRET must be a strong random value (>= 32 chars)');
+// Jest sets NODE_ENV to "test", the tests only import the app and do not start the server
+const isTest = process.env.NODE_ENV === 'test';
+
+// SEC-01: the server does not start without a strong JWT secret
+function assertJwtSecret() {
+  const JWT_SECRET = process.env.JWT_SECRET;
+  if (
+    !JWT_SECRET ||
+    JWT_SECRET.length < 32 ||
+    JWT_SECRET === 'change_me_to_a_long_random_text'
+  ) {
+    throw new Error('JWT_SECRET must be a strong random value (>= 32 chars)');
+  }
 }
 
-// R-06: without the master key no document can be uploaded or opened
-DocumentEncryptionService.assertConfigured();
+// The configuration is checked only when the server really starts,
+// so a test that imports the app does not fail for a missing variable
+if (!isTest) {
+  assertJwtSecret();
+
+  // R-06: without the master key no document can be uploaded or opened
+  DocumentEncryptionService.assertConfigured();
+}
 
 const app = express();
 
@@ -92,7 +104,10 @@ app.use((err, _req, res, _next) => {
   res.status(500).send('Internal server error.');
 });
 
-const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => console.log(`Servidor en http://localhost:${PORT}`));
+// supertest opens its own connection, so the tests do not need port 3001
+if (!isTest) {
+  const PORT = process.env.PORT || 3001;
+  app.listen(PORT, () => console.log(`Servidor en http://localhost:${PORT}`));
+}
 
 export default app;
