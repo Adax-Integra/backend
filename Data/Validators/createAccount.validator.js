@@ -36,6 +36,16 @@ class CreateAccountValidator {
       throw new Error('phone must contain exactly 10 digits.');
     }
 
+    const countryCode = RequiredStringValidator.validateRequiredString(
+      body.country_code,
+      'country_code'
+    );
+
+    // acepts a plus sign followed by 1 to 3 digits (e.g. +52)
+    if (!/^\+\d{1,3}$/.test(countryCode)) {
+      throw new Error('country_code must be a valid country code (e.g. +52).');
+    }
+
     // checks that the passwords is text and has at least 8 characters
     if (
       typeof body.password !== 'string' ||
@@ -57,7 +67,8 @@ class CreateAccountValidator {
       name,
       lastName,
       email,
-      phone,
+      // saves the phone with its country code (e.g. +524421234567)
+      phone: `${countryCode}${phone}`,
       password: body.password,
     };
   }
