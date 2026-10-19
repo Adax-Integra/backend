@@ -1,6 +1,7 @@
 import GetCaseByIdUseCase from '../../Domain/UseCases/getCaseById.usecase.js';
 import ListCasesUseCase from '../../Domain/UseCases/listCases.usecase.js';
 import CaseListDTO from '../DTOs/caseList.dto.js';
+import CaseDetailDTO from '../DTOs/caseDetail.dto.js';
 import GetAllCasesFromUser from '../../Domain/UseCases/getAllCasesFromUser.usecase.js';
 import CaseSummaryDTO from '../DTOs/getAllCases.dto.js';
 import CloseCaseUseCase from '../../Domain/UseCases/closeCase.usecase.js';
@@ -156,11 +157,11 @@ class CaseController {
     try {
       const { caseId } = req.params;
 
-      const data = await getCaseByIdUseCase.execute(caseId);
+      const caseData = await getCaseByIdUseCase.execute(caseId);
 
       return res.status(200).json({
         success: true,
-        data: data,
+        data: new CaseDetailDTO(caseData).toJSON(),
       });
     } catch (error) {
       return res.status(400).json({

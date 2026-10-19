@@ -2724,12 +2724,23 @@ components:
         has_lawyer: { type: boolean }
         state: { type: string, nullable: true }
         record_id: { type: string, format: uuid }
-        created_at: { type: string, format: date-time, nullable: true }
-        updated_at: { type: string, format: date-time, nullable: true }
+        created_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Always in UTC, ends in Z
+          example: '2026-10-08T03:33:38.891Z'
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Always in UTC, ends in Z
+          example: '2026-10-08T03:33:38.891Z'
         record:
           type: object
           properties:
             record_id: { type: string, format: uuid }
+            record_number: { type: string, nullable: true }
             user:
               type: object
               properties:

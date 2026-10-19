@@ -55,6 +55,9 @@ describe('Unit tests for V-11', () => {
           'case_id',
           ALREADY_CLOSED_CASE
         );
+        // Dates are sent in UTC so the app can show the local time
+        expect(response.body.data.created_at).toMatch(/Z$/);
+        expect(response.body.data.updated_at).toMatch(/Z$/);
       });
     });
 
