@@ -451,6 +451,8 @@ paths:
               name: Maria
               last_name: Gomez
               email: maria.gomez@gmail.com
+              country_code: '+52'
+              phone: '4421234567'
               password: password123
               confirm_password: password123
       responses:
@@ -2258,11 +2260,13 @@ components:
 
     CreateAccountRequest:
       type: object
-      required: [name, last_name, email, password, confirm_password]
+      required: [name, last_name, email, country_code, phone, password, confirm_password]
       properties:
         name: { type: string }
         last_name: { type: string }
         email: { type: string, format: email }
+        country_code: { type: string, pattern: '^\\+\\d{1,3}$', example: '+52' }
+        phone: { type: string, pattern: '^\\d{10}$', example: '4421234567' }
         password: { type: string, format: password, minLength: 8 }
         confirm_password: { type: string, format: password, minLength: 8 }
 
