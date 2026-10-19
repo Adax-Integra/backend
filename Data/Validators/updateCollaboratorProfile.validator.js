@@ -1,7 +1,8 @@
 import EmailValidator from './email.validator.js';
 import RequiredStringValidator from './requiredString.validator.js';
+import PhoneValidator from './phone.validator.js';
 
-const ALLOWED_PROFILE_KEYS = ['name', 'last_name', 'email'];
+const ALLOWED_PROFILE_KEYS = ['name', 'last_name', 'email', 'phone'];
 
 const MAX_NAME_LENGTH = 50;
 const MAX_EMAIL_LENGTH = 128;
@@ -84,6 +85,14 @@ class UpdateCollaboratorProfileValidator {
         }
       } catch (error) {
         errors['profile.email'] = error.message;
+      }
+    }
+    // G-11: phone reuses the same validator as R-04 (own profile edit)
+    if (body.profile.phone !== undefined) {
+      try {
+        profile.phone = PhoneValidator.validatePhone(body.profile.phone);
+      } catch (error) {
+        errors['profile.phone'] = error.message;
       }
     }
 

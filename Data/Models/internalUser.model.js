@@ -204,7 +204,7 @@ class InternalUserModel {
   static async findEditableProfileById(userId) {
     const { data, error } = await supabase
       .from('user')
-      .select('user_id, name, last_name, email')
+      .select('user_id, name, last_name, email, phone')
       .eq('user_id', userId)
       .is('deleted_at', null)
       .maybeSingle();
@@ -229,6 +229,26 @@ class InternalUserModel {
     }
 
     return data ?? null;
+  }
+  /*
+  G-11: The RPC used by G-18 only handles name, last_name and email,
+  so the phone is updated on its own.
+  Returns null when the account does not exist or was deactivated.
+  */
+  static async updatePhone(userId, phone) {
+    const { data, error } = await supabase
+      .from('user')
+      .update({ phone })
+      .eq('user_id', userId)
+      .is('deleted_at', null)
+      .select('user_id')
+      .maybeSingle();
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return data;
   }
 
   static async updateProfileWithLog({ userId, actorId, profile, changes }) {
