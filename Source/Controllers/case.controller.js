@@ -14,6 +14,7 @@ import CaseViolenceTypesDTO from '../DTOs/caseViolenceTypes.dto.js';
 import ListAssignableCollaboratorsUseCase from '../../Domain/UseCases/listAssignableCollaborators.usecase.js';
 import AssignableCollaboratorsDTO from '../DTOs/assignableCollaborators.dto.js';
 import ReplaceCaseCollaboratorsUseCase from '../../Domain/UseCases/replaceCaseCollaborators.usecase.js';
+import UpdateCaseStepUseCase from '../../Domain/UseCases/updateCaseStep.usecase.js';
 
 const listCasesUseCase = new ListCasesUseCase();
 const getCaseByIdUseCase = new GetCaseByIdUseCase();
@@ -27,6 +28,7 @@ const assignCaseCollaboratorUseCase = new AssignCaseCollaboratorUseCase();
 const listAssignableCollaboratorsUseCase =
   new ListAssignableCollaboratorsUseCase();
 const replaceCaseCollaboratorsUseCase = new ReplaceCaseCollaboratorsUseCase();
+const updateCaseStepUseCase = new UpdateCaseStepUseCase();
 
 class CaseController {
   async listCases(req, res) {
@@ -413,6 +415,50 @@ class CaseController {
       return res.status(400).json({
         success: false,
         error: error.message,
+      });
+    }
+  }
+
+  //r-13 update case steps
+  async updateCaseStep(req, res) {
+    try {
+      const { caseId } = req.params;
+      const { stepNumber } = req.body;
+
+      const updatedCase = await updateCaseStepUseCase.execute(
+        caseId,
+        stepNumber
+      );
+
+      return res.status(200).json({
+        success: true,
+        data: updatedCase,
+      });
+    } catch (error) {
+      if (
+        error.status === 400 ||
+        error.message === 'caseId is required' ||
+        error.message.includes('required') ||
+        error.message.includes('Invalid step number')
+      ) {
+        return res.status(400).json({
+          success: false,
+          error: error.message,
+        });
+      }
+
+      if (error.status === 409 || error.message && error.message.includes('closed case')) {
+        return res.status(409).json({
+          success: false,
+          error: error.message,
+        });
+      }
+
+      console.error('Failed to update case step:', error);
+
+      return res.status(500).json({
+        success: false,
+        error: 'Unable to update case step.',
       });
     }
   }
