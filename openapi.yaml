@@ -2717,59 +2717,72 @@ components:
     CaseDetail:
       type: object
       properties:
-        caseId: { type: string, format: uuid }
-        caseNumber: { type: string, nullable: true }
-        writtenDescription: { type: string, nullable: true }
-        writtenHelpsWanted: { type: string, nullable: true }
-        hasLawyer: { type: boolean }
+        case_id: { type: string, format: uuid }
+        case_number: { type: string, nullable: true }
+        written_description: { type: string, nullable: true }
+        written_helps_wanted: { type: string, nullable: true }
+        has_lawyer: { type: boolean }
         state: { type: string, nullable: true }
-        recordId: { type: string, format: uuid }
-        recordNumber: { type: string, nullable: true }
-        createdAt:
+        record_id: { type: string, format: uuid }
+        created_at:
           type: string
           format: date-time
           nullable: true
           description: Always in UTC, ends in Z
           example: '2026-10-08T03:33:38.891Z'
-        updatedAt:
+        updated_at:
           type: string
           format: date-time
           nullable: true
           description: Always in UTC, ends in Z
           example: '2026-10-08T03:33:38.891Z'
-        user:
+        record:
           type: object
           properties:
-            userId: { type: string, format: uuid }
-            name: { type: string }
-            lastName: { type: string }
-        steps:
+            record_id: { type: string, format: uuid }
+            record_number: { type: string, nullable: true }
+            user:
+              type: object
+              properties:
+                user_id: { type: string, format: uuid }
+                name: { type: string }
+                last_name: { type: string }
+        case_steps:
           type: array
           items:
             type: object
             properties:
-              caseStepId: { type: string, format: uuid }
-              stepNumber: { type: integer }
+              case_step_id: { type: string, format: uuid }
+              step_number: { type: integer }
               status: { type: string }
-        helps:
+        case_violence:
           type: array
           items:
             type: object
             properties:
-              helpId: { type: string, format: uuid }
-              description: { type: string }
-        violenceTypes:
+              violence_types:
+                type: object
+                properties:
+                  violence_id: { type: string, format: uuid }
+                  description: { type: string }
+                  severity: { type: integer, nullable: true }
+        case_help:
           type: array
           items:
             type: object
             properties:
-              violenceId: { type: string, format: uuid }
-              description: { type: string }
-              severity: { type: integer, nullable: true }
-        assignedUserIds:
+              help_types:
+                type: object
+                properties:
+                  help_id: { type: string, format: uuid }
+                  description: { type: string }
+        case_assignment:
           type: array
           description: Collaborators currently assigned to the case (R-10), removed ones are left out
-          items: { type: string, format: uuid }
+          items:
+            type: object
+            properties:
+              user_id: { type: string, format: uuid }
 
     StateOption:
       type: object
