@@ -82,4 +82,13 @@ router.post(
   caseController.assignCollaborator
 );
 
+//r-13 updates case steps
+// Assign an internal or admin user to a case (R-10)
+router.patch(
+  '/cases/:caseId/steps',
+  authMiddleware,
+  adminInternalOnly,
+  caseController.updateCaseStep
+);
+
 export default router;
