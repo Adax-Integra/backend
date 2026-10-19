@@ -484,26 +484,6 @@ class CaseModel {
 
   //r-13 update case step
   static async updateCaseStep(caseId, targetStepNumber) {
-    //verify the case exists and is not closed
-    const { data: caseData, error: caseError } = await supabase
-      .from('case')
-      .select('case_id, state')
-      .eq('case_id', caseId)
-      .is('deleted_at', null)
-      .maybeSingle();
-
-    if (caseError) throw new Error(caseError.message);
-    if (!caseData) {
-      const error = new Error('Case not found.');
-      error.status = 404;
-      throw error;
-    }
-    if (caseData.state === 'Closed') {
-      const error = new Error('Cannot update steps for a closed case.');
-      error.status = 409;
-      throw error;
-    }
-
     //fetch all steps for this case to check bounds
     const { data: steps, error: stepsError } = await supabase
       .from('case_steps')
@@ -511,7 +491,15 @@ class CaseModel {
       .eq('case_id', caseId)
       .is('deleted_at', null);
 
-    if (stepsError) throw new Error(stepsError.message);
+    if (stepsError) {
+      throw new Error(stepsError.message);
+    }
+
+    if (!steps || steps.length === 0) {
+      const error = new Error('No steps found for this case.');
+      error.status = 404;
+      throw error;
+    }
 
     const stepExists = steps.some((s) => s.step_number === targetStepNumber);
     if (!stepExists) {
@@ -523,7 +511,6 @@ class CaseModel {
     //if the later steps are marked pendiente, previous steps will
     //automatically mark as completado
     const now = new Date().toISOString();
-
     const updatePromises = steps.map(async (step) => {
       const newStatus =
         step.step_number <= targetStepNumber ? 'Completado' : 'Pendiente';
