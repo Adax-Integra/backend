@@ -6,6 +6,11 @@ const ACTIONS = {
     title: 'Edición de datos de usuaria',
     verb: 'editó los datos de',
   },
+  // G-18: the admin edits the data of a collaborator
+  update_collaborator_profile: {
+    title: 'Edición de datos de colaboradora',
+    verb: 'editó los datos de',
+  },
   // G-03: the admin creates a collaborator account
   create_collaborator: {
     title: 'Alta de colaboradora',
