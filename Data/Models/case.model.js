@@ -562,7 +562,11 @@ class CaseModel {
     const now = new Date().toISOString();
     const updatePromises = steps.map(async (step) => {
       const newStatus =
-        step.step_number <= targetStepNumber ? 'Completado' : 'Pendiente';
+        step.step_number < targetStepNumber ? 'Completado' 
+        : step.step_number === targetStepNumber
+        ? 'En progreso'
+        : 'Pendiente';
+        
       return supabase
         .from('case_steps')
         .update({ status: newStatus, updated_at: now })
