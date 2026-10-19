@@ -1422,6 +1422,74 @@ paths:
                 code: SERVER_ERROR
                 error: Unable to assign the collaborator.
 
+    put:
+      tags: [Cases]
+      summary: Replace the collaborators of a case (R-10)
+      description: Sends the final list of collaborators of an open case. Users in the list that are not assigned yet are assigned, assigned users that are not in the list are removed (soft delete), and an empty list removes everyone. Only the new users are checked, they must be active internal or admin accounts. Repeated ids are counted once. Each added or removed user is saved as its own entry in the activity log (assign_case_collaborator or unassign_case_collaborator). GET /api/cases/{caseId} returns the current collaborators in case_assignment. Internal and admin only.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReplaceCaseCollaboratorsRequest'
+      responses:
+        '200':
+          description: Collaborators of the case updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReplaceCaseCollaboratorsSuccessResponse'
+              example:
+                success: true
+                data:
+                  caseId: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+                  userIds:
+                    - 7c9e6679-7425-40de-944b-e07fc1f90ae7
+        '400':
+          description: caseId is not a UUID, userIds is missing or is not an array, or one of its ids is not a UUID (VALIDATION_ERROR)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CaseAssignmentErrorResponse'
+              example:
+                success: false
+                code: VALIDATION_ERROR
+                error: userIds must be an array.
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404':
+          description: The case does not exist (CASE_NOT_FOUND) or one of the new users is not an internal or admin account (COLLABORATOR_NOT_FOUND)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CaseAssignmentErrorResponse'
+              example:
+                success: false
+                code: COLLABORATOR_NOT_FOUND
+                error: Collaborator with ID 7c9e6679-7425-40de-944b-e07fc1f90ae7 not found.
+        '409':
+          description: The case is closed (CASE_CLOSED) or one of the new accounts is deactivated (COLLABORATOR_INACTIVE)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CaseAssignmentErrorResponse'
+              example:
+                success: false
+                code: CASE_CLOSED
+                error: Case with ID 3fa85f64-5717-4562-b3fc-2c963f66afa6 is closed.
+        '500':
+          description: Unable to update the collaborators
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CaseAssignmentErrorResponse'
+              example:
+                success: false
+                code: SERVER_ERROR
+                error: Unable to update the collaborators.
+
   /api/help-types:
     get:
       tags: [Case helps]
@@ -2598,6 +2666,33 @@ components:
               name: { type: string, example: Ana }
               lastName: { type: string, example: López }
 
+    ReplaceCaseCollaboratorsRequest:
+      type: object
+      required: [userIds]
+      properties:
+        userIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: Final list of collaborators of the case, an empty array removes everyone
+          example:
+            - 7c9e6679-7425-40de-944b-e07fc1f90ae7
+
+    ReplaceCaseCollaboratorsSuccessResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success: { type: boolean, example: true }
+        data:
+          type: object
+          required: [caseId, userIds]
+          properties:
+            caseId: { type: string, format: uuid }
+            userIds:
+              type: array
+              items: { type: string, format: uuid }
+
     AssignCaseCollaboratorSuccessResponse:
       type: object
       required: [success]
@@ -2665,6 +2760,13 @@ components:
                 properties:
                   help_id: { type: string, format: uuid }
                   description: { type: string }
+        case_assignment:
+          type: array
+          description: Collaborators currently assigned to the case (R-10), removed ones are left out
+          items:
+            type: object
+            properties:
+              user_id: { type: string, format: uuid }
 
     StateOption:
       type: object

@@ -3,10 +3,14 @@ import CaseModel from '../../Data/Models/case.model.js';
 class UpdateCaseStepUseCase {
   async execute(caseId, targetStepNumber) {
     if (!caseId) {
-      throw new Error('caseId is required');
+      const error = new Error('caseId is required');
+      error.status = 400;
+      throw error;
     }
     if (!targetStepNumber || typeof targetStepNumber !== 'number') {
-      throw new Error('A valid numeric stepNumber is required');
+      const error = new Error('A valid numeric stepNumber is required');
+      error.status = 400;
+      throw error;
     }
 
     //verify the case exists and is not closed
@@ -18,7 +22,7 @@ class UpdateCaseStepUseCase {
     }
 
     //update steps from the model function
-    const updatedCase = await CaseModel.updateCaseSteps(
+    const updatedCase = await CaseModel.updateCaseStep(
       caseId,
       targetStepNumber
     );

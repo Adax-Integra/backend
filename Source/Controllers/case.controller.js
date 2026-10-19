@@ -13,6 +13,7 @@ import AssignCaseCollaboratorUseCase from '../../Domain/UseCases/assignCaseColla
 import CaseViolenceTypesDTO from '../DTOs/caseViolenceTypes.dto.js';
 import ListAssignableCollaboratorsUseCase from '../../Domain/UseCases/listAssignableCollaborators.usecase.js';
 import AssignableCollaboratorsDTO from '../DTOs/assignableCollaborators.dto.js';
+import ReplaceCaseCollaboratorsUseCase from '../../Domain/UseCases/replaceCaseCollaborators.usecase.js';
 import UpdateCaseStepUseCase from '../../Domain/UseCases/updateCaseStep.usecase.js';
 
 const listCasesUseCase = new ListCasesUseCase();
@@ -26,6 +27,8 @@ const listAssignedCasesUseCase = new ListAssignedCasesUseCase();
 const assignCaseCollaboratorUseCase = new AssignCaseCollaboratorUseCase();
 const listAssignableCollaboratorsUseCase =
   new ListAssignableCollaboratorsUseCase();
+const replaceCaseCollaboratorsUseCase = new ReplaceCaseCollaboratorsUseCase();
+const updateCaseStepUseCase = new UpdateCaseStepUseCase();
 
 class CaseController {
   async listCases(req, res) {
@@ -339,6 +342,66 @@ class CaseController {
     }
   }
 
+  /*
+  R-10: replaces the collaborators of a case with the list sent by the app,
+  the ones missing from the list are removed
+  */
+  async replaceCollaborators(req, res) {
+    try {
+      const { caseId, userIds, addedIds, removedIds } =
+        await replaceCaseCollaboratorsUseCase.execute(
+          req.params.caseId,
+          req.body
+        );
+
+      // V-06: only who was really added or removed appears in the activity log
+      const logs = [
+        ...addedIds.map((userId) => ({
+          action: 'assign_case_collaborator',
+          userId,
+        })),
+        ...removedIds.map((userId) => ({
+          action: 'unassign_case_collaborator',
+          userId,
+        })),
+      ];
+      await Promise.all(
+        logs.map(({ action, userId }) =>
+          logActivityUseCase.execute({
+            actorId: req.user.user_id,
+            action,
+            entity: 'case',
+            entityId: caseId,
+            details: { userId },
+          })
+        )
+      );
+
+      return res.status(200).json({
+        success: true,
+        data: { caseId, userIds },
+      });
+    } catch (error) {
+      const status = error.status ?? 500;
+
+      if (status >= 500) {
+        console.error('Failed to replace case collaborators:', error);
+
+        return res.status(500).json({
+          success: false,
+          code: 'SERVER_ERROR',
+          error: 'Unable to update the collaborators.',
+        });
+      }
+
+      return res.status(status).json({
+        success: false,
+        code: error.code ?? 'VALIDATION_ERROR',
+        error: error.message,
+      });
+    }
+  }
+
   async getCasesByUser(req, res) {
     try {
       const { userId } = req.params;
@@ -362,7 +425,7 @@ class CaseController {
       const { caseId } = req.params;
       const { stepNumber } = req.body;
 
-      const updatedCase = await UpdateCaseStepUseCase.execute(
+      const updatedCase = await updateCaseStepUseCase.execute(
         caseId,
         stepNumber
       );
@@ -373,6 +436,7 @@ class CaseController {
       });
     } catch (error) {
       if (
+        error.status === 400 ||
         error.message === 'caseId is required' ||
         error.message.includes('required') ||
         error.message.includes('Invalid step number')
@@ -383,7 +447,7 @@ class CaseController {
         });
       }
 
-      if (error.message && error.message.includes('closed case')) {
+      if (error.status === 409 || error.message && error.message.includes('closed case')) {
         return res.status(409).json({
           success: false,
           error: error.message,
