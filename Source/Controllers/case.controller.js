@@ -13,6 +13,7 @@ import AssignCaseCollaboratorUseCase from '../../Domain/UseCases/assignCaseColla
 import CaseViolenceTypesDTO from '../DTOs/caseViolenceTypes.dto.js';
 import ListAssignableCollaboratorsUseCase from '../../Domain/UseCases/listAssignableCollaborators.usecase.js';
 import AssignableCollaboratorsDTO from '../DTOs/assignableCollaborators.dto.js';
+import ReplaceCaseCollaboratorsUseCase from '../../Domain/UseCases/replaceCaseCollaborators.usecase.js';
 
 const listCasesUseCase = new ListCasesUseCase();
 const getCaseByIdUseCase = new GetCaseByIdUseCase();
@@ -25,6 +26,7 @@ const listAssignedCasesUseCase = new ListAssignedCasesUseCase();
 const assignCaseCollaboratorUseCase = new AssignCaseCollaboratorUseCase();
 const listAssignableCollaboratorsUseCase =
   new ListAssignableCollaboratorsUseCase();
+const replaceCaseCollaboratorsUseCase = new ReplaceCaseCollaboratorsUseCase();
 
 class CaseController {
   async listCases(req, res) {
@@ -327,6 +329,66 @@ class CaseController {
           success: false,
           code: 'SERVER_ERROR',
           error: 'Unable to assign the collaborator.',
+        });
+      }
+
+      return res.status(status).json({
+        success: false,
+        code: error.code ?? 'VALIDATION_ERROR',
+        error: error.message,
+      });
+    }
+  }
+
+  /*
+  R-10: replaces the collaborators of a case with the list sent by the app,
+  the ones missing from the list are removed
+  */
+  async replaceCollaborators(req, res) {
+    try {
+      const { caseId, userIds, addedIds, removedIds } =
+        await replaceCaseCollaboratorsUseCase.execute(
+          req.params.caseId,
+          req.body
+        );
+
+      // V-06: only who was really added or removed appears in the activity log
+      const logs = [
+        ...addedIds.map((userId) => ({
+          action: 'assign_case_collaborator',
+          userId,
+        })),
+        ...removedIds.map((userId) => ({
+          action: 'unassign_case_collaborator',
+          userId,
+        })),
+      ];
+      await Promise.all(
+        logs.map(({ action, userId }) =>
+          logActivityUseCase.execute({
+            actorId: req.user.user_id,
+            action,
+            entity: 'case',
+            entityId: caseId,
+            details: { userId },
+          })
+        )
+      );
+
+      return res.status(200).json({
+        success: true,
+        data: { caseId, userIds },
+      });
+    } catch (error) {
+      const status = error.status ?? 500;
+
+      if (status >= 500) {
+        console.error('Failed to replace case collaborators:', error);
+
+        return res.status(500).json({
+          success: false,
+          code: 'SERVER_ERROR',
+          error: 'Unable to update the collaborators.',
         });
       }
 

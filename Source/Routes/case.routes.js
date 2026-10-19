@@ -81,5 +81,12 @@ router.post(
   adminInternalOnly,
   caseController.assignCollaborator
 );
+// Replace the collaborators of a case with a final list, the missing ones are removed (R-10)
+router.put(
+  '/cases/:caseId/assignments',
+  authMiddleware,
+  adminInternalOnly,
+  caseController.replaceCollaborators
+);
 
 export default router;
