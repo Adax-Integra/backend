@@ -1,4 +1,4 @@
-import CasesModel from '../../Data/Models/cases.model.js';
+import CaseModel from '../../Data/Models/case.model.js';
 
 class UpdateCaseStepUseCase {
   async execute(caseId, targetStepNumber) {
@@ -10,7 +10,7 @@ class UpdateCaseStepUseCase {
     }
 
     //verify the case exists and is not closed
-    const existingCase = await CasesModel.findById(caseId);
+    const existingCase = await CaseModel.findById(caseId);
     if (existingCase.state === 'Closed') {
       const error = new Error('Cannot update steps for a closed case.');
       error.status = 409;
@@ -18,7 +18,7 @@ class UpdateCaseStepUseCase {
     }
 
     //update steps from the model function
-    const updatedCase = await CasesModel.updateCaseSteps(
+    const updatedCase = await CaseModel.updateCaseSteps(
       caseId,
       targetStepNumber
     );
