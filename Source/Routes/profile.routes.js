@@ -5,10 +5,11 @@ import { ownDataOnly } from '../Middlewares/role.middleware.js';
 
 const router = express.Router();
 
-//since we are obtaining userId, we must validate the session to check profile
+// Validate the session to check profile, like PATCH the id must match the token (g-13)
 router.get(
   '/profile/:userId',
   authMiddleware,
+  ownDataOnly,
   profileController.getProfileByUserId
 );
 
