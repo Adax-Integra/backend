@@ -91,13 +91,23 @@ class MailerService {
       return;
     }
 
+    const message = 'Te informamos que el equipo de Adax actualizó los datos de tu cuenta con tu autorización.';
+    const contactNote = 'Si no reconoces este cambio, siéntete libre de comunicarte con Adax por sus medios oficiales.';
+
     await transporter.sendMail({
       from: MAIL_FROM ?? MAIL_USER,
       to: email,
       subject: 'Actualización de tus datos en Adax',
-      text:
-        'Te informamos que el equipo de Adax actualizó los datos de tu cuenta con tu autorización.\n\n' +
-        'Si no reconoces este cambio, siéntete libre de comunicarte con Adax por sus medios oficiales.',
+      // plain text fallback for clients that do not render HTML
+      text: `${message}\n\n${contactNote}`,
+      // only fixed text is inserted, no user data
+      html: `
+        <div style="max-width: 400px; margin: 0 auto; padding: 28px 20px; background: #ffffff; border-radius: 12px; border: 1px solid #eae6ee; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; text-align: center; color: #2d2d2d;">
+          <h2 style="margin: 0 0 16px; font-size: 18px; font-weight: 600; color: #6C2582;">Actualización de tus datos</h2>
+          <p style="margin: 0 0 12px; font-size: 14px; line-height: 1.5; color: #555555;">${message}</p>
+          <p style="margin: 16px 0 0; font-size: 12px; color: #999999; line-height: 1.4;">${contactNote}</p>
+        </div>
+      `,
     });
   }
 
