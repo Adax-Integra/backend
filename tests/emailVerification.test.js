@@ -214,10 +214,12 @@ describe('POST /api/external-user/register (G-01)', () => {
   const body = {
     name: 'María',
     last_name: 'Gómez',
+    country_code: '+52',
     phone: '4421234567',
     email,
-    password,
-    confirm_password: password,
+    // the register validator also requires a special character
+    password: `${password}!`,
+    confirm_password: `${password}!`,
   };
 
   it('creates the account and emails a verification code', async () => {
@@ -229,7 +231,7 @@ describe('POST /api/external-user/register (G-01)', () => {
         name: body.name,
         last_name: body.last_name,
         email,
-        phone: body.phone,
+        phone: '+524421234567',
       },
       record_id: 'record-id',
       address_id: 'address-id',
@@ -242,6 +244,9 @@ describe('POST /api/external-user/register (G-01)', () => {
 
     expect(response.statusCode).toBe(201);
     expect(response.body.data.userId).toBe(userId);
+    expect(ExternalUserModel.createAccount).toHaveBeenCalledWith(
+      expect.objectContaining({ phone: '+524421234567' })
+    );
     expect(sentCodes).toHaveLength(1);
     expect(sentCodes[0]).toMatch(/^\d{6}$/);
   });
