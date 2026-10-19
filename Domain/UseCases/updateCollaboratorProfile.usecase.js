@@ -62,6 +62,22 @@ class UpdateCollaboratorProfileUseCase {
       profile,
       changes,
     });
+    // G-11: the RPC does not save the phone, so it is saved here.
+    // It runs after the RPC, so nothing is saved if the RPC fails
+    const phoneChanged = changes.some(
+      (change) => change.field === 'profile.phone'
+    );
+
+    if (phoneChanged) {
+      const savedPhone = await InternalUserModel.updatePhone(
+        validUserId,
+        profile.phone
+      );
+
+      if (!savedPhone) {
+        throw requestError('Collaborator not found', 404);
+      }
+    }
 
     const recipients = emailChanged
       ? [currentProfile.email, profile.email]
