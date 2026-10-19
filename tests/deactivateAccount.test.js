@@ -1,14 +1,17 @@
-import { afterEach, describe, expect, it, jest } from '@jest/globals';
+import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import jwt from 'jsonwebtoken';
 import request from 'supertest';
 
 import app from '../Source/app.js';
 import UserModel from '../Data/Models/user.model.js';
 import ActivityLogModel from '../Data/Models/activityLog.model.js';
+import AuthTokenModel from '../Data/Models/authToken.model.js';
 
 /*
 UserModel.deactivate and ActivityLogModel.create are mocked,
 so no real account is deactivated and no log entry is saved.
+AuthTokenModel.isActive is mocked too (G-14), the test tokens are never
+saved in auth_tokens, so the session check would always answer 401.
 */
 
 const USER_ID = '0b7a1c1e-6f0a-4b55-9a4e-2f1d7f5c9a10';
@@ -28,6 +31,11 @@ const mockDeactivate = (result) =>
 
 const mockLog = () =>
   jest.spyOn(ActivityLogModel, 'create').mockResolvedValue(undefined);
+
+beforeEach(() => {
+  // Every test token counts as an active session
+  jest.spyOn(AuthTokenModel, 'isActive').mockResolvedValue(true);
+});
 
 afterEach(() => {
   jest.restoreAllMocks();
