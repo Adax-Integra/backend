@@ -41,3 +41,14 @@ export const createCaseLimiter = rateLimit({
     error: 'Too many cases created, try again later.',
   },
 });
+
+//Rate limit for event creation, allows up to 20 new events per IP every hour
+export const createEventLimiter = rateLimit({
+  ...base,
+  windowMs: 60 * 60 * 1000,
+  max: 20,
+  message: {
+    success: false,
+    error: 'Too many events created, try again later.',
+  },
+});

@@ -1,149 +1,114 @@
-import UserModel from '../../Data/Models/user.model.js';
-import PasswordRecoveryModel from '../../Data/Models/passwordRecovery.model.js';
-import MailerService from '../../Data/Services/mailer.service.js';
-import PasswordValidator from '../../Data/Validators/password.validator.js';
+import bcrypt from 'bcryptjs';
 
-import crypto from 'crypto';
-import bcrypt from 'bcrypt';
+import UserModel from '../../Data/Models/user.model.js';
+import EmailValidator from '../../Data/Validators/email.validator.js';
+import PasswordValidator from '../../Data/Validators/password.validator.js';
+import EmailCodeService, {
+  EMAIL_CODE_PURPOSE,
+} from '../Services/emailCode.service.js';
+
 const BCRYPT_SALT_ROUNDS = 10;
+const CODE_PATTERN = /^\d{6}$/;
+const SILENT_CODES = new Set(['RESEND_TOO_SOON', 'TOO_MANY_SENDS']);
+
+function createError(message, status, code) {
+  const error = new Error(message);
+  error.status = status;
+  error.code = code;
+  return error;
+}
 
 class PasswordRecoveryUseCase {
   async forgotPassword(email) {
     //validates email, returning clean version
-    const cleanEmail = email?.trim();
-
-    //empty email throws 400 error
-    if (!cleanEmail) {
-      const error = new Error('Favor de ingresar correo.');
-      error.status = 400;
-      throw error;
-    }
-
-    //check for valid email format
-    const emailRegex = /^[\w-_.]+@([\w-]+.)+[\w-]{2,4}$/;
-
-    if (!emailRegex.test(cleanEmail)) {
-      const error = new Error('Favor de ingresar un correo válido.');
-      error.status = 400;
-      throw error;
-    }
-
-    //find user by email
+    const cleanEmail = EmailValidator.validateEmail(email).toLowerCase();
     const user = await UserModel.findByEmail(cleanEmail);
 
-    //generic response even if email does not exist
+    //same response whether account exists or not
+    const message = 'Si el correo está registrado, enviaremos un código.';
+
     if (!user) {
-      return {
-        message: 'Si el correo existe, se envió un enlace',
-      };
+      return { message };
     }
 
-    //generate a secure random token
-    const recoveryToken = crypto.randomBytes(32).toString('hex');
-
-    //hash the token for storage
-    const tokenHash = crypto
-      .createHash('sha256')
-      .update(recoveryToken)
-      .digest('hex');
-
-    //set expiration time for the token (1 hour)
-    const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
-
-    //check if a recovery record already exists for the user
-    const existingRecord = await PasswordRecoveryModel.findByUserId(
-      user.user_id
-    );
-
-    if (existingRecord) {
-      //update the existing record with the new token and expiration
-      await PasswordRecoveryModel.updateRecoveryRecord(
-        existingRecord.recovery_id,
-        tokenHash,
-        expiresAt
-      );
-    } else {
-      //otherwise, create a new recovery record
-      await PasswordRecoveryModel.createRecoveryRecord(
-        user.user_id,
-        tokenHash,
-        expiresAt
-      );
+    try {
+      await EmailCodeService.issueCode({
+        userId: user.user_id,
+        email: cleanEmail,
+        purpose: EMAIL_CODE_PURPOSE.RESET_PASSWORD,
+      });
+    } catch (error) {
+      if (!SILENT_CODES.has(error.code)) {
+        throw error;
+      }
     }
 
-    await MailerService.sendPasswordRecoveryEmail(cleanEmail, recoveryToken);
-
-    //send the recovery email with the token
-    return {
-      message: 'Si el correo existe, se envió un enlace',
-    };
+    return { message };
   }
 
-  //validate token has not been used and is not expired and that it exists
-  async validateToken(token) {
-    const cleanToken = token?.trim();
+  //validate code before moving to reset password
+  async validateCode(email, code) {
+    const cleanCode = String(code ?? '').trim();
+    const cleanEmail = EmailValidator.validateEmail(email).toLowerCase();
 
-    if (!cleanToken) {
-      const error = new Error('Token inválido.');
-      error.status = 400;
-      throw error;
+    if (!CODE_PATTERN.test(cleanCode)) {
+      throw createError('El código debe tener 6 dígitos.', 400, 'CODE_INVALID');
     }
 
-    //hash the token for comparison
-    const tokenHash = crypto
-      .createHash('sha256')
-      .update(cleanToken)
-      .digest('hex');
+    const user = await UserModel.findByEmail(cleanEmail);
 
-    //find the recovery record by token hash
-    const recoveryRecord = await PasswordRecoveryModel.findByToken(tokenHash);
-
-    if (!recoveryRecord) {
-      const error = new Error('Token inválido o no encontrado.');
-      error.status = 400;
-      throw error;
+    if (!user) {
+      throw createError('Código incorrecto.', 400, 'CODE_INVALID');
     }
 
-    //check if token has been used
-    if (recoveryRecord.used_at) {
-      const error = new Error('Token ya ha sido usado.');
-      error.status = 400;
-      throw error;
-    }
+    //validate without deleting the code
+    await EmailCodeService.validateCode({
+      userId: user.user_id,
+      purpose: EMAIL_CODE_PURPOSE.RESET_PASSWORD,
+      code: cleanCode,
+    });
 
-    //check if token is expired
-    const expiresAt = new Date(`${recoveryRecord.expires_at}Z`);
-
-    if (expiresAt <= new Date()) {
-      const error = new Error('Token ha expirado.');
-      error.status = 400;
-      throw error;
-    }
-    return {
-      valid: true,
-      userId: recoveryRecord.user_id,
-      recoveryId: recoveryRecord.recovery_id,
-    };
+    return { message: 'Código validado correctamente.' };
   }
 
-  //password reset function, takes token and new password, validates token, hashes new password, updates user record, marks token as used
-  async resetPassword(token, newPassword) {
-    //validate recovery token
-    const { userId, recoveryId } = await this.validateToken(token);
+  async resetPassword(email, code, newPassword) {
+    const cleanEmail = EmailValidator.validateEmail(email).toLowerCase();
+    const user = await UserModel.findByEmail(cleanEmail);
+
+    if (!user) {
+      throw createError('Código incorrecto.', 400, 'CODE_INVALID');
+    }
+
+    //revalidate code
+    await EmailCodeService.validateCode({
+      userId: user.user_id,
+      purpose: EMAIL_CODE_PURPOSE.RESET_PASSWORD,
+      code: String(code ?? '').trim(),
+    });
 
     const password = PasswordValidator.validatePassword(newPassword);
+    const passwordHash = await bcrypt.hash(password, BCRYPT_SALT_ROUNDS);
 
-    //hash the new password
-    const hashedPassword = await bcrypt.hash(password, BCRYPT_SALT_ROUNDS);
+    const updatedUser = await UserModel.updatePassword(
+      user.user_id,
+      passwordHash
+    );
 
-    await UserModel.recoverPassword(userId, hashedPassword);
+    if (!updatedUser) {
+      throw createError(
+        'No se pudo actualizar la contraseña.',
+        500,
+        'PASSWORD_UPDATE_FAILED'
+      );
+    }
 
-    //mark token as used
-    await PasswordRecoveryModel.markTokenAsUsed(recoveryId);
+    //remove code once password has been updated
+    await EmailCodeService.removeCode(
+      user.user_id,
+      EMAIL_CODE_PURPOSE.RESET_PASSWORD
+    );
 
-    return {
-      message: 'Contraseña actualizada exitosamente.',
-    };
+    return { message: 'Contraseña actualizada exitosamente.' };
   }
 }
 

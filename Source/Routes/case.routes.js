@@ -19,6 +19,25 @@ router.get(
   caseController.listCases
 );
 
+// V-12: Cases assigned to the logged-in collaborator, open and closed.
+// Must stay before /cases/:caseId so "assigned" is not read as a caseId
+router.get(
+  '/cases/assigned',
+  authMiddleware,
+  adminInternalOnly,
+  caseController.listAssignedCases
+);
+
+/* 
+R-10: Accounts that can be assigned to a case, internal/admin only.
+*/
+router.get(
+  '/cases/collaborators',
+  authMiddleware,
+  adminInternalOnly,
+  caseController.listAssignableCollaborators
+);
+
 //Case details: any authenticated user (the owner sees it in V-07,
 // staff can see any case). A per-case ownership check is a recommended
 // follow-up, for now, a valid token is enough
@@ -38,6 +57,45 @@ router.patch(
   authMiddleware,
   adminInternalOnly,
   caseController.closeCase
+);
+
+// List available violence types (R-07), internal/admin only
+router.get(
+  '/violence-types',
+  authMiddleware,
+  adminInternalOnly,
+  caseController.listViolenceTypes
+);
+
+// Assign violence types to a case (R-07), internal/admin only
+router.patch(
+  '/cases/:caseId/violence-types',
+  authMiddleware,
+  adminInternalOnly,
+  caseController.assignViolenceTypes
+);
+// Assign an internal or admin user to a case (R-10)
+router.post(
+  '/cases/:caseId/assignments',
+  authMiddleware,
+  adminInternalOnly,
+  caseController.assignCollaborator
+);
+// Replace the collaborators of a case with a final list, the missing ones are removed (R-10)
+router.put(
+  '/cases/:caseId/assignments',
+  authMiddleware,
+  adminInternalOnly,
+  caseController.replaceCollaborators
+);
+
+//r-13 updates case steps
+// Assign an internal or admin user to a case (R-10)
+router.patch(
+  '/cases/:caseId/step',
+  authMiddleware,
+  adminInternalOnly,
+  caseController.updateCaseStep
 );
 
 export default router;

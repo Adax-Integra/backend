@@ -1,6 +1,7 @@
 class ExternalProfileDTO {
   constructor({ profile, address }) {
     this.user_id = profile?.user_id ?? null;
+    this.verification_status = profile?.verification_status ?? null;
     this.profile = profile
       ? {
           name: profile.name,
@@ -10,15 +11,12 @@ class ExternalProfileDTO {
           phone: profile.phone,
         }
       : null;
+    // G-07: the address only keeps the country, the state and the municipality
     this.address = address
       ? {
-          address_line_1: address.address_line_1,
-          address_line_2: address.address_line_2,
-          neighborhood: address.neighborhood,
-          zip_code: address.zip_code,
           country: address.country,
           state: address.state,
-          city: address.city,
+          municipality: address.municipality,
         }
       : null;
   }
@@ -26,6 +24,7 @@ class ExternalProfileDTO {
   toJSON() {
     return {
       user_id: this.user_id,
+      verification_status: this.verification_status,
       profile: this.profile,
       address: this.address,
     };

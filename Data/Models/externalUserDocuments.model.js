@@ -1,9 +1,12 @@
 // Used for generating random file names.
 import crypto from 'node:crypto';
 import { supabase } from '../Config/supabase.js';
+import DocumentEncryptionService from '../Services/documentEncryption.service.js';
+import DocumentLinkService from '../Services/documentLink.services.js';
 
 const USER_DOCUMENTS_BUCKET = 'user-documents';
-const SIGNED_URL_EXPIRES_IN_SECONDS = 60 * 15;
+// The bucket only holds encrypted bytes, the real type comes from the path
+const ENCRYPTED_CONTENT_TYPE = 'application/octet-stream';
 const SIGNED_URL_FIELDS = ['identity_document', 'proof_of_address'];
 // Folder inside "{userId}/" where each document type is stored
 const DOCUMENT_FOLDERS = {
@@ -11,9 +14,15 @@ const DOCUMENT_FOLDERS = {
   proof_of_address: 'address',
 };
 const FILE_EXTENSIONS = {
-  'application/pdf': 'pdf',
   'image/jpeg': 'jpg',
   'image/png': 'png',
+};
+// Old uploads can still be PDF, they are served with their own type
+const CONTENT_TYPES = {
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  png: 'image/png',
+  pdf: 'application/pdf',
 };
 
 /*
@@ -21,7 +30,8 @@ Data Model for external user access to the "user_documents" table.
 
 Files live in the "user-documents" Storage bucket.
 The table stores path strings. attachSignedUrls turns those paths into
-short-lived read URLs. API responses include the URLs, not the paths.
+short-lived links to the backend, which decrypts the file (downloadFile).
+API responses include the links, not the paths.
 */
 class ExternalUserDocumentsModel {
   static async findByUserId(userId) {
@@ -58,48 +68,36 @@ class ExternalUserDocumentsModel {
     return data;
   }
 
-  // Attach signed URLs to the documents to be returned to the client
-  static async attachSignedUrls(documents) {
+  /*
+  Attach signed links to the documents to be returned to the client.
+  The links point to the backend (GET /api/documents/files/:token), never
+  to Storage, because Storage only has the encrypted bytes.
+  */
+  static async attachSignedUrls(documents, baseUrl) {
     if (!documents) {
       return null;
     }
 
-    // Get the paths of the documents to attach signed URLs to
-    const paths = SIGNED_URL_FIELDS.map((field) => documents[field]).filter(
-      (path) => typeof path === 'string' && path.length > 0
-    );
-
-    // Create a map of paths to signed URLs
-    const urlsByPath = new Map();
-
-    // Create signed URLs for the documents
-    if (paths.length > 0) {
-      const { data, error } = await supabase.storage
-        .from(USER_DOCUMENTS_BUCKET)
-        .createSignedUrls(paths, SIGNED_URL_EXPIRES_IN_SECONDS);
-
-      if (error) {
-        throw new Error(error.message);
+    const urlFor = (field) => {
+      const storagePath = documents[field];
+      if (typeof storagePath !== 'string' || storagePath.length === 0) {
+        return null;
       }
 
-      // Add the signed URLs to the map
-      for (const [index, item] of (data ?? []).entries()) {
-        const path = paths[index];
-        if (!path) {
-          // Skip if the path is not valid
-          continue;
-        }
+      const token = DocumentLinkService.sign({
+        userId: documents.user_id,
+        field,
+        storagePath,
+      });
+      return DocumentLinkService.buildUrl(baseUrl, token);
+    };
 
-        const signedUrl = item.signedUrl ?? item.signedURL ?? null;
-        urlsByPath.set(path, item.error ? null : signedUrl);
-      }
-    }
+    const [identityUrl, addressUrl] = SIGNED_URL_FIELDS.map(urlFor);
 
     return {
       document_id: documents.document_id,
-      identity_document_url:
-        urlsByPath.get(documents.identity_document) ?? null,
-      proof_of_address_url: urlsByPath.get(documents.proof_of_address) ?? null,
+      identity_document_url: identityUrl,
+      proof_of_address_url: addressUrl,
     };
   }
 
@@ -121,15 +119,50 @@ class ExternalUserDocumentsModel {
 
     const path = `${userId}/${folder}/${crypto.randomUUID()}.${extension}`;
 
+    // The image is encrypted before it leaves the backend
+    const encrypted = DocumentEncryptionService.encrypt(file.buffer, path);
+
     const { error } = await supabase.storage
       .from(USER_DOCUMENTS_BUCKET)
-      .upload(path, file.buffer, { contentType: file.mimetype });
+      .upload(path, encrypted, { contentType: ENCRYPTED_CONTENT_TYPE });
 
     if (error) {
       throw new Error(error.message);
     }
 
     return path;
+  }
+
+  /*
+  Downloads a file from the bucket and returns it decrypted, with the
+  content type of the original image.
+  */
+  static async downloadFile(path) {
+    const { data, error } = await supabase.storage
+      .from(USER_DOCUMENTS_BUCKET)
+      .download(path);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    const stored = Buffer.from(await data.arrayBuffer());
+    const extension = path.slice(path.lastIndexOf('.') + 1).toLowerCase();
+    const contentType = CONTENT_TYPES[extension] ?? ENCRYPTED_CONTENT_TYPE;
+
+    /*
+    Files uploaded before R-06 encryption are still plain until the
+    "pnpm documents:encrypt" script runs, so they are served as they are.
+    */
+    if (!DocumentEncryptionService.isEncrypted(stored)) {
+      console.warn('[documents] Serving a file that is not encrypted yet.');
+      return { buffer: stored, contentType };
+    }
+
+    return {
+      buffer: DocumentEncryptionService.decrypt(stored, path),
+      contentType,
+    };
   }
 
   // Removes files from the bucket (just in case a step fails)

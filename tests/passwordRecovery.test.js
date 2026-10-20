@@ -1,117 +1,117 @@
-//tests for password recovery
+import { afterEach, describe, expect, it, jest } from '@jest/globals';
 
-//tests for password recovery model
-import PasswordRecoveryModel from '../Data/Models/passwordRecovery.model.js';
-
-//user functions within the model
-
-//const userId = 'test-user-id';
-
-//check if a recovery record exists for the user
-/*try {
-    const recovery = await PasswordRecoveryModel.findByUserId(userId);
-
-    if (recovery) {
-        console.log('Recovery record found:');
-        console.log(recovery);
-    } else {
-        console.log('No recovery record found for this user.');
-    }
-} catch (error) {
-    console.error('Error testing PasswordRecoveryModel:', error.message);
-}*/
-
-//test inserting a new recovery record for the user
-/*try {
-    console.log('Starting insert...');
-
-    const recovery = await PasswordRecoveryModel.createRecoveryRecord(
-        userId,
-        'test-hash',
-        new Date(Date.now() + 60 * 60 * 1000).toISOString()
-    );
-
-    console.log('INSERT SUCCESSFUL');
-    console.log(recovery);
-} catch (error) {
-    console.error('INSERT FAILED');
-    console.error(error);
-}*/
-
-//update the existing record using record id
-/*try {
-  const recovery = await PasswordRecoveryModel.updateRecoveryRecord(
-    'test-recovery-id',
-    'new-test-hash',
-    new Date(Date.now() + 60 * 60 * 1000).toISOString()
-  );
-
-  console.log('Recovery record updated:');
-  console.log(recovery);
-} catch (error) {
-  console.error('Error updating recovery record:', error.message);
-}*/
-
-//--------------------------------------------------------------------------
-
-//mark the token as used
-//this should be done after the user successfully resets their password
-const result = await PasswordRecoveryModel.markTokenAsUsed('test-recovery-id');
-
-console.log(result);
-
-//test upon receiving raw token
-//import crypto from 'crypto';
-
-const recoveryToken = 'test-token';
-
-/*const tokenHash = crypto
-    .createHash('sha256')
-    .update(recoveryToken)
-    .digest('hex');*/
-
-/*try {
-    console.log('Searching for recovery token...');
-
-    const recovery = await PasswordRecoveryModel.findByToken(tokenHash);
-
-    console.log('Result:');
-    console.log(recovery);
-
-} catch (error) {
-    console.error('Token lookup failed:');
-    console.error(error);
-}*/
-
-//---------------------------------------------------------------------------
-//test use case for password recovery
+import UserModel from '../Data/Models/user.model.js';
+import EmailCodeService from '../Domain/Services/emailCode.service.js';
 import PasswordRecoveryUseCase from '../Domain/UseCases/passwordRecovery.usecase.js';
 
 const useCase = new PasswordRecoveryUseCase();
+const user = { user_id: 'test-user', email: 'user@example.com' };
 
-//replace w valid email
-/*const email = 'test-email';
+//undo fake functions after each test
+afterEach(() => {
+  jest.restoreAllMocks();
+});
 
-//should create a hashed token and store it in the password recovery table, or update an existing record if one exists for the user
-try {
-  console.log('Starting password recovery test...');
-  const result = await useCase.forgotPassword(email);
+//forgot password with email, code and generic message
+describe('forgotPassword', () => {
+  it('sends a code when the user exists', async () => {
+    //dummy db and code service
+    jest.spyOn(UserModel, 'findByEmail').mockResolvedValue(user);
+    const issueCode = jest
+      .spyOn(EmailCodeService, 'issueCode')
+      .mockResolvedValue();
 
-  console.log('PASSWORD RECOVERY SUCCESSFUL');
-  console.log(result);
-} catch (error) {
-  console.error('PASSWORD RECOVERY FAILED');
-  console.error(error);
-}*/
+    //real method
+    const result = await useCase.forgotPassword('user@example.com');
 
-try {
-  console.log('Validating recovery token...');
+    //results
+    expect(issueCode).toHaveBeenCalledTimes(1);
+    expect(result.message).toBe(
+      'Si el correo está registrado, enviaremos un código.'
+    );
+  });
 
-  const result = await useCase.validateToken(recoveryToken);
+  it('gives the same answer but sends nothing when the user does not exist', async () => {
+    jest.spyOn(UserModel, 'findByEmail').mockResolvedValue(null);
+    const issueCode = jest
+      .spyOn(EmailCodeService, 'issueCode')
+      .mockResolvedValue();
 
-  console.log('TOKEN VALID');
-  console.log(result);
-} catch (error) {
-  console.error('TOKEN INVALID');
-  console.error(error.message);
-}
+    const result = await useCase.forgotPassword('nadie@example.com');
+
+    expect(issueCode).not.toHaveBeenCalled();
+    expect(result.message).toBe(
+      'Si el correo está registrado, enviaremos un código.'
+    );
+  });
+});
+
+//password update and invalidating code
+describe('resetPassword', () => {
+  it('rejects a password without a special character without updating it or consuming the code', async () => {
+    jest.spyOn(UserModel, 'findByEmail').mockResolvedValue(user);
+    jest.spyOn(EmailCodeService, 'validateCode').mockResolvedValue();
+
+    const updatePassword = jest
+      .spyOn(UserModel, 'updatePassword')
+      .mockResolvedValue(user);
+
+    const removeCode = jest
+      .spyOn(EmailCodeService, 'removeCode')
+      .mockResolvedValue();
+
+    await expect(
+      useCase.resetPassword('user@example.com', '123456', 'newPassword123')
+    ).rejects.toMatchObject({
+      status: 400,
+      code: 'VALIDATION_ERROR',
+      message: 'La contraseña debe contener al menos un carácter especial.',
+    });
+
+    expect(updatePassword).not.toHaveBeenCalled();
+    expect(removeCode).not.toHaveBeenCalled();
+  });
+
+  it('updates the password and removes the code when the code is valid', async () => {
+    jest.spyOn(UserModel, 'findByEmail').mockResolvedValue(user);
+    jest.spyOn(EmailCodeService, 'validateCode').mockResolvedValue();
+    const updatePassword = jest
+      .spyOn(UserModel, 'updatePassword')
+      .mockResolvedValue(user);
+    const removeCode = jest
+      .spyOn(EmailCodeService, 'removeCode')
+      .mockResolvedValue();
+
+    const result = await useCase.resetPassword(
+      'usuaria@example.com',
+      '123456',
+      'newPassword123!'
+    );
+
+    expect(updatePassword).toHaveBeenCalledTimes(1);
+    expect(removeCode).toHaveBeenCalledTimes(1);
+    expect(result.message).toBe('Contraseña actualizada exitosamente.');
+  });
+
+  it('rejects a code that is not 6 digits', async () => {
+    await expect(
+      useCase.resetPassword('usuaria@example.com', 'abc', 'newPassword123!')
+    ).rejects.toMatchObject({ status: 400, code: 'CODE_INVALID' });
+  });
+
+  it('does not change the password when the code is wrong', async () => {
+    jest.spyOn(UserModel, 'findByEmail').mockResolvedValue(user);
+    jest
+      .spyOn(EmailCodeService, 'validateCode')
+      .mockRejectedValue(
+        Object.assign(new Error('wrong'), { status: 400, code: 'CODE_INVALID' })
+      );
+    const updatePassword = jest.spyOn(UserModel, 'updatePassword');
+
+    await expect(
+      useCase.resetPassword('usuaria@example.com', '123456', 'newPassword123!')
+    ).rejects.toMatchObject({ code: 'CODE_INVALID' });
+
+    expect(updatePassword).not.toHaveBeenCalled();
+  });
+});

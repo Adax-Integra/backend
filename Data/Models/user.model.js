@@ -4,7 +4,7 @@ import { supabase } from '../Config/supabase.js';
 class UserModel {
   static TABLE = 'user';
 
-  static AUTH_COLUMNS = 'user_id, email, password';
+  static AUTH_COLUMNS = 'user_id, email, password, email_verified_at';
 
   /**
    * Return back the data if the email is found in the database, otherwise returns null.
@@ -22,25 +22,6 @@ class UserModel {
       .maybeSingle();
     // Returns a single record or null if it does not exist
 
-    if (error) {
-      throw new Error(error.message);
-    }
-
-    return data;
-  }
-
-  //update the password in the user table
-  //must hash before storing it
-  static async recoverPassword(userId, hashedPassword) {
-    const { data, error } = await supabase
-      .from(UserModel.TABLE)
-      .update({
-        password: hashedPassword,
-      })
-      .eq('user_id', userId)
-      .is('deleted_at', null)
-      .select(UserModel.AUTH_COLUMNS)
-      .single();
     if (error) {
       throw new Error(error.message);
     }
@@ -70,6 +51,91 @@ class UserModel {
       .eq('user_id', userId)
       .is('deleted_at', null)
       .select('user_id')
+      .maybeSingle();
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return data;
+  }
+  // G-09: marks the email as verified once the user enters the correct code
+  static async markEmailVerified(userId) {
+    const { error } = await supabase
+      .from(UserModel.TABLE)
+      .update({ email_verified_at: new Date().toISOString() })
+      .eq('user_id', userId)
+      .is('deleted_at', null);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+  }
+
+  // B-01: reads the identity verification status of a user
+  static async getVerificationStatus(userId) {
+    const { data, error } = await supabase
+      .from(UserModel.TABLE)
+      .select('user_id, verification_status, email')
+      .eq('user_id', userId)
+      .is('deleted_at', null)
+      .maybeSingle();
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return data;
+  }
+
+  static async updateVerificationStatus(userId, status) {
+    const { data, error } = await supabase
+      .from(UserModel.TABLE)
+      .update({ verification_status: status })
+      .eq('user_id', userId)
+      .is('deleted_at', null)
+      .select('user_id, verification_status')
+      .maybeSingle();
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return data;
+  }
+
+  static async updateVerificationStatusWithLog({
+    userId,
+    actorId,
+    status,
+    reason,
+  }) {
+    const { data, error } = await supabase.rpc(
+      'update_verification_status_with_log',
+      {
+        p_user_id: userId,
+        p_actor_id: actorId,
+        p_status: status,
+        p_reason: reason ?? null,
+      }
+    );
+
+    if (error) {
+      throw new Error(error.message);
+    }
+    return Array.isArray(data) ? data[0] : data;
+  }
+
+  // G-08: the account is marked with deleted_at instead of being deleted,
+  // so the login stops finding it and its records, cases and log entries are kept.
+  // Returns null when the account does not exist or was already deactivated
+  static async deactivate(userId) {
+    const { data, error } = await supabase
+      .from(UserModel.TABLE)
+      .update({ deleted_at: new Date().toISOString() })
+      .eq('user_id', userId)
+      .is('deleted_at', null)
+      .select('user_id, deleted_at')
       .maybeSingle();
 
     if (error) {

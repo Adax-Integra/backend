@@ -44,13 +44,23 @@ class RecordModel {
     return data;
   }
 
-    //Retrieves a page of non-deleted records and their owners.
-  static async findAll({ page = 1, search = '', hasOpenCases = null, status = null } = {}) {
+  //Retrieves a page of non-deleted records and their owners.
+  static async findAll({
+    page = 1,
+    search = '',
+    hasOpenCases = null,
+    status = null,
+  } = {}) {
     // V-05 displays 10 records per page
     const limit = 10;
 
     // Allowed record lifecycle statuses (must match the DB CHECK constraint).
-    const ALLOWED_STATUSES = ['SIN_EMPEZAR', 'EN_REVISION', 'EN_SEGUIMIENTO', 'COMPLETADO'];
+    const ALLOWED_STATUSES = [
+      'SIN_EMPEZAR',
+      'EN_REVISION',
+      'EN_SEGUIMIENTO',
+      'COMPLETADO',
+    ];
 
     if (!Number.isSafeInteger(page) || page < 1) {
       throw new Error('page must be a positive integer.');
@@ -124,6 +134,49 @@ class RecordModel {
       page,
       limit,
     };
+  }
+
+  static async findStatusById(recordId) {
+    const { data, error } = await supabase
+      .from('record')
+      .select('record_id, status')
+      .eq('record_id', recordId)
+      .is('deleted_at', null)
+      .maybeSingle();
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    if (!data) {
+      const notFound = new Error('Record not found');
+      notFound.status = 404;
+      throw notFound;
+    }
+
+    return data;
+  }
+
+  static async updateStatus(recordId, newStatus) {
+    const { data, error } = await supabase
+      .from('record')
+      .update({ status: newStatus })
+      .eq('record_id', recordId)
+      .is('deleted_at', null)
+      .select('record_id, status')
+      .maybeSingle();
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    if (!data) {
+      const notFound = new Error('Record not found');
+      notFound.status = 404;
+      throw notFound;
+    }
+
+    return data;
   }
 }
 export default RecordModel;

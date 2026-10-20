@@ -1,4 +1,5 @@
 import CaseModel from '../../Data/Models/case.model.js';
+import { calculateCaseUrgency } from '../../Data/Services/caseUrgency.helper.js';
 
 // Match names without requiring accents, capitalization, or exact spacing.
 function normalizeSearch(value) {
@@ -20,7 +21,9 @@ class ListCasesUseCase {
     const query = normalizeSearch(search);
     const urgencyFilter = urgency.trim();
     if (
-      !['', 'Todas', 'Alta', 'Media', 'Baja', 'Sin evaluar'].includes(urgencyFilter)
+      !['', 'Todas', 'Alta', 'Media', 'Baja', 'Sin evaluar'].includes(
+        urgencyFilter
+      )
     ) {
       throw new Error(
         'urgency must be Alta, Media, Baja, Sin evaluar, or Todas.'
@@ -62,38 +65,53 @@ class ListCasesUseCase {
     } while (allCases.length < total);
 
     // Calculate the urgency level for each case
-    const casesWithUrgency = allCases.map((caseData) => {
-      let severity = null;
+    const casesWithUrgency = allCases.map((caseData) => ({
+      ...caseData,
+      ...calculateCaseUrgency(caseData.case_violence),
+    }));
 
-      // A case takes the highest severity among its active violence types.
-      for (const link of caseData.case_violence ?? []) {
-        const value = link.violence_types?.severity;
-
-        if (Number.isInteger(value) && value >= 1 && value <= 10) {
-          severity = severity === null ? value : Math.max(severity, value);
-        }
-      }
-
-      let urgency = 'Sin evaluar';
-
-      if (severity >= 8) {
-        urgency = 'Alta';
-      } else if (severity >= 4) {
-        urgency = 'Media';
-      } else if (severity >= 1) {
-        urgency = 'Baja';
-      }
-
-      return { ...caseData, severity, urgency };
-    });
-
-    // Search and filter the complete list before counting and paginating it.
+    // Search and filter before counting and paginating.
     const matchingCases = casesWithUrgency.filter((caseData) => {
+      const state = normalizeSearch(caseData.state ?? '');
+
+      // Closed cases do not belong to the collaborator's priority listing.
+      if (state === 'closed' || state === 'cerrado') {
+        return false;
+      }
+
       const user = caseData.record?.user;
       const fullName = [user?.name, user?.last_name].filter(Boolean).join(' ');
-      const matchesSearch =
-        normalizeSearch(fullName).includes(query) ||
-        normalizeSearch(caseData.case_id ?? '').includes(query);
+
+      const violenceTypes = (caseData.case_violence ?? [])
+        .map((link) => link.violence_types?.description)
+        .filter(Boolean);
+
+      // Ignore deleted assignments and deleted collaborators.
+      const assignedNames = (caseData.case_assignment ?? [])
+        .filter(
+          (assignment) =>
+            assignment.deleted_at === null &&
+            assignment.user != null &&
+            assignment.user.deleted_at === null
+        )
+        .map((assignment) =>
+          [assignment.user.name, assignment.user.last_name]
+            .filter(Boolean)
+            .join(' ')
+        );
+
+      const searchableValues = [
+        fullName,
+        caseData.case_id ?? '',
+        caseData.case_number ?? '',
+        ...violenceTypes,
+        ...assignedNames,
+      ];
+
+      const matchesSearch = searchableValues.some((value) =>
+        normalizeSearch(value).includes(query)
+      );
+
       const matchesUrgency =
         urgencyFilter === '' ||
         urgencyFilter === 'Todas' ||

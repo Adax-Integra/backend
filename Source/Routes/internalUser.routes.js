@@ -5,6 +5,7 @@ import {
   adminInternalOnly,
   adminOnly,
 } from '../Middlewares/role.middleware.js';
+import { createCaseLimiter } from '../Middlewares/rateLimit.middleware.js';
 
 const router = express.Router();
 
@@ -16,6 +17,15 @@ router.get(
   internalUserController.getAllCasesFromUser
 );
 
+// R-11 Create a case for an external user from an internal account
+router.post(
+  '/internal-users/external-users/:userId/cases',
+  authMiddleware,
+  adminInternalOnly,
+  createCaseLimiter,
+  internalUserController.createCaseForExternalUser
+);
+
 // R-03 Register a new external user's expediente
 router.post(
   '/internal-users/external-users',
@@ -24,11 +34,19 @@ router.post(
   internalUserController.registerExternalUser
 );
 
+// G-16 Admin consults the list of external accounts
+router.get(
+  '/internal-users/external-users',
+  authMiddleware,
+  adminInternalOnly,
+  internalUserController.listExternalUsers
+);
+
 // G-07 Get the personal data of an external user (admin only)
 router.get(
   '/internal-users/external-users/:userId',
   authMiddleware,
-  adminOnly,
+  adminInternalOnly,
   internalUserController.getExternalProfile
 );
 
@@ -38,6 +56,22 @@ router.patch(
   authMiddleware,
   adminOnly,
   internalUserController.updateExternalProfile
+);
+
+// B-02 Admin or internal staff reviews an external user's identity verification
+router.patch(
+  '/internal-users/external-users/:userId/verification',
+  authMiddleware,
+  adminInternalOnly,
+  internalUserController.reviewExternalVerification
+);
+
+// V-13 Internal users view the documents of an external user's record
+router.get(
+  '/internal-users/external-users/:userId/documents',
+  authMiddleware,
+  adminInternalOnly,
+  internalUserController.getExternalUserDocuments
 );
 
 // G-03 Admin creates a new collaborator (internal user) account
@@ -62,6 +96,38 @@ router.get(
   authMiddleware,
   adminOnly,
   internalUserController.listCollaborators
+);
+
+// G-10 Admin and ONLY ADMIN consults the detail of a collaborator
+router.get(
+  '/internal-users/:userId',
+  authMiddleware,
+  adminOnly,
+  internalUserController.getCollaboratorDetail
+);
+
+// G-18 Admin edits the name, last name or email of a collaborator
+router.patch(
+  '/internal-users/:userId',
+  authMiddleware,
+  adminOnly,
+  internalUserController.updateCollaboratorProfile
+);
+
+// G-10 Admin consults the cases assigned to a collaborator
+router.get(
+  '/internal-users/:userId/assigned-cases',
+  authMiddleware,
+  adminOnly,
+  internalUserController.getCollaboratorCases
+);
+
+// G-04 Admin activates or deactivates a collaborator account
+router.patch(
+  '/internal-users/:userId/status',
+  authMiddleware,
+  adminOnly,
+  internalUserController.updateCollaboratorStatus
 );
 
 export default router;

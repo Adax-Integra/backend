@@ -19,25 +19,43 @@ import profileRoutes from '../Source/Routes/profile.routes.js';
 import locationRoutes from '../Source/Routes/location.routes.js';
 import reportRoutes from '../Source/Routes/report.routes.js';
 import passwordRecoveryRoutes from '../Source/Routes/passwordRecovery.routes.js';
-import assetLinks from '../Data/Config/assetlinks.js';
+import eventRoutes from '../Source/Routes/event.routes.js';
+import caseHelpRoutes from '../Source/Routes/caseHelp.routes.js';
 
 // R-06: Document upload and replacement routes
 import uploadDocumentsRoutes from '../Source/Routes/uploadDocuments.routes.js';
 
 import { apiLimiter } from '../Source/Middlewares/rateLimit.middleware.js';
 
+import DocumentEncryptionService from '../Data/Services/documentEncryption.service.js';
+
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const swaggerDocument = parseYaml(
   readFileSync(join(__dirname, '..', 'openapi.yaml'), 'utf8')
 );
 
-const JWT_SECRET = process.env.JWT_SECRET;
-if (
-  !JWT_SECRET ||
-  JWT_SECRET.length < 32 ||
-  JWT_SECRET === 'change_me_to_a_long_random_text'
-) {
-  throw new Error('JWT_SECRET must be a strong random value (>= 32 chars)');
+// Jest sets NODE_ENV to "test", the tests only import the app and do not start the server
+const isTest = process.env.NODE_ENV === 'test';
+
+// SEC-01: the server does not start without a strong JWT secret
+function assertJwtSecret() {
+  const JWT_SECRET = process.env.JWT_SECRET;
+  if (
+    !JWT_SECRET ||
+    JWT_SECRET.length < 32 ||
+    JWT_SECRET === 'change_me_to_a_long_random_text'
+  ) {
+    throw new Error('JWT_SECRET must be a strong random value (>= 32 chars)');
+  }
+}
+
+// The configuration is checked only when the server really starts,
+// so a test that imports the app does not fail for a missing variable
+if (!isTest) {
+  assertJwtSecret();
+
+  // R-06: without the master key no document can be uploaded or opened
+  DocumentEncryptionService.assertConfigured();
 }
 
 const app = express();
@@ -57,11 +75,6 @@ app.get('/', (_req, res) => res.status(200).json({ status: 'server running' }));
 // Health check endpoint for mobile connectivity testing & load balancers
 app.get('/health', (_req, res) => res.status(200).json({ status: 'ok' }));
 
-//android app links verification
-app.get('/.well-known/assetlinks.json', (_req, res) => {
-  res.json(assetLinks);
-});
-
 // OpenAPI docs (single source in root folder: openapi.yaml)
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
@@ -76,6 +89,8 @@ app.use('/api', profileRoutes);
 app.use('/api', locationRoutes);
 app.use('/api', reportRoutes);
 app.use('/api/password-recovery', passwordRecoveryRoutes);
+app.use('/api', eventRoutes);
+app.use('/api', caseHelpRoutes);
 
 // R-06: Register document upload and replacement endpoints
 app.use('/api', uploadDocumentsRoutes);
@@ -89,7 +104,10 @@ app.use((err, _req, res, _next) => {
   res.status(500).send('Internal server error.');
 });
 
-const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => console.log(`Servidor en http://localhost:${PORT}`));
+// supertest opens its own connection, so the tests do not need port 3001
+if (!isTest) {
+  const PORT = process.env.PORT || 3001;
+  app.listen(PORT, () => console.log(`Servidor en http://localhost:${PORT}`));
+}
 
 export default app;

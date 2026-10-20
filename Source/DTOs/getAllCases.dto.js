@@ -17,11 +17,13 @@ class CaseSummaryDTO {
     case_violence = [],
     case_assignment = [],
     updated_at,
+    urgency = 'Sin evaluar',
   }) {
     this.caseId = case_id ?? null;
     // Folio shown to the user, e.g. C-26-9999
     this.caseNumber = case_number ?? null;
     this.state = state ?? null;
+    this.urgency = urgency;
 
     // Owner of the case, it comes from the record the case belongs to
     const owner = record?.user;
@@ -62,6 +64,7 @@ class CaseSummaryDTO {
       userName: this.userName,
       violenceTypes: this.violenceTypes,
       assignedUsers: this.assignedUsers,
+      urgency: this.urgency,
       updatedAt: this.updatedAt,
     };
   }
